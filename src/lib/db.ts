@@ -1,70 +1,79 @@
-import mongoose from "mongoose"
+import mongoose, { Connection } from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI
+const MONGODB_URI1 = process.env.MONGODB_URI!;
+const MONGODB_URI2 = process.env.PROD_DB!;
 
-if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local")
+interface CachedConnections {
+  conn1: Connection | null;
+  promise1: Promise<Connection> | null;
+  conn2: Connection | null;
+  promise2: Promise<Connection> | null;
 }
 
-interface Cached {
-  conn: typeof mongoose | null
-  promise: Promise<typeof mongoose> | null
-}
+const globalWithMongo = global as typeof globalThis & {
+  mongoConnections?: CachedConnections;
+};
 
-let cached: Cached = (global as any).mongoose
+const cached: CachedConnections = globalWithMongo.mongoConnections || {
+  conn1: null,
+  promise1: null,
+  conn2: null,
+  promise2: null
+};
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null }
-}
+export async function connectDB1(): Promise<Connection> {
+  if (cached.conn1) return cached.conn1;
 
-export async function connectDB() {
-  if (cached.conn) {
-    return cached.conn
-  }
-
-  if (!cached.promise) {
-    const opts = {
-      bufferCommands: false,
-      maxPoolSize: 10,
-      serverSelectionTimeoutMS: 10000,
+  if (!cached.promise1) {
+    cached.promise1 = mongoose.createConnection(MONGODB_URI1, {
+      serverSelectionTimeoutMS: 30000,
       socketTimeoutMS: 45000,
-      connectTimeoutMS: 10000,
-      family: 4,
-    }
-
-    console.log("Connecting to MongoDB...")
-
-    cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      console.log("User MongoDB connected successfully")
-      return mongoose
-    })
+    }).asPromise().then((conn) => {
+      console.log('MongoDB 1 connected successfully');
+      return conn;
+    }).catch((error) => {
+      console.error('MongoDB 1 connection error:', error);
+      throw error;
+    });
   }
 
   try {
-    cached.conn = await cached.promise
-
-    // Log database info for debugging if connection is established
-    if (mongoose.connection && mongoose.connection.readyState === 1 && mongoose.connection.db) {
-      const dbName = mongoose.connection.db.databaseName
-      console.log(`Connected to database: ${dbName}`)
-
-      try {
-        // List collections for debugging
-        const collections = await mongoose.connection.db.listCollections().toArray()
-        console.log(
-          "Available collections:",
-          collections.map((c) => c.name),
-        )
-      } catch (listError) {
-        console.error("Error listing collections:", listError instanceof Error ? listError.message : "Unknown error")
-      }
-    }
-
-    return cached.conn
+    cached.conn1 = await cached.promise1;
   } catch (e) {
-    cached.promise = null
-    console.error("Error connecting to MongoDB:", e instanceof Error ? e.message : "Unknown error")
-    throw e
+    cached.promise1 = null;
+    throw e;
   }
+
+  return cached.conn1;
 }
 
+export async function connectDB2(): Promise<Connection> {
+  if (cached.conn2) return cached.conn2;
+
+  if (!cached.promise2) {
+    cached.promise2 = mongoose.createConnection(MONGODB_URI2, {
+      serverSelectionTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+    }).asPromise().then((conn) => {
+      console.log('MongoDB 2 connected successfully');
+      return conn;
+    }).catch((error) => {
+      console.error('MongoDB 2 connection error:', error);
+      throw error;
+    });
+  }
+
+  try {
+    cached.conn2 = await cached.promise2;
+  } catch (e) {
+    cached.promise2 = null;
+    throw e;
+  }
+
+  return cached.conn2;
+}
+
+// Store in global scope for HMR (Hot Module Replacement)
+if (process.env.NODE_ENV !== 'production') {
+  globalWithMongo.mongoConnections = cached;
+}

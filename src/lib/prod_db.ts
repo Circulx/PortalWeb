@@ -1,15 +1,14 @@
-import mongoose from "mongoose"
+import mongoose from 'mongoose'
 
-const MONGODB_URI =
-  "mongodb+srv://devloper:developer@cluster0.zwhn7.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+const MONGODB_URI = process.env.PROD_DB
 
 if (!MONGODB_URI) {
-  throw new Error("Please define the MONGODB_URI environment variable inside .env.local")
+  throw new Error('Please define the MONGODB_URI environment variable inside .env.local')
 }
 
 interface Cached {
-  conn: typeof mongoose | null
-  promise: Promise<typeof mongoose> | null
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
 }
 
 let cached: Cached = (global as any).mongoose
@@ -19,7 +18,9 @@ if (!cached) {
 }
 
 export async function connectDB() {
+  console.log(MONGODB_URI);
   if (cached.conn) {
+    console.log("Already done!")
     return cached.conn
   }
 
@@ -29,7 +30,7 @@ export async function connectDB() {
     }
 
     cached.promise = mongoose.connect(MONGODB_URI!, opts).then((mongoose) => {
-      console.log("Prod. MongoDB connected successfully")
+      console.log("MongoDB2 connected successfully")
       return mongoose
     })
   }
