@@ -1,15 +1,28 @@
-import { connectDB } from "@/lib/db" // Changed from connectDB2 to connectDB
-import { User } from "@/models/user"
-import { NextResponse } from "next/server"
+import { NextResponse } from 'next/server'
+import { connectDB1 } from '@/lib/db'
+import { User, IUser } from '@/models/user'
+import { getCurrentUser } from '@/actions/auth'
 
 export async function GET() {
   try {
-    await connectDB()
-    const users = await User.find().select("-password").lean()
-    return NextResponse.json(users, { status: 200 })
+    const currentUser = await getCurrentUser()
+    if (!currentUser || currentUser.type !== 'admin') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    await connectDB1()
+    const users: IUser[] = await User.find({}).select('-password')
+    
+    const sanitizedUsers = users.map(user => ({
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      type: user.type,
+    }))
+
+    return NextResponse.json(sanitizedUsers)
   } catch (error) {
     console.error("Error fetching users:", error)
-    return NextResponse.json({ error: "Error fetching users" }, { status: 500 })
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
-
