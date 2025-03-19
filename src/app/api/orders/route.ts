@@ -1,4 +1,4 @@
-import { connectDB2 } from '@/lib/db';
+import { connectDB } from '@/lib/prod_db';
 import { NextResponse } from 'next/server';
 import { OrderModel } from './orders';
 

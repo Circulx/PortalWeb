@@ -10,7 +10,6 @@ export default function Home() {
       <BrandCarousel />
       <ProductGrid />
       <FeatureCard />
-      <ProductGrid />  
       
       {/* Add more sections here */}
     </main>
