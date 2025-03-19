@@ -1,4 +1,4 @@
-import { connectDB2 } from '@/lib/db';
+import { connectDB } from '@/lib/prod_db';
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
@@ -60,7 +60,7 @@ const productSchema = new mongoose.Schema<Product>({
   sub_category_name: { type: String }
 });
 
-const db2 = await connectDB2();
+const db2 = await connectDB();
 
 const ProductModel = db2.models.Product || db2.model<Product>('Product', productSchema);
 

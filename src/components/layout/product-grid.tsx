@@ -177,8 +177,9 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
 
 export default function ProductGrid() {
   const [allProducts, setAllProducts] = useState<Product[]>([])
-  const [categoryProducts, setCategoryProducts] = useState<Record<string, Product[]>>({})
-  const [isLoading, setIsLoading] = useState(true)
+  const [categorySubcategoryProducts, setCategorySubcategoryProducts] = useState<
+    Record<string, Record<string, Product[]>>
+  >({});  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [retryCount, setRetryCount] = useState(0)
 
@@ -217,35 +218,24 @@ export default function ProductGrid() {
         setAllProducts(processedProducts)
 
         // Group products by category and subcategory
-        const groupedProducts: Record<string, Product[]> = {}
+        const groupedProducts: Record<string, Record<string, Product[]>> = {};
 
-        // Get unique categories and subcategories
-        const categories = [...new Set(processedProducts.map((p) => p.category_name).filter(Boolean))]
-        const subcategories = [...new Set(processedProducts.map((p) => p.sub_category_name).filter(Boolean))]
+        processedProducts.forEach((product) => {
+          const category = product.category_name || "Uncategorized";
+          const subcategory = product.sub_category_name || "Uncategorized";
 
-        console.log("Available categories:", categories)
-        console.log("Available subcategories:", subcategories)
-
-        // Group by subcategory first (more specific)
-        subcategories.forEach((subcat) => {
-          if (subcat) {
-            groupedProducts[subcat] = processedProducts.filter((p) => p.sub_category_name === subcat)
+          if (!groupedProducts[category]) {
+            groupedProducts[category] = {};
           }
-        })
 
-        // Then group by category
-        categories.forEach((cat) => {
-          if (cat) {
-            groupedProducts[cat] = processedProducts.filter((p) => p.category_name === cat)
+          if (!groupedProducts[category][subcategory]) {
+            groupedProducts[category][subcategory] = [];
           }
-        })
 
-        // If we have no categorized products, create a "Featured Products" category with all products
-        if (Object.keys(groupedProducts).length === 0) {
-          groupedProducts["Featured Products"] = processedProducts
-        }
+          groupedProducts[category][subcategory].push(product);
+        });
 
-        setCategoryProducts(groupedProducts)
+        setCategorySubcategoryProducts(groupedProducts);
       } catch (error) {
         console.error("Error fetching products:", error)
         const errorMessage = error instanceof Error ? error.message : "Unknown error"
@@ -269,8 +259,8 @@ export default function ProductGrid() {
   }, [retryCount])
 
   // Render product carousels for each category
-  const renderProductCarousels = () => {
-    if (Object.keys(categoryProducts).length === 0) {
+  const renderCategorySubcategoryCarousels = () => {
+    if (Object.keys(categorySubcategoryProducts).length === 0) {
       if (isLoading) {
         return (
           <>
@@ -287,13 +277,17 @@ export default function ProductGrid() {
       )
     }
 
-    return Object.entries(categoryProducts)
-      .filter(([_, products]) => products.length > 0)
-      .slice(0, 4) // Limit to 4 categories to avoid overwhelming the page
-      .map(([category, products]) => (
-        <ProductCarousel key={category} products={products} title={category} isLoading={isLoading} />
-      ))
-  }
+    return Object.entries(categorySubcategoryProducts).map(([category, subcategories]) => (
+      <div key={category} className="mb-12">
+        <h2 className="text-3xl font-bold mb-6 text-gray-800">{category}</h2>
+        {Object.entries(subcategories).map(([subcategory, products]) => (
+          <div key={subcategory} className="mb-8">
+            <ProductCarousel products={products} title={subcategory} isLoading={isLoading} />
+          </div>
+        ))}
+      </div>
+    ));
+  };
 
   return (
     <div className="w-full px-4 py-8">
@@ -304,7 +298,7 @@ export default function ProductGrid() {
         </div>
       )}
 
-      {renderProductCarousels()}
+      {renderCategorySubcategoryCarousels()}
     </div>
   )
 }

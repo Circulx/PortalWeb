@@ -1,4 +1,4 @@
-import { connectDB2 } from '@/lib/db';
+import { connectDB } from '@/lib/prod_db';
 import mongoose from 'mongoose';
 
 interface Payment {
@@ -19,7 +19,7 @@ const paymentSchema = new mongoose.Schema<Payment>({
   updated_at: { type: String }
 });
 
-const db = await connectDB2();
+const db = await connectDB();
 const PaymentModel = db.models.Payment || db.model<Payment>('Payment', paymentSchema);
 
 export { PaymentModel, paymentSchema };
