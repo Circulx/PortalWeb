@@ -1,14 +1,72 @@
 import { NextResponse } from "next/server"
 import { connectDB } from "@/lib/prod_db"
 import mongoose from "mongoose"
-import { ProductModel } from "@/models/product"
 
+// Define the Product interface
+interface Product {
+  product_id: number
+  title: string
+  model?: string
+  description?: string
+  category_id?: number
+  sub_category_id?: number
+  units?: string
+  weight?: number
+  dimensions?: object
+  image_link?: string
+  stock: number
+  price: number
+  discount?: number
+  SKU: string
+  seller_id?: number
+  created_at?: string
+  rating?: number
+  updated_at?: string
+  seller_name?: string
+  location?: string
+  category_name?: string
+  sub_category_name?: string
+}
+
+// Define the schema
+const productSchema = new mongoose.Schema<Product>({
+  product_id: { type: Number, required: true },
+  title: { type: String, required: true },
+  model: { type: String },
+  description: { type: String },
+  category_id: { type: Number },
+  sub_category_id: { type: Number },
+  units: { type: String },
+  weight: { type: Number },
+  dimensions: {
+    width: { type: Number },
+    height: { type: Number },
+    length: { type: Number },
+  },
+  image_link: { type: String },
+  stock: { type: Number, required: true },
+  price: { type: Number, required: true },
+  discount: { type: Number },
+  SKU: { type: String, required: true },
+  seller_id: { type: Number },
+  created_at: { type: String },
+  updated_at: { type: String },
+  rating: { type: Number },
+  seller_name: { type: String },
+  location: { type: String },
+  category_name: { type: String },
+  sub_category_name: { type: String },
+})
 
 export async function GET() {
   try {
     // Connect to the database
     await connectDB()
 
+    // Get the model (use the exact collection name from your DB)
+    const ProductModel = mongoose.models.products || mongoose.model<Product>("products", productSchema)
+
+    // Log available collections to debug - with proper null checking
     if (mongoose.connection && mongoose.connection.readyState === 1 && mongoose.connection.db) {
       try {
         const collections = await mongoose.connection.db.listCollections().toArray()
@@ -111,6 +169,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     await connectDB()
+    const ProductModel = mongoose.models.products || mongoose.model<Product>("products", productSchema)
     const productData = await request.json()
     const newProduct = new ProductModel(productData)
     await newProduct.save()

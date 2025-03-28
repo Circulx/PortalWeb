@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server"
 import { OrderModel } from "./orders"
-import { cookies } from "next/headers"
-import jwt from "jsonwebtoken"
-import { Network } from "lucide-react";
-
-const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb";
 
 export async function GET() {
   try {
@@ -58,47 +53,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token');
-    console.log("body: ", request.body);
-    console.log(token);
-    console.log(token?.value);
-    if (!token || !token?.value) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    // Decode the JWT token to get the buyer_id (user_id)
-    const decoded = jwt.verify(token.value, JWT_SECRET) as { userId: string };
-    const buyer_id = parseInt(decoded.userId);
-
-    const { billingDetails, paymentMethod, additionalInfo, amount, razorpayOrderId, cartItems } = await request.json();
-
-    const sellerIds = cartItems.map((item: { seller_id: number }) => item.seller_id);
-    const uniqueSellerIds = [...new Set(sellerIds)];
-    const seller_id = uniqueSellerIds[0];
-    if (!seller_id) {
-      return NextResponse.json({ error: "Seller not found for the products in the cart" }, { status: 400 });
-    }
-
+    const orderData = await request.json()
     const newOrder = new OrderModel({
-      order_id: razorpayOrderId,
-      order_date: new Date().toISOString(),
-      buyer_id,
-      seller_id,
-      status: "Paid",
-      amount,
-      billingDetails,
-      paymentMethod,
-      additionalInfo,
+      ...orderData,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    });
-
-    await newOrder.save();
-
-    return NextResponse.json(newOrder, { status: 201 });
+    })
+    await newOrder.save()
+    return NextResponse.json(newOrder, { status: 201 })
   } catch (error) {
-    console.error("Error creating order:", error);
-    return NextResponse.json({ error: "Error creating order" }, { status: 500 });
+    console.error("Error posting order:", error)
+    return NextResponse.json({ error: "Error posting order" }, { status: 500 })
   }
 }
 

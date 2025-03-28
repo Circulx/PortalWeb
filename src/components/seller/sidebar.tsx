@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { LayoutDashboard, Package2, ClipboardList, Star, UserCircle, HelpCircle, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -12,7 +12,6 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false)
   const sidebarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
-  const searchParams = useSearchParams()
 
   const toggleSidebar = () => setIsOpen(!isOpen)
 
@@ -34,7 +33,7 @@ export function Sidebar() {
   }, [pathname])
 
   const navItems = [
-    { href: "/seller?view=dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/seller", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/seller/products", icon: Package2, label: "Product Management" },
     { href: "/seller/orders", icon: ClipboardList, label: "Order Management" },
     { href: "/seller/reviews", icon: Star, label: "Ratings & Reviews" },
@@ -68,32 +67,15 @@ export function Sidebar() {
             <h1 className="text-xl font-bold text-green-900">Seller Portal</h1>
           </div>
           <nav className="flex-1 overflow-y-auto px-4 py-1">
-            {navItems.map((item) => {
-              // Special handling for Dashboard to check if it's active
-              const isDashboardActive =
-                item.href.includes("dashboard") && pathname === "/seller" && searchParams.get("view") === "dashboard"
-
-              // Special handling for Profile Management to check if it's active
-              const isProfileActive =
-                item.href === "/seller/profile" || (pathname === "/seller" && !searchParams.get("view"))
-
-              // For other items, check if pathname matches
-              const isActive = item.href.includes("dashboard")
-                ? isDashboardActive
-                : item.href === "/seller/profile"
-                  ? isProfileActive
-                  : pathname === item.href
-
-              return (
-                <SidebarLink
-                  key={item.href}
-                  href={item.href}
-                  icon={<item.icon className="h-5 w-5" />}
-                  label={item.label}
-                  isActive={isActive}
-                />
-              )
-            })}
+            {navItems.map((item) => (
+              <SidebarLink
+                key={item.href}
+                href={item.href}
+                icon={<item.icon className="h-5 w-5" />}
+                label={item.label}
+                isActive={pathname === item.href}
+              />
+            ))}
           </nav>
         </div>
       </div>

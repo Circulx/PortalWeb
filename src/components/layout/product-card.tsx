@@ -18,7 +18,6 @@ interface ProductCardProps {
   hoverImage: string
   href: string
   rating: number
-  seller_id: number
 }
 
 export default function ProductCard({
@@ -32,22 +31,22 @@ export default function ProductCard({
   hoverImage,
   href,
   rating,
-  seller_id
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const dispatch = useDispatch()
 
   const renderStars = (rating: number) => {
+    const ratingValue = rating || 0 // Default to 0 if rating is undefined
     return Array.from({ length: 5 }, (_, index) => (
       <Star
         key={index}
-        className={`w-4 h-4 ${index < Math.floor(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
+        className={`w-4 h-4 ${index < Math.floor(ratingValue) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
       />
     ))
   }
 
   const handleAddToCart = () => {
-    dispatch(addItem({ id: href, title, image_link, price, quantity: 1, discount, seller_id }))
+    dispatch(addItem({ id: href, title, image_link, price, quantity: 1 }))
   }
 
   return (
@@ -93,7 +92,7 @@ export default function ProductCard({
           {/* Star Rating */}
           <div className="flex items-center">
             {renderStars(rating)}
-            <span className="ml-1 text-xs text-gray-600">({rating?.toFixed(1)})</span>
+            <span className="ml-1 text-xs text-gray-600">({rating ? rating.toFixed(1) : "0.0"})</span>
           </div>
 
           {/* Company and Location */}

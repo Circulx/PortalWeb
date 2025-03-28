@@ -1,30 +1,5 @@
 import mongoose from "mongoose"
 
-interface Product {
-  product_id: number
-  title: string
-  model?: string
-  description?: string
-  category_id?: number
-  sub_category_id?: number
-  units?: string
-  weight?: number
-  dimensions?: object
-  image_link?: string
-  stock: number
-  price: number
-  discount?: number
-  SKU: string
-  seller_id?: number
-  created_at?: string
-  rating?: number
-  updated_at?: string
-  seller_name?: string
-  location?: string
-  category_name?: string
-  sub_category_name?: string
-}
-
 const productSchema = new mongoose.Schema({
   product_id: { type: Number, unique: true },
   title: { type: String, required: true },
@@ -72,6 +47,5 @@ productSchema.pre("save", async function (next) {
   }
 })
 
-const ProductModel = mongoose.models.Product || mongoose.model<Product>("Product", productSchema);
+export default mongoose.models.Product || mongoose.model("Product", productSchema)
 
-export { ProductModel };
