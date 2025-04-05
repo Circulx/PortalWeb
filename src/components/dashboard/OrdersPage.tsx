@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -29,64 +29,113 @@ interface Order {
 }
 
 // Mock data with more orders and different dates
-const mockOrders: Order[] = [
-  {
-    id: "112-0822160-5390023",
-    date: "2024-01-15",
-    total: 157.99,
-    shipTo: "Irakli Lolashvili",
-    status: "Delivered",
-    items: [
-      {
-        id: "1",
-        name: "SAMSUNG 980 PRO SSD 2TB PCIe NVMe Gen 4 Gaming M.2 Internal Solid State Drive Memory Card",
-        image: "/login.png",
-        returnEligible: true,
-        returnDate: "2024-02-15",
-        price: 157.99,
-      },
-    ],
-  },
-  {
-    id: "112-0822160-5390024",
-    date: "2023-11-20",
-    total: 299.99,
-    shipTo: "Irakli Lolashvili",
-    status: "Delivered",
-    items: [
-      {
-        id: "2",
-        name: "Gaming Monitor 27-inch 4K",
-        image: "/login.png",
-        returnEligible: false,
-        returnDate: "2023-12-20",
-        price: 299.99,
-      },
-    ],
-  },
-  {
-    id: "112-0822160-5390025",
-    date: "2023-06-10",
-    total: 79.99,
-    shipTo: "Irakli Lolashvili",
-    status: "Delivered",
-    items: [
-      {
-        id: "3",
-        name: "Wireless Gaming Mouse",
-        image: "/placeholder.svg",
-        returnEligible: false,
-        returnDate: "2023-07-10",
-        price: 79.99,
-      },
-    ],
-  },
-]
+// const mockOrders: Order[] = [
+//   {
+//     id: "112-0822160-5390023",
+//     date: "2024-01-15",
+//     total: 157.99,
+//     shipTo: "Irakli Lolashvili",
+//     status: "Delivered",
+//     items: [
+//       {
+//         id: "1",
+//         name: "SAMSUNG 980 PRO SSD 2TB PCIe NVMe Gen 4 Gaming M.2 Internal Solid State Drive Memory Card",
+//         image: "/login.png",
+//         returnEligible: true,
+//         returnDate: "2024-02-15",
+//         price: 157.99,
+//       },
+//     ],
+//   },
+//   {
+//     id: "112-0822160-5390024",
+//     date: "2023-11-20",
+//     total: 299.99,
+//     shipTo: "Irakli Lolashvili",
+//     status: "Delivered",
+//     items: [
+//       {
+//         id: "2",
+//         name: "Gaming Monitor 27-inch 4K",
+//         image: "/login.png",
+//         returnEligible: false,
+//         returnDate: "2023-12-20",
+//         price: 299.99,
+//       },
+//     ],
+//   },
+//   {
+//     id: "112-0822160-5390025",
+//     date: "2023-06-10",
+//     total: 79.99,
+//     shipTo: "Irakli Lolashvili",
+//     status: "Delivered",
+//     items: [
+//       {
+//         id: "3",
+//         name: "Wireless Gaming Mouse",
+//         image: "/placeholder.svg",
+//         returnEligible: false,
+//         returnDate: "2023-07-10",
+//         price: 79.99,
+//       },
+//     ],
+//   },
+// ]
 
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("orders")
   const [timeFilter, setTimeFilter] = useState("past3Months")
   const [hiddenRatingBanners, setHiddenRatingBanners] = useState<string[]>([])
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch orders from the API
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        const response = await fetch("/api/orders", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch orders");
+        }
+
+        const data = await response.json();
+        console.log(data[0]);
+
+        const mappedOrders: Order[] = data.map((order: any) => ({
+          id: order._id.$oid || order.order_id, // Use _id.$oid or order_id as id
+          date: order.order_date,
+          total: order.amount,
+          shipTo: order.billingDetails.name, // Use billingDetails.name as shipTo
+          status: order.status,
+          items: [
+            {
+              id: order.order_id, // Use order_id as item id
+              name: "Order Item", // Placeholder name (update if item details are available)
+              image: "/placeholder.svg", // Placeholder image (update if item images are available)
+              returnEligible: false, // Placeholder return eligibility
+              returnDate: "", // Placeholder return date
+              price: order.amount, // Use order amount as item price
+            },
+          ],
+        }));
+        console.log("mapped: ", mappedOrders);
+        setOrders(mappedOrders); // Set fetched orders
+      } catch (error) {
+        console.error("Error fetching orders:", error);
+      } finally {
+        setLoading(false); // Stop loading
+      }
+    };
+
+    fetchOrders();
+  }, []);
 
   const filteredOrders = useMemo(() => {
     const now = new Date()
@@ -109,9 +158,14 @@ export default function OrdersPage() {
         filterDate = subMonths(now, 3)
     }
 
-    return mockOrders
+    return orders
       .filter((order) => {
-        const orderDate = parseISO(order.date)
+        const orderDate = parseISO(order.date);
+
+        if (isNaN(orderDate.getTime())) {
+          console.log("Invalid order date:", order.date);
+          return false;
+        }
         if (timeFilter === "2024" || timeFilter === "2023") {
           const year = timeFilter === "2024" ? 2024 : 2023
           return orderDate.getFullYear() === year

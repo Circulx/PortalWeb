@@ -2,13 +2,29 @@ import { NextResponse } from "next/server"
 import { OrderModel } from "./orders"
 import { cookies } from "next/headers"
 import jwt from "jsonwebtoken"
-import { Network } from "lucide-react";
 
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb";
 
 export async function GET() {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth-token");
+
+    if (!token || !token?.value) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Decode the JWT token to get the buyer_id (user_id)
+    const decoded = jwt.verify(token.value, JWT_SECRET) as { userId: string };
+    const buyer_id = parseInt(decoded.userId);
+    console.log(buyer_id);
+    // Fetch orders for the logged-in user
     const orders = await OrderModel.aggregate([
+      {
+        $match: {
+          buyer_id: buyer_id, // Filter orders by buyer_id
+        },
+      },
       {
         $lookup: {
           from: "users",
@@ -48,7 +64,7 @@ export async function GET() {
           payment: 0,
         },
       },
-    ])
+    ]);
     return NextResponse.json(orders, { status: 200 })
   } catch (error) {
     console.error("Error fetching orders:", error)
