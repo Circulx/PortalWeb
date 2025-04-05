@@ -1,5 +1,7 @@
 "use client"
 
+import { Toaster } from "@/components/ui/sonner"
+
 import { useState, useEffect, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Plus, ArrowUpDown, ChevronLeft, ChevronRight } from "lucide-react"
@@ -8,14 +10,17 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 
 interface Seller {
+  _id: string 
   id: string
   name: string
   tradeName: string
   email: string
   phone: string
   registeredDate: string
+  status: "Approved" | "Reject" | "Review"
 }
 
 export function SellerList() {
@@ -134,6 +139,44 @@ export function SellerList() {
 
   const currentPageData = getCurrentPageData()
 
+  const handleStatusChange = async (sellerId: string, status: "Approved" | "Reject" | "Review") => {
+    try {
+      const response = await fetch(`/api/admin/sellers/${sellerId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to update seller status")
+      }
+
+      // Update the local state
+      setSellers((prevSellers) =>
+        prevSellers.map((seller) => (seller._id === sellerId ? { ...seller, status } : seller)),
+      )
+
+      toast({
+        title: "Status updated",
+        description: `Seller status updated to ${status}`,
+      })
+    } catch (err) {
+      console.error("Error updating seller status:", err)
+      toast({
+        title: "Error",
+        description: "Failed to update seller status. Please try again.",
+      })
+    }
+  }
+
+  const statusColors = {
+    Approved: "bg-green-100 text-green-800 border-green-300",
+    Reject: "bg-red-100 text-red-800 border-red-300",
+    Review: "bg-amber-100 text-amber-800 border-amber-300",
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -173,6 +216,16 @@ export function SellerList() {
                 <th
                   scope="col"
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSort("_id")}
+                >
+                  <div className="flex items-center">
+                    Seller ID
+                    <ArrowUpDown className="ml-1 h-4 w-4" />
+                  </div>
+                </th>
+                <th
+                  scope="col"
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSort("id")}
                 >
                   <div className="flex items-center">
@@ -202,13 +255,9 @@ export function SellerList() {
                 </th>
                 <th
                   scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                  onClick={() => handleSort("registeredDate")}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                 >
-                  <div className="flex items-center">
-                    Registered Date
-                    <ArrowUpDown className="ml-1 h-4 w-4" />
-                  </div>
+                  Status
                 </th>
               </tr>
             </thead>
@@ -216,6 +265,9 @@ export function SellerList() {
               {loading ? (
                 Array.from({ length: itemsPerPage }).map((_, index) => (
                   <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <Skeleton className="h-4 w-16" />
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Skeleton className="h-4 w-16" />
                     </td>
@@ -233,23 +285,56 @@ export function SellerList() {
               ) : currentPageData.length > 0 ? (
                 currentPageData.map((seller) => (
                   <tr
-                    key={seller.id || Math.random().toString()}
+                    key={seller._id || Math.random().toString()}
                     className="hover:bg-gray-50 cursor-pointer"
                     onClick={() => handleViewSeller(seller.id)}
                   >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      {seller._id || "N/A"}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {seller.id || "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{seller.name || "N/A"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{seller.email || "N/A"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {seller.registeredDate || "N/A"}
+                      <Select
+                        defaultValue="Review"
+                        value={seller.status || "Review"}
+                        onValueChange={(value) =>
+                          handleStatusChange(seller._id, value as "Approved" | "Reject" | "Review")
+                        }
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "w-[130px] h-8 border-2",
+                            seller.status === "Approved"
+                              ? statusColors.Approved
+                              : seller.status === "Reject"
+                                ? statusColors.Reject
+                                : statusColors.Review,
+                          )}
+                        >
+                          <SelectValue placeholder="Review" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem className="bg-green-100 text-green-800 hover:bg-green-200" value="Approved">
+                            Approved
+                          </SelectItem>
+                          <SelectItem className="bg-red-100 text-red-800 hover:bg-red-200" value="Reject">
+                            Reject
+                          </SelectItem>
+                          <SelectItem className="bg-amber-100 text-amber-800 hover:bg-amber-200" value="Review">
+                            Review
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={4} className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={6} className="px-6 py-4 text-center text-sm text-gray-500">
                     {searchTerm ? "No sellers found matching your search." : "No sellers found."}
                   </td>
                 </tr>
@@ -283,6 +368,7 @@ export function SellerList() {
           <ChevronRight className="h-4 w-4 ml-2" />
         </Button>
       </div>
+      <Toaster />
     </div>
   )
 }

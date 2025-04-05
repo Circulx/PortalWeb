@@ -155,6 +155,11 @@ const ProfileProgressSchema = new mongoose.Schema<IProfileProgress>(
     userId: { type: String, required: true, index: true },
     completedSteps: [{ type: String, required: true }],
     currentStep: { type: String, required: true },
+    status: {
+      type: String,
+      enum: ["Approved", "Reject", "Review"],
+      default: "Review", // Default status
+    },
   },
   { timestamps: true },
 )
@@ -180,10 +185,6 @@ const ProductSchema = new mongoose.Schema({
   discount: Number,
   SKU: { type: String, required: true },
   seller_id: String,
-  created_at: { type: Date, default: Date.now },
-  rating: Number,
-  updated_at: { type: Date, default: Date.now },
-  seller_name: { type: String, required: true },
   emailId: { type: String, required: true },
   location: { type: String, required: true },
   category_name: { type: String, required: true },
