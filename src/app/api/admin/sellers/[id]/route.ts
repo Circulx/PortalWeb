@@ -1,7 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
+import mongoose from "mongoose"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+interface Params {
+  params: {
+    id: string
+  }
+}
+
+export async function PATCH(request: NextRequest, { params }: Params) {
   try {
     const { id } = params
     const { status } = await request.json()
@@ -18,11 +25,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     const ProfileProgress = db.models.ProfileProgress
 
     // Convert string ID to ObjectId
-    // const objectId = new mongoose.Types.ObjectId(id)
+    const objectId = new mongoose.Types.ObjectId(id)
 
     // Find and update the profile progress based on userId
     const updatedProfile = await ProfileProgress.findOneAndUpdate(
-      { userId: id }, // Use userId instead of _id
+      { userId: objectId.toString() }, // Use userId instead of _id
       { status },
       { new: true },
     )
