@@ -2,19 +2,19 @@ import { NextResponse, type NextRequest } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose"
 
-interface Params {
-  params: {
-    id: string
-  }
-}
-
-export async function PATCH(request: NextRequest, { params }: Params) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const { id } = params
+    // Safely extract the 'id' from the route parameters
+    const id = request.nextUrl.pathname.split("/").pop()
+
+    if (!id) {
+      return NextResponse.json({ error: "Seller ID is required" }, { status: 400 })
+    }
+
     const { status } = await request.json()
 
-    if (!id || !status) {
-      return NextResponse.json({ error: "Seller ID and status are required" }, { status: 400 })
+    if (!status) {
+      return NextResponse.json({ error: "Status is required" }, { status: 400 })
     }
 
     if (!["Approved", "Reject", "Review"].includes(status)) {
@@ -25,7 +25,12 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const ProfileProgress = db.models.ProfileProgress
 
     // Convert string ID to ObjectId
-    const objectId = new mongoose.Types.ObjectId(id)
+    let objectId
+    try {
+      objectId = new mongoose.Types.ObjectId(id)
+    } catch (error) {
+      return NextResponse.json({ error: "Invalid Seller ID format" }, { status: 400 })
+    }
 
     // Find and update the profile progress based on userId
     const updatedProfile = await ProfileProgress.findOneAndUpdate(
