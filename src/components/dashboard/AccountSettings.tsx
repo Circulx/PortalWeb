@@ -21,14 +21,55 @@ export default function AccountSettings() {
     state: "",
     zipCode: "",
   })
-  const [profileImage, setProfileImage] = useState<string | null>(null)
-  const [countries, setCountries] = useState<any[]>([])
-  const [states, setStates] = useState<any[]>([])
-  const [isFormValid, setIsFormValid] = useState(false)
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+  const [countries, setCountries] = useState<any[]>([]);
+  const [states, setStates] = useState<any[]>([]);
+  const [isFormValid, setIsFormValid] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); // Track editing state
 
   useEffect(() => {
-    setCountries(Country.getAllCountries())
+    setCountries(Country.getAllCountries());
+    fetchUserData();
   }, [])
+
+  const fetchUserData = async () => {
+    try {
+      const response = await fetch("/api/users/account-details", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch user data.");
+      }
+
+      const data = await response.json();
+      setFormData({
+        fullName: data.name || "",
+        email: data.email || "",
+        secondaryEmail: data.secondaryEmail || "",
+        phoneNumber: data.phoneNumber || "",
+        country: data.country || "",
+        state: data.state || "",
+        zipCode: data.zipCode || "",
+      });
+      setProfileImage(data.profileImage || null);
+      if (data.country) {
+        const selectedCountry = countries.find((country) => country.isoCode === data.country);
+        if (selectedCountry) {
+          setStates(State.getStatesOfCountry(selectedCountry.isoCode));
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      setError("Failed to load user data.");
+    }
+  };
 
   const validateEmail = useCallback((email: string) => {
     const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
@@ -36,7 +77,7 @@ export default function AccountSettings() {
   }, [])
 
   const validateForm = useCallback(() => {
-    const requiredFields = ["fullName", "email", "phoneNumber", "country", "state", "zipCode"]
+    const requiredFields = ["fullName", "email", "country", "state", "zipCode"]
     const isValid =
       requiredFields.every((field) => formData[field as keyof typeof formData] !== "") && validateEmail(formData.email)
     setIsFormValid(isValid)
@@ -76,17 +117,42 @@ export default function AccountSettings() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (isFormValid) {
-      console.log(formData)
-      // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFormValid) return;
+
+    setLoading(true);
+    setMessage(null);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/users/account-details", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Failed to update profile.");
+      } else {
+        setMessage(data.message || "Profile updated successfully.");
+        setIsEditing(false);
+      }
+    } catch (err) {
+      console.error("Error updating profile:", err);
+      setError("An unexpected error occurred. Please try again.");
+    } finally {
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <Card className="max-w-4xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Account Settings</h1>
+      <h1 className="text-2xl font-bold mb-6">Account Details</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-[200px_1fr] gap-8 items-start">
         {/* Profile Image Section */}
@@ -105,11 +171,12 @@ export default function AccountSettings() {
               </div>
             )}
           </div>
-          <input type="file" id="profileImage" accept="image/*" className="hidden" onChange={handleImageUpload} />
+          <input type="file" id="profileImage" accept="image/*" className="hidden" onChange={handleImageUpload} disabled={!isEditing}/>
           <Button
             variant="outline"
             className="w-full hover:bg-orange-500 hover:text-white"
             onClick={() => document.getElementById("profileImage")?.click()}
+            disabled={!isEditing}
           >
             Change Photo
           </Button>
@@ -122,7 +189,7 @@ export default function AccountSettings() {
               <Label htmlFor="fullName">
                 Full Name <span className="text-orange-500">*</span>
               </Label>
-              <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleInputChange} required />
+              <Input id="fullName" name="fullName" value={formData.fullName} onChange={handleInputChange} required disabled={!isEditing}/>
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">
@@ -134,6 +201,7 @@ export default function AccountSettings() {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
+                disabled={!isEditing}
                 required
               />
             </div>
@@ -145,18 +213,19 @@ export default function AccountSettings() {
                 type="email"
                 value={formData.secondaryEmail}
                 onChange={handleInputChange}
+                disabled={!isEditing}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">
-                Phone Number <span className="text-orange-500">*</span>
+                Phone Number
               </Label>
               <Input
                 id="phoneNumber"
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleInputChange}
-                required
+                disabled={!isEditing}
               />
             </div>
 
@@ -181,13 +250,25 @@ export default function AccountSettings() {
               <Label htmlFor="zipCode">
                 Zip Code <span className="text-orange-500">*</span>
               </Label>
-              <Input id="zipCode" name="zipCode" value={formData.zipCode} onChange={handleInputChange} required />
+              <Input id="zipCode" name="zipCode" value={formData.zipCode} onChange={handleInputChange} disabled={!isEditing} required />
             </div>
           </div>
-
-          <Button type="submit" className="bg-emerald-900 hover:bg-orange-500 text-white" disabled={!isFormValid}>
-            Save Changes
-          </Button>
+          <div className="flex gap-3">
+          <Button
+              type="submit"
+              className="bg-emerald-900 hover:bg-orange-500 text-white"
+              disabled={!isEditing || !isFormValid}
+            >
+              Save Changes
+            </Button>
+            <Button
+              type="button"
+              className="bg-gray-500 hover:bg-gray-600 text-white"
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              {isEditing ? "Cancel" : "Edit"}
+            </Button>
+          </div>
         </form>
       </div>
     </Card>

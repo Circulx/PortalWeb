@@ -7,6 +7,11 @@ export interface IUser extends Document {
   email: string
   password: string
   type: "admin" | "seller" | "customer"
+  secondaryEmail?: string;
+  phoneNumber?: string;
+  country?: string;
+  state?: string;
+  zipCode?: string;
   createdAt: Date
   updatedAt: Date
 }
@@ -21,6 +26,11 @@ const userSchema = new Schema<IUser>(
       enum: ["admin", "seller", "customer"],
       default: "customer",
     },
+    secondaryEmail: { type: String }, // Optional field
+    phoneNumber: { type: String }, // Optional field
+    country: { type: String }, // Optional field
+    state: { type: String }, // Optional field
+    zipCode: { type: String }, // Optional field
   },
   { timestamps: true },
 )

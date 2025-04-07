@@ -19,7 +19,7 @@ export default function DashboardSidebar() {
   return (
     <aside className="w-full md:w-64 bg-white border-b md:border-r md:border-b-0">
       <div className="p-4 border-b">
-        <h1 className="text-xl font-bold text-emerald-900">Customer Dashboard</h1>
+        <h1 className="text-xl font-bold text-emerald-900">My Profile</h1>
       </div>
       <nav className="p-4 space-y-2">
         {navigation.map((item) => {
