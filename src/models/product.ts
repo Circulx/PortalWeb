@@ -23,6 +23,7 @@ interface Product {
   location?: string
   category_name?: string
   sub_category_name?: string
+  status?: string
 }
 
 const productSchema = new mongoose.Schema({
@@ -54,6 +55,7 @@ const productSchema = new mongoose.Schema({
   sub_category_name: String,
   is_draft: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
+  status: { type: String, enum: ["Pending", "Approved", "Flagged"], default: "Pending" },
 })
 
 // Auto-increment product_id
@@ -72,6 +74,7 @@ productSchema.pre("save", async function (next) {
   }
 })
 
-const ProductModel = mongoose.models.Product || mongoose.model<Product>("Product", productSchema);
+const ProductModel = mongoose.models.Product || mongoose.model<Product>("Product", productSchema)
 
-export { ProductModel };
+export { ProductModel }
+

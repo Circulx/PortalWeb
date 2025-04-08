@@ -1,355 +1,349 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { MoreHorizontal, Filter, ChevronLeft, ChevronRight } from "lucide-react"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useEffect } from "react"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { YearMonthPicker } from "./year-month-picker"
-import type { Review } from "@/types/reviews"
-import { isWithinInterval, parseISO, startOfMonth, endOfMonth, format } from "date-fns"
+import { Check, Flag, Clock, ChevronDown, Filter } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
-// Sample data with 15 products
-const sampleReviews: Review[] = [
-  {
-    id: "review-1",
-    image: "/placeholder.svg?text=1",
-    buyerName: "Alice Johnson",
-    review: "Great product! Exactly what I needed.",
-    date: "2024-01-15T10:30:00Z",
-    productName: "Wireless Earbuds",
-    sellerName: "TechGadgets Inc.",
-    status: "Approved",
-  },
-  {
-    id: "review-2",
-    image: "/placeholder.svg?text=2",
-    buyerName: "Bob Smith",
-    review: "The quality could be better. Slightly disappointed.",
-    date: "2024-02-03T14:45:00Z",
-    productName: "Smart Watch",
-    sellerName: "WearableTech Co.",
-    status: "Flagged",
-  },
-  {
-    id: "review-3",
-    image: "/placeholder.svg?text=3",
-    buyerName: "Charlie Brown",
-    review: "Excellent service and fast delivery!",
-    date: "2024-03-22T09:15:00Z",
-    productName: "Bluetooth Speaker",
-    sellerName: "AudioPhiles Ltd.",
-    status: "Approved",
-  },
-  {
-    id: "review-4",
-    image: "/placeholder.svg?text=4",
-    buyerName: "Diana Prince",
-    review: "Product works well but arrived later than expected.",
-    date: "2024-04-10T16:20:00Z",
-    productName: "Portable Charger",
-    sellerName: "PowerUp Electronics",
-    status: "Pending",
-  },
-  {
-    id: "review-5",
-    image: "/placeholder.svg?text=5",
-    buyerName: "Ethan Hunt",
-    review: "Amazing quality for the price. Highly recommended!",
-    date: "2024-05-05T11:00:00Z",
-    productName: "Noise-Cancelling Headphones",
-    sellerName: "SoundMasters",
-    status: "Approved",
-  },
-  {
-    id: "review-6",
-    image: "/placeholder.svg?text=6",
-    buyerName: "Fiona Gallagher",
-    review: "Not as described. Considering returning it.",
-    date: "2024-06-18T13:30:00Z",
-    productName: "Fitness Tracker",
-    sellerName: "HealthTech Innovations",
-    status: "Flagged",
-  },
-  {
-    id: "review-7",
-    image: "/placeholder.svg?text=7",
-    buyerName: "George Costanza",
-    review: "Perfect fit and great design!",
-    date: "2024-07-07T10:45:00Z",
-    productName: "Laptop Sleeve",
-    sellerName: "TechAccessories Co.",
-    status: "Approved",
-  },
-  {
-    id: "review-8",
-    image: "/placeholder.svg?text=8",
-    buyerName: "Hannah Baker",
-    review: "Good product but the user manual could be clearer.",
-    date: "2024-08-14T15:20:00Z",
-    productName: "Smart Home Hub",
-    sellerName: "ConnectedLife Inc.",
-    status: "Pending",
-  },
-  {
-    id: "review-9",
-    image: "/placeholder.svg?text=9",
-    buyerName: "Ian Malcolm",
-    review: "Exceeded my expectations. Will buy again!",
-    date: "2024-09-02T09:00:00Z",
-    productName: "Wireless Mouse",
-    sellerName: "ErgoTech Solutions",
-    status: "Approved",
-  },
-  {
-    id: "review-10",
-    image: "/placeholder.svg?text=10",
-    buyerName: "Julia Roberts",
-    review: "The color is slightly different from the picture.",
-    date: "2024-10-20T14:10:00Z",
-    productName: "Mechanical Keyboard",
-    sellerName: "TypeMaster Keyboards",
-    status: "Pending",
-  },
-  {
-    id: "review-11",
-    image: "/placeholder.svg?text=11",
-    buyerName: "Kevin Hart",
-    review: "Great value for money. Very satisfied!",
-    date: "2024-11-11T11:11:00Z",
-    productName: "Portable SSD",
-    sellerName: "DataStore Solutions",
-    status: "Approved",
-  },
-  {
-    id: "review-12",
-    image: "/placeholder.svg?text=12",
-    buyerName: "Laura Palmer",
-    review: "The product arrived damaged. Waiting for replacement.",
-    date: "2024-12-25T08:30:00Z",
-    productName: "4K Webcam",
-    sellerName: "ClearView Cameras",
-    status: "Flagged",
-  },
-  {
-    id: "review-13",
-    image: "/placeholder.svg?text=13",
-    buyerName: "Michael Scott",
-    review: "Works perfectly for my needs. Happy customer!",
-    date: "2025-01-01T00:01:00Z",
-    productName: "Ergonomic Office Chair",
-    sellerName: "ComfortSeating Co.",
-    status: "Approved",
-  },
-  {
-    id: "review-14",
-    image: "/placeholder.svg?text=14",
-    buyerName: "Nancy Wheeler",
-    review: "Good product but took a while to figure out how to use it.",
-    date: "2025-02-14T12:00:00Z",
-    productName: "Smart Thermostat",
-    sellerName: "EcoTemp Systems",
-    status: "Pending",
-  },
-  {
-    id: "review-15",
-    image: "/placeholder.svg?text=15",
-    buyerName: "Oscar Martinez",
-    review: "Excellent build quality. Feels very premium.",
-    date: "2025-03-17T17:30:00Z",
-    productName: "Wireless Charging Pad",
-    sellerName: "PowerUp Electronics",
-    status: "Approved",
-  },
-]
-
-interface ReviewsTableProps {
-  initialReviews?: Review[]
+interface Product {
+  _id?: string
+  product_id: number
+  title: string
+  image_link?: string
+  seller_name: string
+  status?: string
+  created_at?: string
 }
 
-export function ReviewsTable({ initialReviews = sampleReviews }: ReviewsTableProps) {
-  const [reviews] = useState<Review[]>(initialReviews)
-  const [status, setStatus] = useState<string>("all")
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null)
+export function ReviewsTable() {
+  const [products, setProducts] = useState<Product[]>([])
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [statusFilter, setStatusFilter] = useState<string | null>(null)
+  const [dateFilter, setDateFilter] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = 10
+  const [totalPages, setTotalPages] = useState(1)
+  const [updatingStatus, setUpdatingStatus] = useState<number | null>(null)
+  const { toast } = useToast()
 
-  // Filter reviews based on status and date
-  const filteredReviews = useMemo(() => {
-    return reviews.filter((review) => {
-      // Status filter
-      if (status !== "all" && review.status !== status) return false
+  const productsPerPage = 10
+  const placeholderImage = "/placeholder.svg"
 
-      // Date filter
-      if (selectedDate) {
-        const reviewDate = parseISO(review.date)
-        const monthStart = startOfMonth(selectedDate)
-        const monthEnd = endOfMonth(selectedDate)
+  useEffect(() => {
+    fetchProducts()
+  }, [currentPage, statusFilter, dateFilter])
 
-        if (!isWithinInterval(reviewDate, { start: monthStart, end: monthEnd })) {
-          return false
-        }
+  const fetchProducts = async () => {
+    try {
+      setLoading(true)
+      const queryParams = new URLSearchParams()
+
+      queryParams.append("page", currentPage.toString())
+      queryParams.append("limit", productsPerPage.toString())
+
+      if (statusFilter) {
+        queryParams.append("status", statusFilter)
       }
 
-      return true
-    })
-  }, [reviews, status, selectedDate])
+      if (dateFilter) {
+        queryParams.append("date", dateFilter)
+      }
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredReviews.length / itemsPerPage)
-  const startIndex = (currentPage - 1) * itemsPerPage
-  const paginatedReviews = filteredReviews.slice(startIndex, startIndex + itemsPerPage)
+      const response = await fetch(`/api/admin/products?${queryParams.toString()}`)
 
-  // Reset filters and pagination
-  const handleReset = () => {
-    setStatus("all")
-    setSelectedDate(null)
+      if (!response.ok) {
+        throw new Error("Failed to fetch products")
+      }
+
+      const data = await response.json()
+
+      // Ensure all products have a status field (default to "Pending")
+      const productsWithStatus = (data.products || []).map((product: Product) => ({
+        ...product,
+        status: product.status || "Pending",
+      }))
+
+      setProducts(productsWithStatus)
+      setFilteredProducts(productsWithStatus)
+      setTotalPages(Math.ceil((data.total || 0) / productsPerPage))
+      setLoading(false)
+    } catch (err) {
+      setError("Error fetching products. Please try again.")
+      setLoading(false)
+      console.error("Error fetching products:", err)
+    }
+  }
+
+  const handleStatusChange = async (productId: number, newStatus: string) => {
+    try {
+      setUpdatingStatus(productId)
+
+      const response = await fetch("/api/admin/products/update-status", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          productId,
+          status: newStatus,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update status")
+      }
+
+      // Update the product in the local state
+      setProducts((prevProducts) =>
+        prevProducts.map((product) => (product.product_id === productId ? { ...product, status: newStatus } : product)),
+      )
+
+      setFilteredProducts((prevProducts) =>
+        prevProducts.map((product) => (product.product_id === productId ? { ...product, status: newStatus } : product)),
+      )
+
+      // Show success toast with product ID
+      toast({
+        title: "Status Updated",
+        description: `Product ID ${productId} status changed to ${newStatus}`,
+      })
+
+      console.log(`Product ID ${productId} status updated to ${newStatus}`)
+    } catch (error) {
+      console.error("Error updating status:", error)
+      toast({
+        title: "Update Failed",
+        description: `Failed to update Product ID ${productId} status`,
+      })
+    } finally {
+      setUpdatingStatus(null)
+    }
+  }
+
+  const resetFilters = () => {
+    setStatusFilter(null)
+    setDateFilter(null)
     setCurrentPage(1)
   }
 
-  // Handle pagination
-  const handlePrevious = () => {
-    setCurrentPage((prev) => Math.max(1, prev - 1))
+  const getStatusColor = (status: string | undefined) => {
+    const statusColors: Record<string, string> = {
+      Pending: "bg-orange-100 text-orange-800",
+      Approved: "bg-green-100 text-green-800",
+      Flagged: "bg-red-100 text-red-800",
+    }
+
+    return status && statusColors[status] ? statusColors[status] : statusColors["Pending"]
   }
 
-  const handleNext = () => {
-    setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-  }
-
-  const statusColors = {
-    Pending: "bg-orange-100 text-orange-600",
-    Approved: "bg-green-100 text-green-600",
-    Flagged: "bg-red-100 text-red-600",
+  const getStatusIcon = (status: string | undefined) => {
+    switch (status) {
+      case "Approved":
+        return <Check className="h-4 w-4" />
+      case "Flagged":
+        return <Flag className="h-4 w-4" />
+      case "Pending":
+      default:
+        return <Clock className="h-4 w-4" />
+    }
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-      <div className="p-4 border-b">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <h2 className="text-xl font-semibold">Reviews Table</h2>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="w-4 h-4" />
-              <span className="text-sm">Filter By</span>
+    <div className="w-full">
+      <div className="flex flex-col">
+        <div className="flex items-center justify-between py-4">
+          <h2 className="text-xl font-semibold">Product Table</h2>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center">
+              <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filter By</span>
             </div>
 
-            <YearMonthPicker
-              selected={selectedDate}
-              onSelect={(date) => {
-                setSelectedDate(date)
-                setCurrentPage(1)
-              }}
-              onClear={() => {
-                setSelectedDate(null)
-                setCurrentPage(1)
-              }}
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="ml-2">
+                  {statusFilter || "All Status"} <ChevronDown className="ml-2 h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => {
+                    setStatusFilter(null)
+                    setCurrentPage(1)
+                  }}
+                >
+                  All Status
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setStatusFilter("Pending")
+                    setCurrentPage(1)
+                  }}
+                >
+                  Pending
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setStatusFilter("Approved")
+                    setCurrentPage(1)
+                  }}
+                >
+                  Approved
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={() => {
+                    setStatusFilter("Flagged")
+                    setCurrentPage(1)
+                  }}
+                >
+                  Flagged
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-            <Select
-              value={status}
-              onValueChange={(value) => {
-                setStatus(value)
-                setCurrentPage(1)
-              }}
+            <Button
+              variant="ghost"
+              onClick={resetFilters}
+              className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50"
             >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="Pending">Pending</SelectItem>
-                <SelectItem value="Approved">Approved</SelectItem>
-                <SelectItem value="Flagged">Flagged</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Button variant="outline" className="text-red-500" onClick={handleReset}>
               Reset Filter
             </Button>
           </div>
         </div>
-      </div>
 
-      <div className="overflow-x-auto">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-[100px]">Image</TableHead>
-              <TableHead>Reviews by Buyer</TableHead>
-              <TableHead>Review Date</TableHead>
-              <TableHead>Product Name</TableHead>
-              <TableHead>Seller Name</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginatedReviews.map((review) => (
-              <TableRow key={review.id}>
-                <TableCell>
-                  <img
-                    src="/image.png"
-                    alt={`Product ${review.productName}`}
-                    className="w-10 h-10 rounded-full object-cover"
-                  />
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{review.buyerName}</p>
-                    <p className="text-sm text-gray-500">{review.review}</p>
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm text-gray-500">{format(parseISO(review.date), "MMM d, yyyy")}</TableCell>
-                <TableCell>{review.productName}</TableCell>
-                <TableCell>{review.sellerName}</TableCell>
-                <TableCell>
-                  <Badge className={statusColors[review.status]}>{review.status}</Badge>
-                </TableCell>
-                <TableCell className="text-right">
-                  <Button variant="ghost" size="icon">
-                    <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="p-4 border-t flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          Showing {startIndex + 1} to {Math.min(startIndex + itemsPerPage, filteredReviews.length)} of{" "}
-          {filteredReviews.length} results
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handlePrevious}
-            disabled={currentPage === 1}
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="w-4 h-4 mr-1" />
-            Previous
-          </Button>
-          <div className="text-sm text-gray-500">
-            Page {currentPage} of {totalPages}
+        <div className="rounded-md border">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  <th className="h-12 px-4 text-left align-middle font-medium">Image</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium">Product ID</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium">Product Name</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium">Seller Name</th>
+                  <th className="h-12 px-4 text-left align-middle font-medium">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="p-4 text-center">
+                      <div className="flex justify-center">
+                        <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-gray-900"></div>
+                      </div>
+                      <p className="mt-2 text-sm text-gray-500">Loading products...</p>
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={5} className="p-4 text-center text-red-500">
+                      {error}
+                    </td>
+                  </tr>
+                ) : filteredProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="p-4 text-center">
+                      No products found
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProducts.map((product) => (
+                    <tr key={product._id || product.product_id} className="border-b">
+                      <td className="p-4 align-middle">
+                        <div className="h-12 w-12 overflow-hidden rounded-md relative">
+                          <img
+                            src={product.image_link || placeholderImage}
+                            alt={product.title}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              ;(e.target as HTMLImageElement).src = placeholderImage
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle">{product.product_id}</td>
+                      <td className="p-4 align-middle">{product.title}</td>
+                      <td className="p-4 align-middle">{product.seller_name}</td>
+                      <td className="p-4 align-middle">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              className={`${getStatusColor(product.status)} flex items-center gap-1 px-2 py-1 text-xs font-medium`}
+                              disabled={updatingStatus === product.product_id}
+                            >
+                              {updatingStatus === product.product_id ? (
+                                <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-current"></div>
+                              ) : (
+                                getStatusIcon(product.status)
+                              )}
+                              {product.status || "Pending"}
+                              <ChevronDown className="ml-1 h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              className="flex items-center gap-2 text-green-600"
+                              onClick={() => handleStatusChange(product.product_id, "Approved")}
+                            >
+                              <Check className="h-4 w-4" />
+                              Approved
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="flex items-center gap-2 text-orange-600"
+                              onClick={() => handleStatusChange(product.product_id, "Pending")}
+                            >
+                              <Clock className="h-4 w-4" />
+                              Pending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="flex items-center gap-2 text-red-600"
+                              onClick={() => handleStatusChange(product.product_id, "Flagged")}
+                            >
+                              <Flag className="h-4 w-4" />
+                              Flagged
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleNext}
-            disabled={currentPage === totalPages}
-            aria-label="Next page"
-          >
-            Next
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+
+          {/* Pagination */}
+          {!loading && !error && totalPages > 0 && (
+            <div className="flex items-center justify-between px-4 py-4">
+              <div className="text-sm text-muted-foreground">
+                Showing page {currentPage} of {totalPages}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
   )
 }
-

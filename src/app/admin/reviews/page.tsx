@@ -1,26 +1,62 @@
 import { StatsCard } from "@/components/admin/reviews/stats-card"
 import { ReviewsTable } from "@/components/admin/reviews/reviews-table"
-import type { ReviewStats } from "@/types/reviews"
+import { connectProfileDB } from "@/lib/profileDb"
+import mongoose from "mongoose"
 
-const stats: ReviewStats = {
-  total: 4250,
-  pending: 1200,
-  approved: 2800,
-  flagged: 190,
-  totalGrowth: 10,
-  pendingGrowth: -5,
-  approvedGrowth: 23,
-  flaggedGrowth: 13,
+async function getProductStats() {
+  try {
+    // Connect to the profile database
+    const connection = await connectProfileDB()
+
+    // Get the products collection
+    let Product
+    try {
+      // Try to get the existing model
+      Product = connection.models.Product
+    } catch (e) {
+      // If model doesn't exist, create a new one with an empty schema
+      // This is just to query the collection
+      // Use mongoose.Schema instead of connection.Schema
+      Product = connection.model("Product", new mongoose.Schema({}))
+    }
+
+    // Get total count
+    const total = (await Product.countDocuments()) || 0
+
+    // Get counts by status
+    const pending = (await Product.countDocuments({ status: "Pending" })) || 0
+    const approved = (await Product.countDocuments({ status: "Approved" })) || 0
+    const flagged = (await Product.countDocuments({ status: "Flagged" })) || 0
+
+    return {
+      total,
+      pending,
+      approved,
+      flagged,
+    }
+  } catch (error: unknown) {
+    // Properly handle unknown error type
+    console.error("Error fetching product stats:", error instanceof Error ? error.message : "Unknown error")
+
+    return {
+      total: 0,
+      pending: 0,
+      approved: 0,
+      flagged: 0,
+    }
+  }
 }
 
-export default function ReviewsPage() {
+export default async function ReviewsPage() {
+  const stats = await getProductStats()
+
   return (
-    <div className="p-6 max-w-[1400px] mx-auto space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatsCard title="Total Reviews" value={stats.total} change={stats.totalGrowth} type="total" />
-        <StatsCard title="Pending Reviews" value={stats.pending} change={stats.pendingGrowth} type="pending" />
-        <StatsCard title="Approved Reviews" value={stats.approved} change={stats.approvedGrowth} type="approved" />
-        <StatsCard title="Flagged Reviews" value={stats.flagged} change={stats.flaggedGrowth} type="flagged" />
+    <div className="p-4 max-w-[1400px] mx-auto space-y-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatsCard title="Total Products" value={stats.total} type="total" />
+        <StatsCard title="Pending Products" value={stats.pending} type="pending" />
+        <StatsCard title="Approved Products" value={stats.approved} type="approved" />
+        <StatsCard title="Flagged Products" value={stats.flagged} type="flagged" />
       </div>
 
       <ReviewsTable />

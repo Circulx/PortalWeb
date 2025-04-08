@@ -50,4 +50,3 @@ export interface ProductFormData {
   sub_category_name?: string
   is_draft?: boolean
 }
-
