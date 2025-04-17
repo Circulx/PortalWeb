@@ -13,7 +13,6 @@ import axios from "axios"
 import ProductCard from "@/components/layout/product-card"
 import "swiper/css"
 import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle } from "lucide-react"
-import { Toast } from "@/components/ui/use-toast"
 
 interface Product {
   product_id: number
@@ -514,11 +513,12 @@ export default function Cart() {
               price={product.price}
               discount={product.discount}
               image_link={product.image_link}
-              href={`/product/${product.product_id}`}
+              href={`/products/${product.product_id}`}
               rating={product.rating}
               originalPrice={product.price + product.discount}
               hoverImage={product.image_link}
-              seller_id={0}
+              seller_id={product.seller_id || 0}
+              stock={product.stock}
             />
           ))}
         </div>
@@ -625,4 +625,3 @@ export default function Cart() {
 function toast(arg0: { title: string; description: string; duration: number }) {
   throw new Error("Function not implemented.")
 }
-
