@@ -11,13 +11,19 @@ export interface ReviewStats {
 
 export interface Review {
   id: string
-  image: string
-  buyerName: string
-  review: string
-  date: string // ISO date string
   productName: string
-  sellerName: string
-  status: "Pending" | "Approved" | "Flagged"
+  sku: string
+  company: string
+  rating: number
+  text: string
+  date: string
+  imageUrl: string
+  // Keeping the original fields for compatibility
+  image?: string
+  buyerName?: string
+  review?: string
+  sellerName?: string
+  status?: "Pending" | "Approved" | "Flagged"
 }
 
 export interface Product {
@@ -30,3 +36,48 @@ export interface Product {
   created_at?: string
 }
 
+// Adding the missing types
+export interface RatingStats {
+  total: number
+  average: number
+  growth: number
+  distribution: number[]
+}
+
+export interface ProductDetails {
+  name: string
+  sku: string
+  category: string
+  pricePerUnit: number
+  availableStock: number
+  description: string
+  imageUrl: string
+}
+
+export interface ProductMetrics {
+  totalSales: {
+    value: number
+    growth: number
+  }
+  revenue: {
+    value: number
+    growth: number
+  }
+  conversionRate: {
+    value: number
+    growth: number
+  }
+  totalViews: {
+    value: number
+    growth: number
+  }
+  averageReview: {
+    value: number
+    distribution: number[]
+  }
+}
+
+// Adding the missing rating distribution component
+export interface RatingDistribution {
+  distribution: number[]
+}
