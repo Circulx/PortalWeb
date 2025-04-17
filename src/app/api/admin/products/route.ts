@@ -1,6 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
-import mongoose from "mongoose"
+import mongoose, { type Model, type Document } from "mongoose"
+
+// Define a basic interface for the Product document
+interface ProductDocument extends Document {
+  status?: string
+  createdAt?: Date
+  [key: string]: any
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,13 +15,20 @@ export async function GET(request: NextRequest) {
     const db = await connectProfileDB()
 
     // Get the products collection
-    let Product
+    let Product: Model<ProductDocument>
     try {
       // Try to get the existing model
-      Product = db.models.Product
+      Product = db.models.Product as Model<ProductDocument>
     } catch (e) {
       // If model doesn't exist, create a new one with an empty schema
-      Product = db.model("Product", new mongoose.Schema({}))
+      const schema = new mongoose.Schema(
+        {
+          status: String,
+          createdAt: Date,
+        },
+        { strict: false },
+      )
+      Product = db.model<ProductDocument>("Product", schema)
     }
 
     // Get query parameters
@@ -24,7 +38,7 @@ export async function GET(request: NextRequest) {
     const year = url.searchParams.get("year")
 
     // Build the query
-    const query: any = {}
+    const query: Record<string, any> = {}
 
     // Add status filter if not "all"
     if (status !== "all") {
@@ -54,7 +68,7 @@ export async function GET(request: NextRequest) {
     const products = await Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean()
 
     // Add default status if not present
-    const productsWithStatus = products.map((product: { status: any }) => ({
+    const productsWithStatus = products.map((product) => ({
       ...product,
       status: product.status || "Pending",
     }))
@@ -74,4 +88,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
