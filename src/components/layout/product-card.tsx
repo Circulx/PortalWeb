@@ -25,6 +25,9 @@ interface ProductCardProps {
   stock: number
 }
 
+// Create a module-level variable to track if a notification is currently showing
+let isNotificationShowing = false
+
 export default function ProductCard({
   title,
   company,
@@ -42,6 +45,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [notification, setNotification] = useState<string | null>(null)
   const dispatch = useDispatch()
 
   // Get wishlist items from Redux store
@@ -55,6 +59,17 @@ export default function ProductCard({
     const itemInWishlist = wishlistItems.some((item) => item.id === href)
     setIsWishlisted(itemInWishlist)
   }, [wishlistItems, href])
+
+  // Handle notification display and auto-hide
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null)
+        isNotificationShowing = false
+      }, 2000) // Show for 2 seconds
+      return () => clearTimeout(timer)
+    }
+  }, [notification])
 
   // Calculate the discounted price
   const calculateDiscountedPrice = (originalPrice: number, discountPercentage: number): number => {
@@ -73,6 +88,15 @@ export default function ProductCard({
     ))
   }
 
+  // Custom notification function
+  const showNotification = (message: string) => {
+    // Only show notification if one isn't already showing
+    if (!isNotificationShowing) {
+      isNotificationShowing = true
+      setNotification(message)
+    }
+  }
+
   const handleAddToCart = () => {
     dispatch(
       addItem({
@@ -89,6 +113,9 @@ export default function ProductCard({
         stock: stock,
       }),
     )
+
+    // Show custom notification
+    showNotification("Added to cart successfully!")
   }
 
   // Handle toggling the wishlist status
@@ -96,6 +123,9 @@ export default function ProductCard({
     if (isWishlisted) {
       // If already in wishlist, remove it
       dispatch(removeFromWishlist(href))
+
+      // Show notification for removal
+      showNotification("Removed from wishlist")
     } else {
       // If not in wishlist, add it
       dispatch(
@@ -108,6 +138,9 @@ export default function ProductCard({
           seller_id,
         }),
       )
+
+      // Show notification for addition
+      showNotification("Added to wishlist successfully!")
     }
   }
 
@@ -196,6 +229,18 @@ export default function ProductCard({
           <p className="text-xs text-gray-500 mt-0.5">Available: {stock} units</p>
         </div>
       </div>
+
+      {/* Custom Notification - Styled to match the image exactly */}
+      {notification && (
+        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-white px-5 py-3 rounded-lg shadow-md flex items-center gap-3 min-w-[280px] max-w-[320px]">
+          <div className="bg-green-500 rounded-full p-0.5 flex items-center justify-center">
+            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <span className="text-gray-800 text-sm font-medium">{notification}</span>
+        </div>
+      )}
     </div>
   )
 }
