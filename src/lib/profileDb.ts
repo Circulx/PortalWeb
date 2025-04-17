@@ -8,7 +8,9 @@ import type { IBank } from "@/models/profile/bank"
 import type { IDocument } from "@/models/profile/document"
 import type { IProfileProgress } from "@/models/profile/progress"
 
-const PROFILE_DB = process.env.PROFILE_DB!
+const PROFILE_DB =
+  process.env.PROFILE_DB ||
+  "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 // Define the interface locally to avoid import issues
 interface ICategoryBrand {
@@ -36,11 +38,12 @@ export async function connectProfileDB(): Promise<Connection> {
 
   console.log("Creating new profile database connection")
 
-  // Create a new connection promise
+  // Create a new connection promise with increased timeouts
   connectionPromise = mongoose
     .createConnection(PROFILE_DB, {
-      serverSelectionTimeoutMS: 30000,
-      socketTimeoutMS: 45000,
+      serverSelectionTimeoutMS: 60000, // Increase from 30000 to 60000
+      socketTimeoutMS: 90000, // Increase from 45000 to 90000
+      connectTimeoutMS: 60000, // Add explicit connect timeout
     })
     .asPromise()
     .then((conn) => {
@@ -233,4 +236,3 @@ export {
   ProfileProgressSchema,
   ProductSchema,
 }
-

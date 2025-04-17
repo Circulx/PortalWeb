@@ -3,7 +3,9 @@
 import { useState, useEffect } from "react"
 import ProductCard from "./product-card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import axios from "axios"
+import { useDispatch, useSelector } from "react-redux"
+import type { AppDispatch, RootState } from "@/store"
+import { fetchProducts } from "@/store/slices/productSlice"
 
 // Loading skeleton component
 const Skeleton = ({ className = "", ...props }: { className?: string; [key: string]: any }) => {
@@ -74,14 +76,18 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
   }, [])
 
   const handlePrevious = () => {
-    setStartIndex((prevIndex) =>
-      prevIndex === 0 ? Math.max(0, products.length - visibleProducts) : prevIndex - visibleProducts,
-    )
+    // Move back by just one product instead of the full visible count
+    setStartIndex((prevIndex) => Math.max(0, prevIndex - 1))
   }
 
   const handleNext = () => {
-    setStartIndex((prevIndex) => (prevIndex + visibleProducts >= products.length ? 0 : prevIndex + visibleProducts))
+    // Move forward by just one product instead of the full visible count
+    setStartIndex((prevIndex) => Math.min(products.length - visibleProducts, prevIndex + 1))
   }
+
+  // Check if we're at the beginning or end to disable buttons
+  const isAtBeginning = startIndex === 0
+  const isAtEnd = startIndex >= products.length - visibleProducts
 
   // Ensure we don't go out of bounds
   const safeStartIndex = Math.min(startIndex, Math.max(0, products.length - visibleProducts))
@@ -143,6 +149,7 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
                   originalPrice={product.price + product.discount}
                   hoverImage={product.image_link || "/placeholder.svg?height=200&width=200"}
                   seller_id={product.seller_id}
+                  stock={product.stock}
                 />
               </div>
             ))
@@ -157,17 +164,27 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
           <>
             <button
               onClick={handlePrevious}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+              disabled={isAtBeginning}
+              className={`absolute left-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 ${
+                isAtBeginning
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
+              }`}
               aria-label="Previous product"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-800" />
+              <ChevronLeft className="w-6 h-6" />
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+              disabled={isAtEnd}
+              className={`absolute right-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 ${
+                isAtEnd
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
+              }`}
               aria-label="Next product"
             >
-              <ChevronRight className="w-6 h-6 text-gray-800" />
+              <ChevronRight className="w-6 h-6" />
             </button>
           </>
         )}
@@ -177,88 +194,22 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
 }
 
 export default function ProductGrid() {
-  const [allProducts, setAllProducts] = useState<Product[]>([])
-  const [categorySubcategoryProducts, setCategorySubcategoryProducts] = useState<
-    Record<string, Record<string, Product[]>>
-  >({})
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [retryCount, setRetryCount] = useState(0)
+  const dispatch = useDispatch<AppDispatch>()
+  const {
+    products: allProducts,
+    categorySubcategoryProducts,
+    status,
+    error,
+  } = useSelector((state: RootState) => state.products)
+
+  const isLoading = status === "loading"
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-
-        console.log("Fetching products from API...")
-        const response = await axios.get("/api/products")
-        console.log(`Received ${response.data.length} products from API`)
-
-        // Check if we got an error response
-        if (response.data.error) {
-          throw new Error(response.data.error)
-        }
-
-        // Ensure we have an array of products
-        if (!Array.isArray(response.data)) {
-          throw new Error("Invalid response format from API")
-        }
-
-        const products: Product[] = response.data
-
-        // Add fallback values for missing fields
-        const processedProducts = products.map((product) => ({
-          ...product,
-          seller_name: product.seller_name || "Unknown Seller",
-          location: product.location || "Unknown Location",
-          rating: product.rating || 0,
-          discount: product.discount || 0,
-          image_link: product.image_link || "/placeholder.svg?height=200&width=200",
-        }))
-
-        setAllProducts(processedProducts)
-
-        // Group products by category and subcategory
-        const groupedProducts: Record<string, Record<string, Product[]>> = {}
-
-        processedProducts.forEach((product) => {
-          const category = product.category_name || "Uncategorized"
-          const subcategory = product.sub_category_name || "Uncategorized"
-
-          if (!groupedProducts[category]) {
-            groupedProducts[category] = {}
-          }
-
-          if (!groupedProducts[category][subcategory]) {
-            groupedProducts[category][subcategory] = []
-          }
-
-          groupedProducts[category][subcategory].push(product)
-        })
-
-        setCategorySubcategoryProducts(groupedProducts)
-      } catch (error) {
-        console.error("Error fetching products:", error)
-        const errorMessage = error instanceof Error ? error.message : "Unknown error"
-        setError(`Failed to load products: ${errorMessage}. Retrying...`)
-
-        // Retry up to 3 times with increasing delay
-        if (retryCount < 3) {
-          const delay = Math.pow(2, retryCount) * 1000 // Exponential backoff
-          setTimeout(() => {
-            setRetryCount((prev) => prev + 1)
-          }, delay)
-        } else {
-          setError("Failed to load products after multiple attempts. Please refresh the page or try again later.")
-        }
-      } finally {
-        setIsLoading(false)
-      }
+    // Only fetch products if they haven't been loaded yet
+    if (status === "idle") {
+      dispatch(fetchProducts())
     }
-
-    fetchProducts()
-  }, [retryCount])
+  }, [dispatch, status])
 
   // Render product carousels for each category
   const renderCategorySubcategoryCarousels = () => {
@@ -296,7 +247,7 @@ export default function ProductGrid() {
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-6">
           {error}
-          {retryCount < 3 && <span className="ml-2">Retrying...</span>}
+          {status === "loading" && <span className="ml-2">Retrying...</span>}
         </div>
       )}
 
@@ -304,4 +255,3 @@ export default function ProductGrid() {
     </div>
   )
 }
-

@@ -10,6 +10,7 @@ interface CartItem {
   discount: number
   seller_id: number
   stock: number // Add stock property
+  units?: string // Add units property
 }
 
 interface CartState {

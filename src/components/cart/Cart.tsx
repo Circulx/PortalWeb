@@ -12,7 +12,8 @@ import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import ProductCard from "@/components/layout/product-card"
 import "swiper/css"
-import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
+import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle } from "lucide-react"
+import { Toast } from "@/components/ui/use-toast"
 
 interface Product {
   product_id: number
@@ -150,9 +151,36 @@ export default function Cart() {
   const router = useRouter()
   const dispatch = useDispatch()
   const cartItems = useSelector((state: RootState) => state.cart.items)
+  const [stockWarnings, setStockWarnings] = useState<Record<string, boolean>>({})
 
   const handleIncrement = (id: string) => {
-    dispatch(increaseQuantity(id))
+    const item = cartItems.find((item) => item.id === id)
+    if (item) {
+      if (item.quantity >= item.stock) {
+        // Show warning if trying to add more than available stock
+        setStockWarnings((prev) => ({ ...prev, [id]: true }))
+
+        // Show toast notification
+        toast({
+          title: "Stock limit reached",
+          description: `Only ${item.stock} units of "${item.title}" are available.`,
+          duration: 3000,
+        })
+
+        return
+      }
+
+      // Clear warning if it was previously shown
+      if (stockWarnings[id]) {
+        setStockWarnings((prev) => {
+          const newWarnings = { ...prev }
+          delete newWarnings[id]
+          return newWarnings
+        })
+      }
+
+      dispatch(increaseQuantity(id))
+    }
   }
 
   const handleDecrement = (id: string) => {
@@ -163,8 +191,18 @@ export default function Cart() {
     } else {
       // Otherwise just decrease the quantity
       dispatch(decreaseQuantity(id))
+
+      // Clear warning if it was previously shown
+      if (stockWarnings[id]) {
+        setStockWarnings((prev) => {
+          const newWarnings = { ...prev }
+          delete newWarnings[id]
+          return newWarnings
+        })
+      }
     }
   }
+
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
 
   useEffect(() => {
@@ -183,6 +221,22 @@ export default function Cart() {
     fetchRecommendedProducts()
   }, [])
 
+  // Check for stock availability on component mount
+  useEffect(() => {
+    // Verify stock limits for all cart items
+    const newStockWarnings: Record<string, boolean> = {}
+
+    cartItems.forEach((item) => {
+      if (item.quantity >= item.stock) {
+        newStockWarnings[item.id] = true
+      }
+    })
+
+    if (Object.keys(newStockWarnings).length > 0) {
+      setStockWarnings(newStockWarnings)
+    }
+  }, [cartItems])
+
   const historyRef = useRef<HTMLDivElement>(null)
 
   const scrollLeft = () => {
@@ -199,10 +253,20 @@ export default function Cart() {
 
   const handleRemoveItem = (id: string) => {
     dispatch(removeItem(id))
+
+    // Clear warning if it was previously shown
+    if (stockWarnings[id]) {
+      setStockWarnings((prev) => {
+        const newWarnings = { ...prev }
+        delete newWarnings[id]
+        return newWarnings
+      })
+    }
   }
 
   const handleClearCart = () => {
     dispatch(clearCart())
+    setStockWarnings({})
   }
 
   const calculateSubTotal = (price: number, quantity: number) => {
@@ -283,6 +347,10 @@ export default function Cart() {
                             <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
                             {/* Mobile only price */}
                             <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price}</p>
+                            {/* Stock information */}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Available: {item.stock} {item.stock === 1 ? "unit" : "units"}
+                            </p>
                           </div>
                         </div>
 
@@ -294,7 +362,7 @@ export default function Cart() {
                         {/* Quantity controls - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center mb-3 sm:mb-0">
                           <span className="sm:hidden text-sm font-medium">Quantity:</span>
-                          <div className="flex border items-center gap-2">
+                          <div className="flex border items-center gap-2 relative">
                             <button
                               className="px-2 rounded hover:bg-gray-100"
                               onClick={() => handleDecrement(item.id)}
@@ -304,12 +372,23 @@ export default function Cart() {
                             </button>
                             <p className="w-8 text-center">{item.quantity}</p>
                             <button
-                              className="px-2 rounded hover:bg-gray-100"
+                              className={`px-2 rounded ${
+                                item.quantity >= item.stock
+                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                  : "hover:bg-gray-100"
+                              }`}
                               onClick={() => handleIncrement(item.id)}
+                              disabled={item.quantity >= item.stock}
                               aria-label="Increase quantity"
                             >
                               +
                             </button>
+                            {stockWarnings[item.id] && (
+                              <div className="absolute -top-8 right-0 bg-amber-50 text-amber-700 text-xs p-1 rounded border border-amber-200 whitespace-nowrap flex items-center">
+                                <AlertCircle size={12} className="mr-1" />
+                                Max stock reached
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -438,7 +517,9 @@ export default function Cart() {
               href={`/product/${product.product_id}`}
               rating={product.rating}
               originalPrice={product.price + product.discount}
-              hoverImage={product.image_link} seller_id={0}            />
+              hoverImage={product.image_link}
+              seller_id={0}
+            />
           ))}
         </div>
       </div>
@@ -540,5 +621,8 @@ export default function Cart() {
       </div>
     </div>
   )
+}
+function toast(arg0: { title: string; description: string; duration: number }) {
+  throw new Error("Function not implemented.")
 }
 

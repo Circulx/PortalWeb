@@ -31,7 +31,7 @@ export async function sendContactEmail(formData: FormData) {
       from: FROM_EMAIL,
       to: [TO_EMAIL],
       replyTo: email, // Changed from 'reply_to' to 'replyTo'
-      subject: `Circux Contact Submisssion - ${queryType || "General Query"}`,
+      subject: `IND2B Contact Submisssion - ${queryType || "General Query"}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #FF5C00;">New Contact Form Submission</h2>

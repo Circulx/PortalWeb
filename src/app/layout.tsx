@@ -10,7 +10,7 @@ import Providers from "./providers"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Circulx",
+  title: "IND2B",
   description: "Your one-stop shop for all your needs",
   // Remove viewport from here if it exists
 }
@@ -30,14 +30,13 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${inter.className} bg-gray-100`}>
         <Providers>
           <Header user={user} />
-          <main>{children}</main>
+          <main className="min-h-screen">{children}</main>
           <Footer />
         </Providers>
       </body>
     </html>
   )
 }
-

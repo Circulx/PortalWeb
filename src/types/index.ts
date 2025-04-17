@@ -1,4 +1,8 @@
 export interface Product {
+  image_link: string
+  title: string
+  rating: number
+  _id: string
   id: string
   name: string
   productName: string
@@ -15,13 +19,17 @@ export interface Product {
   breadth: string
   availableQuantity: string
   pricePerUnit: string
-  discount: string
+  discount?: number
   discountType: string
   dimensions: {
     length: number
     width: number
     height: number
   }
+  originalPrice: number
+  seller_id: number
+  units: string
+  reviewCount: number
 }
 
 export type CategoryType = "All" | "Electronics" | "Clothing" | "Home & Kitchen" | "Books" | string

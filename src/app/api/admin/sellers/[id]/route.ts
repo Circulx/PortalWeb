@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose"
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest) {
   try {
     // Safely extract the 'id' from the route parameters
     const id = request.nextUrl.pathname.split("/").pop()
@@ -49,4 +49,3 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: "Failed to update seller status" }, { status: 500 })
   }
 }
-
