@@ -21,6 +21,11 @@ export async function PUT(request: NextRequest) {
 
     // Get the products collection directly
     const db = connection.db
+    if (!db) {
+      console.error("Database connection failed: db is undefined")
+      return NextResponse.json({ error: "Database connection failed" }, { status: 500 })
+    }
+
     const productsCollection = db.collection("products")
 
     // Update the product using the native MongoDB driver
