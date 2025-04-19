@@ -7,11 +7,12 @@ export interface IUser extends Document {
   email: string
   password: string
   type: "admin" | "seller" | "customer"
-  secondaryEmail?: string;
-  phoneNumber?: string;
-  country?: string;
-  state?: string;
-  zipCode?: string;
+  secondaryEmail?: string
+  phoneNumber?: string
+  country?: string
+  state?: string
+  zipCode?: string
+  profileImage?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -31,6 +32,7 @@ const userSchema = new Schema<IUser>(
     country: { type: String }, // Optional field
     state: { type: String }, // Optional field
     zipCode: { type: String }, // Optional field
+    profileImage: { type: String }, // Added profile image field
   },
   { timestamps: true },
 )
@@ -44,4 +46,3 @@ export async function getUserModel(): Promise<Model<IUser>> {
 // For backward compatibility - DO NOT USE THIS DIRECTLY
 // This might be using the wrong connection
 export const User = mongoose.models.User || mongoose.model<IUser>("User", userSchema)
-

@@ -7,7 +7,7 @@ interface CartItem {
   image_link: string
   price: number
   quantity: number
-  discount: number
+  discount?: number
   seller_id: number
   stock: number // Add stock property
   units?: string // Add units property
@@ -45,10 +45,10 @@ const cartSlice = createSlice({
 
       if (existingItem) {
         // If the item exists, update the quantity but limit it to the available stock
-        existingItem.quantity = Math.min(existingItem.quantity + item.quantity, stock)
+        existingItem.quantity = Math.min(existingItem.quantity + 1, stock)
       } else {
         // If the item doesn't exist, add it to the cart with a quantity of 1 or the available stock, whichever is smaller
-        state.items.push({ ...item, quantity: Math.min(item.quantity, stock), stock })
+        state.items.push({ ...item, quantity: 1, stock })
       }
     },
     removeItem: (state, action: PayloadAction<string>) => {
