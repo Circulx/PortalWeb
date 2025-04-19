@@ -88,6 +88,8 @@ export default function ProductActions({
           price: Math.round(price),
           discount,
           seller_id: sellerId,
+          units: undefined,
+          stock: 0
         }),
       )
       toast.success("Added to wishlist successfully!", {

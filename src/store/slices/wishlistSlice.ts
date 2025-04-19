@@ -2,8 +2,8 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
 
 // Define the type for wishlist items
 interface WishlistItem {
-  units: any
-  stock: any
+  units: string | undefined
+  stock: number
   id: string
   title: string
   image_link: string

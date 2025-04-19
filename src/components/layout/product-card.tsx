@@ -136,8 +136,6 @@ export default function ProductCard({
           price: calculatedPrice, // Use the calculated price
           discount,
           seller_id,
-          units: undefined,
-          stock: undefined
         }),
       )
 
