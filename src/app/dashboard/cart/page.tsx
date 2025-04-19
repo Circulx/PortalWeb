@@ -1,4 +1,4 @@
-import CartPage from "@/components/dashboard/CartPage"
+import CartPage from "@/components/dashboard/cart-summary"
 
 export default function DashboardCartPage() {
   return <CartPage />
