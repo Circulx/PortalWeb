@@ -1,235 +1,112 @@
-"use client";
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import CheckoutLayout from "../checkout/CheckoutLayout";
-import BillingForm, { BillingDetails } from "../checkout/BillingForm";
-import OrderSummary from "../checkout/OrderSummary";
-import PaymentOptions from "../checkout/PaymentOptions";
-import PaymentForm from "../checkout/PaymentForm";
-import AdditionalInfo from "../checkout/AdditionalInfo";
-import Card from "../ui/Card";
-import Button from "../ui/Button";
-import type { PaymentInformation } from "../types/checkout";
-import img from "../img/motor.png";
-import Script from "next/script";
-import { useSelector } from "react-redux";
-import { RootState } from "@/store";
+"use client"
 
-interface CardDetails {
-  nameOnCard: string;
-  cardNumber: string;
-  expiryDate: string;
-  cvc: string;
-}
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useSelector } from "react-redux"
+import type { RootState } from "@/store"
+import BillingForm from "../checkout/BillingForm"
+import PaymentOptions from "../checkout/paymentOptions"
+import OrderSummary from "../checkout/OrderSummary"
+import type { BillingDetails } from "../checkout/BillingForm"
+import type { PaymentMethod } from "../checkout/paymentOptions"
+import AdditionalInfo from "../checkout/AdditionalInfo"
 
+export default function CheckoutPage() {
+  const router = useRouter()
+  const cartItems = useSelector((state: RootState) => state.cart.items)
+  const [currentStep, setCurrentStep] = useState(1)
+  const [billingDetails, setBillingDetails] = useState<BillingDetails | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null)
+  const [additionalNotes, setAdditionalNotes] = useState("")
+  const [termsAccepted, setTermsAccepted] = useState(false)
+  const [emailSignup, setEmailSignup] = useState(false)
+  const [totalAmount, setTotalAmount] = useState(0)
+  const [isProcessing, setIsProcessing] = useState(false)
 
-const CheckoutPage: React.FC = () => {
-  const router = useRouter();
-  const [billingDetails, setBillingDetails] = useState<BillingDetails | null>(null);
-  const [additionalInfo, setAdditionalInfo] = useState<string>("");
-  const [paymentMethod, setPaymentMethod] = useState<PaymentInformation["method"]>("card");
-  const [cardDetails, setCardDetails] = useState<CardDetails>({
-    nameOnCard: "",
-    cardNumber: "",
-    expiryDate: "",
-    cvc: ""
-  });
+  // Redirect to cart if cart is empty
+  useEffect(() => {
+    if (cartItems.length === 0) {
+      router.push("/cart")
+    }
+  }, [cartItems, router])
 
-  const cartItems = useSelector((state: RootState) => state.cart.items);
-  const [totalAmount, setTotalAmount] = useState<number>(0);
-
-  const handleBillingDetailsSubmit = async (details: BillingDetails) => {
-    setBillingDetails(details);
+  const handleBillingDetailsSubmit = (details: BillingDetails) => {
+    setBillingDetails(details)
+    setCurrentStep(2)
+    window.scrollTo(0, 0)
   }
 
-    const handlePaymentMethodChange = (method: PaymentInformation["method"]) => {
-      setPaymentMethod(method);
-    };
-  
-    const handleCardDetailsChange = (field: keyof CardDetails, value: string) => {
-      setCardDetails((prev) => ({ ...prev, [field]: value }));
-    };
-  
-    const handleAdditionalInfoChange = (info: string) => {
-      setAdditionalInfo(info);
-    };
+  const handlePaymentMethodSelect = (method: PaymentMethod) => {
+    setPaymentMethod(method)
+    setCurrentStep(3)
+    window.scrollTo(0, 0)
+  }
 
-    const handleTotalAmountChange = (amount: number) => {
-      setTotalAmount(amount);
+  const handleAdditionalInfoSubmit = (notes: string) => {
+    setAdditionalNotes(notes)
+    setCurrentStep(4)
+    window.scrollTo(0, 0)
+  }
+
+  const handlePlaceOrder = async () => {
+    if (!billingDetails || !paymentMethod) {
+      return
     }
-  
-    const handlePlaceOrder = async () => {
 
-      if (!billingDetails) {
-        alert("Please fill out the billing details.");
-        return;
-      }
-      console.log(process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID);
-      try {
-        // Step 1: Create a Razorpay order
-        const paymentResponse = await fetch("/api/payments", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ amount: totalAmount, currency: "INR" }),
-        });
-    
-        const { razorpayOrderId } = await paymentResponse.json();
-        console.log(razorpayOrderId);
-        // Step 2: Open Razorpay payment modal
-        const options: RazorpayOptions = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID!,
-          amount: totalAmount,
-          currency: "INR",
-          name: "Circulx",
-          description: "Order Payment",
-          order_id: razorpayOrderId,
-          handler: async (response: any) => {
-            // Step 3: Verify payment
-            const verifyResponse = await fetch("/api/payments", {
-              method: "PATCH",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(response),
-            });
-    
-            const verifyResult = await verifyResponse.json();
-    
-            if (verifyResult.success) {
-              // Step 4: Create the order
-              const orderResponse = await fetch("/api/orders", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                credentials: "include",
-                body: JSON.stringify({
-                  billingDetails,
-                  paymentMethod,
-                  additionalInfo,
-                  amount: totalAmount, 
-                  razorpayOrderId,
-                  cartItems
-                }),
-              });
-    
-              if (!orderResponse.ok) {
-                throw new Error("Failed to create order");
-              }
-    
-              alert("Order placed successfully!");
-              router.push("/order-confirmation");
-            } else {
-              alert("Payment verification failed. Please try again.");
-            }
-          },
-          prefill: {
-            name: billingDetails.firstName + " " + billingDetails.lastName,
-            email: billingDetails.email,
-            contact: billingDetails.phoneNumber,
-          },
-          theme: {
-            color: "#F37254",
-          },
-        };
-    
-        const razorpay = new window.Razorpay(options);
-        razorpay.open();
-      } catch (error) {
-        console.error("Error placing order:", error);
-        alert("Error placing order. Please try again.");
-      }
-    };
+    setIsProcessing(true)
+
+    try {
+      // Here you would typically send the order to your backend
+      // For now, we'll just simulate a successful order
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // Redirect to a success page or show a success message
+      router.push("/checkout/success")
+    } catch (error) {
+      console.error("Error placing order:", error)
+      setIsProcessing(false)
+    }
+  }
+
+  const handleTotalAmountChange = (amount: number) => {
+    setTotalAmount(amount)
+  }
 
   return (
-    <CheckoutLayout>
-      <Script
-        id="razorpay-checkout-js"
-        src="https://checkout.razorpay.com/v1/checkout.js"
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 ">
-        {/* Left column: Billing, Payment, and Additional Info */}
+    <div className="max-w-7xl mx-auto">
+      <h1 className="text-2xl font-bold text-center mb-8">Checkout</h1>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
-          <BillingForm onBillingDetailsSubmit={handleBillingDetailsSubmit} />
+          {/* Billing Information */}
+          <div className={`transition-opacity duration-300 ${currentStep !== 1 && "opacity-60"}`}>
+            <BillingForm onBillingDetailsSubmit={handleBillingDetailsSubmit} />
+          </div>
 
-          <Card className="p-6">
-            <PaymentOptions onMethodSelect={handlePaymentMethodChange} />
-            {paymentMethod === "card" && (
-              <PaymentForm
-                cardDetails={cardDetails}
-                onCardDetailsChange={handleCardDetailsChange}
-              />
-            )}
-          </Card>
+          {/* Payment Options */}
+          <div
+            className={`transition-opacity duration-300 ${currentStep !== 2 && (currentStep < 2 ? "opacity-50" : "opacity-60")}`}
+          >
+            <PaymentOptions onPaymentMethodSelect={handlePaymentMethodSelect} disabled={currentStep < 2} />
+          </div>
 
-          <AdditionalInfo onInfoChange={handleAdditionalInfoChange} />
-        </div>
-
-        {/* Right column: Order Summary */}
-        <div className="lg:col-span-1">
-          <OrderSummary 
-            onPlaceOrder={handlePlaceOrder}
-            onTotalAmountChange={handleTotalAmountChange} />
-
-          {/* Promotional sections */}
-          <div className="mt-3 space-y-3">
-            {/* Xiaomi Earbuds Promo */}
-            <div className="bg-yellow-100 rounded-lg overflow-hidden">
-              <div className="p-6">
-                <div className="flex flex-col items-center">
-                  <div className="relative w-32 h-32 mb-2">
-                    <Image
-                      src={img}
-                      alt="Xiaomi True Wireless Earbuds"
-                      fill
-                      style={{ objectFit: "contain" }}
-                    />
-                  </div>
-                  <h3 className="text-xl font-bold text-center mb-1">
-                    Xiaomi True Wireless Earbuds
-                  </h3>
-                  <p className="text-center text-sm mb-4">
-                    Escape the noise. It's time to hear the magic with Xiaomi
-                    Earbuds.
-                  </p>
-                  <div className="text-center mb-4">
-                    <span className="text-sm mr-2">Only for:</span>
-                    <span className="font-bold">$299 USD</span>
-                  </div>
-                  <Button
-                    className="w-full bg-orange-500 hover:bg-orange-600 text-white"
-                    onClick={() => console.log("Shop now clicked")}
-                  >
-                    SHOP NOW →
-                  </Button>
-                </div>
-              </div>
-            </div>
-            {/* Summer Sales Promo */}
-            <div className="bg-blue-800 text-white rounded-lg overflow-hidden">
-              <div className="p-4 text-center">
-                <h3 className="text-sm font-medium mb-2">SUMMER SALES</h3>
-                <p className="text-3xl font-bold mb-2">37% DISCOUNT</p>
-                <p className="text-sm mb-2">
-                  only for <span className="text-yellow-400">SmartPhone</span>{" "}
-                  product.
-                </p>
-                <Button
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                  onClick={() => console.log("Shop now clicked")}
-                >
-                  SHOP NOW →
-                </Button>
-              </div>
-            </div>
+          {/* Additional Information */}
+          <div
+            className={`transition-opacity duration-300 ${currentStep !== 3 && (currentStep < 3 ? "opacity-50" : "opacity-60")}`}
+          >
+            <AdditionalInfo onSubmit={handleAdditionalInfoSubmit} disabled={currentStep < 3} />
           </div>
         </div>
-      </div>
-    </CheckoutLayout>
-  );
-};
 
-export default CheckoutPage;
+        {/* Order Summary */}
+        <div className="lg:col-span-1">
+          <OrderSummary
+            onPlaceOrder={handlePlaceOrder}
+            onTotalAmountChange={handleTotalAmountChange}
+            isProcessing={isProcessing}
+          />
+        </div>
+      </div>
+    </div>
+  )
+}

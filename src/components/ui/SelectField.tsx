@@ -1,18 +1,16 @@
+"use client"
+
+import type React from "react"
+
 interface SelectFieldProps {
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
-  options: { value: string; label: string }[];
-  placeholder?: string;
-  className?: string;
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void
+  options: { value: string; label: string }[]
+  placeholder?: string
+  className?: string
 }
 
-const SelectField: React.FC<SelectFieldProps> = ({
-  value,
-  onChange,
-  options,
-  placeholder,
-  className,
-}) => {
+const SelectField: React.FC<SelectFieldProps> = ({ value, onChange, options, placeholder, className }) => {
   return (
     <select
       value={value}
@@ -26,7 +24,7 @@ const SelectField: React.FC<SelectFieldProps> = ({
         </option>
       ))}
     </select>
-  );
-};
+  )
+}
 
-export default SelectField;
+export default SelectField

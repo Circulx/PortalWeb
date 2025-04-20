@@ -1,50 +1,55 @@
-import React from "react";
-import Toggle from "../ui/Toggle";
-import TextField from "../ui/TextField";
+"use client"
+
+import type React from "react"
+import { useState } from "react"
 
 interface AdditionalInfoProps {
-  onInfoChange: (info: string) => void;
+  onSubmit: (notes: string) => void
+  disabled?: boolean
 }
 
-const AdditionalInfo: React.FC<AdditionalInfoProps> = ({ onInfoChange }) => {
-  const handleInfoChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onInfoChange(e.target.value);
+const AdditionalInfo: React.FC<AdditionalInfoProps> = ({ onSubmit, disabled = false }) => {
+  const [notes, setNotes] = useState("")
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit(notes)
   }
+
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200" >
+    <form
+      onSubmit={handleSubmit}
+      className={`p-6 bg-white rounded-lg shadow-md border border-gray-200 ${disabled ? "opacity-70 pointer-events-none" : ""}`}
+    >
       <h2 className="text-lg font-medium mb-4">Additional Information</h2>
+      <p className="text-sm text-gray-600 mb-4">
+        If you have any special instructions or notes for your order, please enter them below.
+      </p>
 
       <div className="mb-4">
-        <div className="flex items-center mb-2">
-          <Toggle defaultChecked={true} />
-          <label className="text-sm text-gray-600 ml-2">
-            Do you want to select an Warehouse
-          </label>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <div className="flex items-center mb-2">
-          <Toggle defaultChecked={false} />
-          <label className="text-sm text-gray-600 ml-2">
-            Do you want to select an Logistics
-          </label>
-        </div>
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-1">
+        <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
           Order Notes (Optional)
         </label>
-        <TextField
-          placeholder="Notes about your order, e.g. special notes for delivery or address description, etc."
-          multiline
+        <textarea
+          id="notes"
           rows={4}
-          onChange={handleInfoChange}
-        />
+          className="w-full p-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
+          placeholder="Special instructions for delivery or any other notes"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        ></textarea>
       </div>
-    </div>
-  );
-};
 
-export default AdditionalInfo;
+      <div className="mt-6">
+        <button
+          type="submit"
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded transition-colors"
+        >
+          Continue to Review
+        </button>
+      </div>
+    </form>
+  )
+}
+
+export default AdditionalInfo

@@ -1,8 +1,8 @@
-import CheckoutPage from "@/components/Checkout/pages/Checkout"
+import CheckoutPage from "@/components/Checkout/pages/checkout"
 
 export default function Checkout() {
   return (
-    <div className="text-center p-4 md:p-6">
+    <div className="container mx-auto px-4 py-8">
       <CheckoutPage />
     </div>
   )

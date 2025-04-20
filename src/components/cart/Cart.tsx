@@ -73,7 +73,7 @@ const browsingHistory: BrowsingHistoryProduct[] = [
     product_id: 4,
     title: "Smartwatch",
     image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
     product_id: 5,
@@ -335,6 +335,11 @@ export default function Cart() {
     router.push("/")
   }
 
+  const handleProceedToCheckout = () => {
+    console.log("Proceed to checkout clicked")
+    router.push("/checkout")
+  }
+
   // Calculate the cart container height based on number of items
   const getCartContainerHeight = () => {
     if (cartItems.length === 0) return "auto"
@@ -540,7 +545,12 @@ export default function Cart() {
                 <span>₹{calculateTotal()}</span>
               </div>
 
-              <button className="w-full bg-orange-500 text-white py-2 rounded-lg mt-4">PROCEED TO CHECKOUT</button>
+              <button
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg mt-4 transition-colors"
+                onClick={handleProceedToCheckout}
+              >
+                PROCEED TO CHECKOUT
+              </button>
             </div>
           </div>
         </div>
