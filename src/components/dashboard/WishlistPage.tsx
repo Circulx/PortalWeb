@@ -9,51 +9,108 @@ import { removeFromWishlist } from "@/store/slices/wishlistSlice"
 import { addItem } from "@/store/slices/cartSlice"
 import { ShoppingCart } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import axios from "axios"
+
+interface Product {
+  product_id: number
+  title: string
+  image_link: string
+  price: number
+  discount?: number
+  seller_id: number
+  units?: string
+  stock: number
+  id: string
+}
 
 export default function WishlistPage() {
   const dispatch = useDispatch()
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
   const router = useRouter()
+  const [products, setProducts] = useState<Product[]>([])
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get("/api/products")
+        const products: Product[] = response.data
+        setProducts(products)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    }
+
+    fetchProducts()
+  }, [])
 
   const handleRemoveItem = (id: string) => {
     dispatch(removeFromWishlist(id))
   }
 
   const handleAddToCart = (item: any) => {
-    dispatch(
-      addItem({
-        item: {
-          id: item.id,
-          title: item.title,
-          image_link: item.image_link,
-          price: item.price,
-          discount: item.discount ?? 0,
-          seller_id: item.seller_id,
-          units: item.units,
-          quantity: 1,
-        },
-        stock: item.stock,
-      }),
-    )
+    // Extract the product ID from the item.id URL
+    const productIdFromUrl = item.id.split("/").pop()
+
+    if (productIdFromUrl) {
+      // Find the product in the fetched products array
+      const product = products.find((p) => p.product_id === Number(productIdFromUrl))
+
+      if (product) {
+        dispatch(
+          addItem({
+            item: {
+              id: item.id,
+              title: item.title,
+              image_link: item.image_link,
+              price: item.price,
+              discount: item.discount ?? 0,
+              seller_id: item.seller_id,
+              units: item.units,
+              quantity: 1,
+            },
+            stock: product.stock, // Use the stock from the fetched product
+          }),
+        )
+      } else {
+        console.error("Product not found when adding to cart:", item.id)
+      }
+    } else {
+      console.error("Could not extract product ID from URL:", item.id)
+    }
   }
 
   const handleAddAllToCart = () => {
     wishlistItems.forEach((item) => {
-      dispatch(
-        addItem({
-          item: {
-            id: item.id,
-            title: item.title,
-            image_link: item.image_link,
-            price: item.price,
-            discount: item.discount ?? 0,
-            seller_id: item.seller_id,
-            units: item.units,
-            quantity: 1,
-          },
-          stock: item.stock,
-        }),
-      )
+      // Extract the product ID from the item.id URL
+      const productIdFromUrl = item.id.split("/").pop()
+
+      if (productIdFromUrl) {
+        // Find the product in the fetched products array
+        const product = products.find((p) => p.product_id === Number(productIdFromUrl))
+
+        if (product) {
+          dispatch(
+            addItem({
+              item: {
+                id: item.id,
+                title: item.title,
+                image_link: item.image_link,
+                price: item.price,
+                discount: item.discount ?? 0,
+                seller_id: item.seller_id,
+                units: item.units,
+                quantity: 1,
+              },
+              stock: product.stock, // Use the stock from the fetched product
+            }),
+          )
+        } else {
+          console.error("Product not found when adding to cart:", item.id)
+        }
+      } else {
+        console.error("Could not extract product ID from URL:", item.id)
+      }
     })
   }
 

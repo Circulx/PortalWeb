@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation"
 
 import { useDispatch, useSelector } from "react-redux"
 import type { RootState } from "../../store"
-import { increaseQuantity, decreaseQuantity, removeItem, clearCart } from "../../store/slices/cartSlice"
+import {
+  increaseQuantity,
+  decreaseQuantity,
+  removeItem,
+  clearCart,
+  updateItemStock,
+} from "../../store/slices/cartSlice"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
@@ -151,6 +157,59 @@ export default function Cart() {
   const dispatch = useDispatch()
   const cartItems = useSelector((state: RootState) => state.cart.items)
   const [stockWarnings, setStockWarnings] = useState<Record<string, boolean>>({})
+  const [isLoadingStock, setIsLoadingStock] = useState(false)
+
+  // Fetch real-time stock information for all cart items
+  useEffect(() => {
+    const fetchProductStocks = async () => {
+      if (cartItems.length === 0) return
+
+      setIsLoadingStock(true)
+      try {
+        // Fetch all products to get their current stock
+        const response = await axios.get("/api/products")
+        const products = response.data
+
+        // Update stock information for each cart item
+        cartItems.forEach((item) => {
+          const productId = Number.parseInt(item.id)
+          const product = products.find((p: any) => p.product_id === productId)
+
+          if (product) {
+            // Update the stock in the cart state
+            dispatch(
+              updateItemStock({
+                productId: item.id,
+                stock: product.stock,
+              }),
+            )
+
+            // Check if we need to show a warning (quantity exceeds stock)
+            if (item.quantity > product.stock) {
+              setStockWarnings((prev) => ({ ...prev, [item.id]: true }))
+
+              // If quantity exceeds available stock, adjust it
+              if (product.stock > 0) {
+                // Reduce quantity to match available stock
+                while (item.quantity > product.stock) {
+                  dispatch(decreaseQuantity(item.id))
+                }
+              } else {
+                // If product is out of stock, remove it from cart
+                dispatch(removeItem(item.id))
+              }
+            }
+          }
+        })
+      } catch (error) {
+        console.error("Error fetching product stocks:", error)
+      } finally {
+        setIsLoadingStock(false)
+      }
+    }
+
+    fetchProductStocks()
+  }, [cartItems.length, dispatch])
 
   const handleIncrement = (id: string) => {
     const item = cartItems.find((item) => item.id === id)
@@ -159,7 +218,7 @@ export default function Cart() {
         // Show warning if trying to add more than available stock
         setStockWarnings((prev) => ({ ...prev, [id]: true }))
 
-        // Show toast notification
+        // Show toast notification with accurate message
         toast({
           title: "Stock limit reached",
           description: `Only ${item.stock} units of "${item.title}" are available.`,
@@ -219,22 +278,6 @@ export default function Cart() {
 
     fetchRecommendedProducts()
   }, [])
-
-  // Check for stock availability on component mount
-  useEffect(() => {
-    // Verify stock limits for all cart items
-    const newStockWarnings: Record<string, boolean> = {}
-
-    cartItems.forEach((item) => {
-      if (item.quantity >= item.stock) {
-        newStockWarnings[item.id] = true
-      }
-    })
-
-    if (Object.keys(newStockWarnings).length > 0) {
-      setStockWarnings(newStockWarnings)
-    }
-  }, [cartItems])
 
   const historyRef = useRef<HTMLDivElement>(null)
 
@@ -323,6 +366,11 @@ export default function Cart() {
               </div>
 
               <div className="py-2 relative">
+                {isLoadingStock && (
+                  <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  </div>
+                )}
                 <div
                   className={`${cartItems.length > 5 ? "max-h-[600px] overflow-y-auto" : ""} pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`}
                 >
