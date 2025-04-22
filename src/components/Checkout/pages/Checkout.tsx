@@ -132,7 +132,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="max-w-7xl mx-auto pb-20">
-      <h1 className="text-2xl font-bold text-center mb-8">Checkout</h1>
+      <h1 className="text-2xl font-bold text-center mb-8">Shopping Checkout</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main checkout content - takes 2/3 of the space */}
