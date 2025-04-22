@@ -3,11 +3,10 @@
 import type React from "react"
 import { useState, useEffect } from "react"
 import TextField from "@/components/ui/TextField"
-import SelectField from "@/components/ui/SelectField"
-import Checkbox from "./ui/Checkbox"
+import { Country, State, City } from "country-state-city"
 
 interface BillingFormProps {
-  onBillingDetailsSubmit: (billingDetails: BillingDetails) => void
+  onBillingDetailsSubmit: (billingDetails: BillingDetails, warehouseNeeded: boolean, logisticsNeeded: boolean) => void
 }
 
 export interface BillingDetails {
@@ -21,7 +20,6 @@ export interface BillingDetails {
   zipCode: string
   email: string
   phoneNumber: string
-  shipToDifferentAddress: boolean
 }
 
 const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => {
@@ -30,28 +28,58 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
     lastName: "",
     companyName: "",
     address: "",
-    country: "",
+    country: "IN", // Default to India
     state: "",
     city: "",
     zipCode: "",
     email: "",
     phoneNumber: "",
-    shipToDifferentAddress: false,
   })
-
+  const [warehouseNeeded, setWarehouseNeeded] = useState(false)
+  const [logisticsNeeded, setLogisticsNeeded] = useState(false)
+  const [countries, setCountries] = useState<any[]>([])
+  const [states, setStates] = useState<any[]>([])
+  const [cities, setCities] = useState<any[]>([])
   const [errors, setErrors] = useState<Partial<Record<keyof BillingDetails, string>>>({})
-  const [isFormValid, setIsFormValid] = useState(false)
+  const [touchedFields, setTouchedFields] = useState<Set<keyof BillingDetails>>(new Set())
+  const [formSubmitted, setFormSubmitted] = useState(false)
 
-  // Validate form on input change
+  // Load countries on component mount
+  useEffect(() => {
+    const allCountries = Country.getAllCountries()
+    setCountries(allCountries)
+  }, [])
+
+  // Update states when country changes
+  useEffect(() => {
+    if (billingDetails.country) {
+      const countryStates = State.getStatesOfCountry(billingDetails.country) || []
+      setStates(countryStates)
+    } else {
+      setStates([])
+    }
+  }, [billingDetails.country])
+
+  // Update cities when state changes
+  useEffect(() => {
+    if (billingDetails.country && billingDetails.state) {
+      const citiesData = City.getCitiesOfState(billingDetails.country, billingDetails.state) || []
+      setCities(citiesData)
+    } else {
+      setCities([])
+    }
+  }, [billingDetails.country, billingDetails.state])
+
+  // Validate form on input change, but only show errors for touched fields or after submission
   useEffect(() => {
     validateForm()
-  }, [billingDetails])
+  }, [billingDetails, touchedFields, formSubmitted])
 
   const validateForm = () => {
     const newErrors: Partial<Record<keyof BillingDetails, string>> = {}
     let valid = true
 
-    // Required fields
+    // Validate all fields but only show errors for touched fields or after form submission
     if (!billingDetails.firstName.trim()) {
       newErrors.firstName = "First name is required"
       valid = false
@@ -62,8 +90,13 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
       valid = false
     }
 
+    if (!billingDetails.companyName?.trim()) {
+      newErrors.companyName = "Address is required"
+      valid = false
+    }
+
     if (!billingDetails.address.trim()) {
-      newErrors.address = "Address is required"
+      newErrors.address = "Landmark is required"
       valid = false
     }
 
@@ -102,21 +135,80 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
       valid = false
     }
 
-    setErrors(newErrors)
-    setIsFormValid(valid)
+    // Filter errors to only show for touched fields or after form submission
+    const filteredErrors: Partial<Record<keyof BillingDetails, string>> = {}
+    Object.keys(newErrors).forEach((key) => {
+      const fieldKey = key as keyof BillingDetails
+      if (touchedFields.has(fieldKey) || formSubmitted) {
+        filteredErrors[fieldKey] = newErrors[fieldKey]
+      }
+    })
+
+    setErrors(filteredErrors)
     return valid
   }
 
   const handleChange = (field: keyof BillingDetails, value: string | boolean) => {
     setBillingDetails((prev) => ({ ...prev, [field]: value }))
+    setTouchedFields((prev) => new Set(prev).add(field))
+  }
+
+  const handleCountryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const countryCode = e.target.value
+    setBillingDetails((prev) => ({
+      ...prev,
+      country: countryCode,
+      state: "", // Reset state when country changes
+      city: "", // Reset city when country changes
+    }))
+    setTouchedFields((prev) => {
+      const newTouched = new Set(prev)
+      newTouched.add("country")
+      return newTouched
+    })
+  }
+
+  const handleStateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const stateCode = e.target.value
+    setBillingDetails((prev) => ({
+      ...prev,
+      state: stateCode,
+      city: "", // Reset city when state changes
+    }))
+    setTouchedFields((prev) => {
+      const newTouched = new Set(prev)
+      newTouched.add("state")
+      return newTouched
+    })
+  }
+
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleChange("city", e.target.value)
+  }
+
+  const handleBlur = (field: keyof BillingDetails) => {
+    setTouchedFields((prev) => new Set(prev).add(field))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setFormSubmitted(true)
 
-    if (validateForm()) {
-      onBillingDetailsSubmit(billingDetails)
+    const isValid = validateForm()
+    if (isValid) {
+      onBillingDetailsSubmit(billingDetails, warehouseNeeded, logisticsNeeded)
+    } else {
+      // Scroll to the first error
+      const firstErrorField = document.querySelector(".text-red-500")
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: "smooth", block: "center" })
+      }
     }
+  }
+
+  // Helper function to determine if we should show an error for a field
+  const shouldShowError = (field: keyof BillingDetails) => {
+    return errors[field] && (touchedFields.has(field) || formSubmitted)
   }
 
   return (
@@ -124,101 +216,138 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
       <h2 className="text-lg font-medium mb-4">Billing and Shipping Information</h2>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-1">User name</label>
         <div className="flex flex-col sm:flex-row gap-3">
-          <TextField
-            placeholder="First name"
-            className="flex-1"
-            value={billingDetails.firstName}
-            onChange={(e) => handleChange("firstName", e.target.value)}
-            error={errors.firstName}
-          />
-          <TextField
-            placeholder="Last name"
-            className="flex-1"
-            value={billingDetails.lastName}
-            onChange={(e) => handleChange("lastName", e.target.value)}
-            error={errors.lastName}
-          />
+          <div className="flex-1">
+            <label className="block text-sm text-gray-600 mb-1">
+              First Name <span className="text-red-500">*</span>
+            </label>
+            <TextField
+              placeholder="First name"
+              value={billingDetails.firstName}
+              onChange={(e) => handleChange("firstName", e.target.value)}
+              onBlur={() => handleBlur("firstName")}
+              error={shouldShowError("firstName") ? errors.firstName : undefined}
+            />
+          </div>
+          <div className="flex-1">
+            <label className="block text-sm text-gray-600 mb-1">
+              Last Name <span className="text-red-500">*</span>
+            </label>
+            <TextField
+              placeholder="Last name"
+              value={billingDetails.lastName}
+              onChange={(e) => handleChange("lastName", e.target.value)}
+              onBlur={() => handleBlur("lastName")}
+              error={shouldShowError("lastName") ? errors.lastName : undefined}
+            />
+          </div>
         </div>
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-1">Company Name (Optional)</label>
+        <label className="block text-sm text-gray-600 mb-1">
+          Address <span className="text-red-500">*</span>
+        </label>
         <TextField
           placeholder=""
           value={billingDetails.companyName}
           onChange={(e) => handleChange("companyName", e.target.value)}
+          onBlur={() => handleBlur("companyName")}
+          error={shouldShowError("companyName") ? errors.companyName : undefined}
         />
       </div>
 
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-1">Address</label>
+        <label className="block text-sm text-gray-600 mb-1">
+          Landmark <span className="text-red-500">*</span>
+        </label>
         <TextField
           placeholder=""
           value={billingDetails.address}
           onChange={(e) => handleChange("address", e.target.value)}
-          error={errors.address}
+          onBlur={() => handleBlur("address")}
+          error={shouldShowError("address") ? errors.address : undefined}
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Country</label>
-          <SelectField
-            value={billingDetails.country}
-            onChange={(e) => handleChange("country", e.target.value)}
-            options={[
-              { value: "USA", label: "USA" },
-              { value: "Canada", label: "Canada" },
-              { value: "UK", label: "UK" },
-              { value: "India", label: "India" },
-              { value: "Australia", label: "Australia" },
-            ]}
-            placeholder="Select..."
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">Region/State</label>
-          <SelectField
-            value={billingDetails.state}
-            onChange={(e) => handleChange("state", e.target.value)}
-            options={[
-              { value: "California", label: "California" },
-              { value: "Texas", label: "Texas" },
-              { value: "New York", label: "New York" },
-              { value: "Florida", label: "Florida" },
-              { value: "Illinois", label: "Illinois" },
-            ]}
-            placeholder="Select..."
-          />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-600 mb-1">City</label>
-          <SelectField
-            value={billingDetails.city}
-            onChange={(e) => handleChange("city", e.target.value)}
-            options={[
-              { value: "Los Angeles", label: "Los Angeles" },
-              { value: "Houston", label: "Houston" },
-              { value: "New York City", label: "New York City" },
-              { value: "Chicago", label: "Chicago" },
-              { value: "Miami", label: "Miami" },
-            ]}
-            placeholder="Select..."
-          />
+      {/* Country and State in one row */}
+      <div className="mb-4">
+        <div className="flex flex-row gap-3">
+          <div className="w-1/2">
+            <label className="block text-sm text-gray-600 mb-1">
+              Country <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={billingDetails.country}
+              onChange={handleCountryChange}
+              onBlur={() => handleBlur("country")}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="">Select country...</option>
+              {countries.map((country) => (
+                <option key={country.isoCode} value={country.isoCode}>
+                  {country.name}
+                </option>
+              ))}
+            </select>
+            {shouldShowError("country") && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
+          </div>
+
+          <div className="w-1/2">
+            <label className="block text-sm text-gray-600 mb-1">
+              State <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={billingDetails.state}
+              onChange={handleStateChange}
+              onBlur={() => handleBlur("state")}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="">Select state...</option>
+              {states.map((state) => (
+                <option key={state.isoCode} value={state.isoCode}>
+                  {state.name}
+                </option>
+              ))}
+            </select>
+            {shouldShowError("state") && <p className="text-red-500 text-xs mt-1">{errors.state}</p>}
+          </div>
         </div>
       </div>
 
+      {/* City and Zip Code in one row */}
       <div className="mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="md:col-span-1">
-            <label className="block text-sm text-gray-600 mb-1">Zip Code</label>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <label className="block text-sm text-gray-600 mb-1">
+              City <span className="text-red-500">*</span>
+            </label>
+            <select
+              value={billingDetails.city}
+              onChange={handleCityChange}
+              onBlur={() => handleBlur("city")}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+            >
+              <option value="">Select city...</option>
+              {cities.map((city) => (
+                <option key={city.name} value={city.name}>
+                  {city.name}
+                </option>
+              ))}
+            </select>
+            {shouldShowError("city") && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+          </div>
+
+          <div className="flex-1">
+            <label className="block text-sm text-gray-600 mb-1">
+              Zip Code <span className="text-red-500">*</span>
+            </label>
             <TextField
               placeholder=""
               value={billingDetails.zipCode}
               onChange={(e) => handleChange("zipCode", e.target.value)}
-              error={errors.zipCode}
+              onBlur={() => handleBlur("zipCode")}
+              error={shouldShowError("zipCode") ? errors.zipCode : undefined}
             />
           </div>
         </div>
@@ -226,38 +355,69 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Email</label>
+          <label className="block text-sm text-gray-600 mb-1">
+            Email <span className="text-red-500">*</span>
+          </label>
           <TextField
             placeholder=""
             value={billingDetails.email}
             onChange={(e) => handleChange("email", e.target.value)}
-            error={errors.email}
+            onBlur={() => handleBlur("email")}
+            error={shouldShowError("email") ? errors.email : undefined}
           />
         </div>
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Phone Number</label>
+          <label className="block text-sm text-gray-600 mb-1">
+            Phone Number <span className="text-red-500">*</span>
+          </label>
           <TextField
             placeholder=""
             value={billingDetails.phoneNumber}
             onChange={(e) => handleChange("phoneNumber", e.target.value)}
-            error={errors.phoneNumber}
+            onBlur={() => handleBlur("phoneNumber")}
+            error={shouldShowError("phoneNumber") ? errors.phoneNumber : undefined}
           />
         </div>
       </div>
 
-      <div className="mt-4">
-        <Checkbox
-          label="Ship into different address"
-          checked={billingDetails.shipToDifferentAddress}
-          onChange={(e: { target: { checked: string | boolean } }) => handleChange("shipToDifferentAddress", e.target.checked)}
-        />
+      <div className="mt-6">
+        <h3 className="text-lg font-medium mb-4">Additional Information</h3>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Do you want to select a Warehouse</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={warehouseNeeded}
+                onChange={() => setWarehouseNeeded(!warehouseNeeded)}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+            </label>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Do you want to select a Logistics</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer "
+                checked={logisticsNeeded}
+                onChange={() => setLogisticsNeeded(!logisticsNeeded)}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+            </label>
+          </div>
+        </div>
       </div>
+
       <div className="mt-6">
         <button
           type="submit"
           className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded transition-colors"
         >
-          Continue to Payment
+          Continue
         </button>
       </div>
     </form>

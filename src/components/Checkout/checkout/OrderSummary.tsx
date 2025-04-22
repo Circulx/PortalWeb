@@ -4,7 +4,6 @@ import React, { useState } from "react"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import Image from "next/image"
-import Checkbox from "./ui/Checkbox"
 
 interface OrderSummaryProps {
   onPlaceOrder: () => void
@@ -43,24 +42,23 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
   }, [cartItems])
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
-      <h2 className="text-lg font-medium mb-4">Order Summary</h2>
+    <div className="bg-white rounded-lg shadow-md">
+      {/* Header - Centered title */}
+      <div className="p-4 border-b border-gray-200 text-center">
+        <h2 className="text-xl font-medium">Order Summary</h2>
+      </div>
 
-      <div className="mb-6">
+      {/* Cart Items */}
+      <div className="border-b border-gray-200">
         {cartItems.map((item) => (
-          <div key={item.id} className="flex items-start mb-4">
-            <div className="relative w-20 h-20 flex-shrink-0">
-              <Image
-                src={item.image_link || "/placeholder.svg"}
-                alt={item.title}
-                fill
-                className="object-cover rounded"
-              />
+          <div key={item.id} className="flex items-center p-4 border-b border-gray-100 last:border-b-0">
+            <div className="relative w-16 h-16 flex-shrink-0">
+              <Image src={item.image_link || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
             </div>
             <div className="ml-4 flex-1">
-              <h4 className="text-sm font-medium line-clamp-2">{item.title}</h4>
+              <h4 className="font-medium line-clamp-1">{item.title}</h4>
               <div className="flex items-center justify-between mt-1">
-                <span className="text-xs text-gray-500">
+                <span className="text-gray-500">
                   {item.quantity} × ₹{item.price}
                 </span>
                 <span className="font-medium">₹{item.price * item.quantity}</span>
@@ -70,7 +68,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
         ))}
       </div>
 
-      <div className="border-t border-gray-200 pt-4">
+      {/* Price Summary */}
+      <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between py-2">
           <span className="text-gray-600">Sub-total</span>
           <span>₹{calculateSubTotal()}</span>
@@ -83,53 +82,51 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
           <span className="text-gray-600">Discount</span>
           <span>-{calculateDiscount()}</span>
         </div>
-        <div className="flex justify-between py-2 border-b border-gray-200">
+        <div className="flex justify-between py-2">
           <span className="text-gray-600">Tax</span>
           <span>{calculateTax()}</span>
         </div>
-        <div className="flex justify-between py-3 font-bold">
+        <div className="flex justify-between py-2 font-bold text-lg">
           <span>Total</span>
           <span>₹{calculateTotal().toFixed(2)} INR</span>
         </div>
       </div>
 
-      <div className="mt-6">
-        <h3 className="font-medium mb-2">Review & Place Order</h3>
-        <p className="text-sm text-gray-600 mb-4">
-          Please review the order details and payment details before proceeding to confirm your order
-        </p>
-
-        <div className="mb-4">
-          <Checkbox
-            label={
-              <span className="text-sm">
-                I agree to the{" "}
-                <a href="#" className="text-blue-500">
-                  Terms & conditions
-                </a>
-                ,{" "}
-                <a href="#" className="text-blue-500">
-                  Privacy Policy
-                </a>
-              </span>
-            }
-            checked={termsAccepted}
-            onChange={(e) => setTermsAccepted(e.target.checked)}
-          />
+      {/* Terms and Checkout Button */}
+      <div className="p-4">
+        <div className="mb-3">
+          <label className="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 mr-2"
+              checked={termsAccepted}
+              onChange={(e) => setTermsAccepted(e.target.checked)}
+            />
+            <span className="text-sm">
+              I agree to the{" "}
+              <a href="#" className="text-blue-500">
+                Terms & conditions
+              </a>
+            </span>
+          </label>
         </div>
 
-        <div className="mb-6">
-          <Checkbox
-            label={<span className="text-sm">Sign me up to the email list</span>}
-            checked={emailSignup}
-            onChange={(e) => setEmailSignup(e.target.checked)}
-          />
+        <div className="mb-4">
+          <label className="flex items-start cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1 mr-2"
+              checked={emailSignup}
+              onChange={(e) => setEmailSignup(e.target.checked)}
+            />
+            <span className="text-sm">Sign me up to the email list</span>
+          </label>
         </div>
 
         <button
           onClick={onPlaceOrder}
           disabled={!termsAccepted || isProcessing}
-          className={`w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg transition-colors flex items-center justify-center ${
+          className={`w-full bg-orange-300 hover:bg-orange-400 text-white py-3 rounded-lg transition-colors flex items-center justify-center ${
             !termsAccepted || isProcessing ? "opacity-60 cursor-not-allowed" : ""
           }`}
         >
