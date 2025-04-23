@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import BillingForm from "./BillingForm"
+import AdditionalServicesCard from "./AdditionalServicesCard"
 import PaymentOptions from "./paymentOptions"
 import OrderSummary from "./OrderSummary"
 import WarehouseSelection from "./WarehouseSelection"
@@ -16,10 +17,11 @@ import AdditionalInfo from "./AdditionalInfo"
 // Define checkout steps
 enum CheckoutStep {
   BILLING = 1,
-  WAREHOUSE = 2,
-  LOGISTICS = 3,
-  PAYMENT = 4,
-  ADDITIONAL_INFO = 5,
+  ADDITIONAL_SERVICES = 2,
+  WAREHOUSE = 3,
+  LOGISTICS = 4,
+  PAYMENT = 5,
+  ADDITIONAL_INFO = 6,
 }
 
 export default function CheckoutPage() {
@@ -44,8 +46,14 @@ export default function CheckoutPage() {
   }, [cartItems, router])
 
   // Handle billing details submission
-  const handleBillingDetailsSubmit = (details: BillingDetails, warehouse: boolean, logistics: boolean) => {
+  const handleBillingDetailsSubmit = (details: BillingDetails) => {
     setBillingDetails(details)
+    setCurrentStep(CheckoutStep.ADDITIONAL_SERVICES)
+    window.scrollTo(0, 0)
+  }
+
+  // Handle additional services selection
+  const handleAdditionalServicesSubmit = (warehouse: boolean, logistics: boolean) => {
     setWarehouseNeeded(warehouse)
     setLogisticsNeeded(logistics)
 
@@ -140,6 +148,19 @@ export default function CheckoutPage() {
           {/* Billing Information */}
           <div className={`transition-opacity duration-300 ${currentStep !== CheckoutStep.BILLING && "opacity-60"}`}>
             <BillingForm onBillingDetailsSubmit={handleBillingDetailsSubmit} />
+          </div>
+
+          {/* Additional Services Card */}
+          <div
+            className={`transition-opacity duration-300 ${
+              currentStep !== CheckoutStep.ADDITIONAL_SERVICES &&
+              (currentStep < CheckoutStep.ADDITIONAL_SERVICES ? "opacity-50" : "opacity-60")
+            }`}
+          >
+            <AdditionalServicesCard
+              onSubmit={handleAdditionalServicesSubmit}
+              disabled={currentStep !== CheckoutStep.ADDITIONAL_SERVICES}
+            />
           </div>
 
           {/* Warehouse Selection - only shown if warehouse is needed */}

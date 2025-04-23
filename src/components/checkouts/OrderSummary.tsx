@@ -22,11 +22,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
   }
 
   const calculateDiscount = () => {
-    return 24 // Fixed discount for demo
+    return 0 // Fixed discount for demo
   }
 
   const calculateTax = () => {
-    return 61.99 // Fixed tax for demo
+    return 0.00 // Fixed tax for demo
   }
 
   const calculateTotal = () => {
@@ -59,9 +59,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
               <h4 className="font-medium line-clamp-1">{item.title}</h4>
               <div className="flex items-center justify-between mt-1">
                 <span className="text-gray-500">
-                  {item.quantity} × ₹{item.price}
+                  {item.quantity} × ₹{item.price.toFixed(2)}
                 </span>
-                <span className="font-medium">₹{item.price * item.quantity}</span>
+                <span className="font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -72,7 +72,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
       <div className="p-4 border-b border-gray-200">
         <div className="flex justify-between py-2">
           <span className="text-gray-600">Sub-total</span>
-          <span>₹{calculateSubTotal()}</span>
+          <span>₹{calculateSubTotal().toFixed(2)}</span>
         </div>
         <div className="flex justify-between py-2">
           <span className="text-gray-600">Shipping</span>
@@ -80,11 +80,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
         </div>
         <div className="flex justify-between py-2">
           <span className="text-gray-600">Discount</span>
-          <span>-{calculateDiscount()}</span>
+          <span>-₹{calculateDiscount().toFixed(2)}</span>
         </div>
         <div className="flex justify-between py-2">
           <span className="text-gray-600">Tax</span>
-          <span>{calculateTax()}</span>
+          <span>₹{calculateTax().toFixed(2)}</span>
         </div>
         <div className="flex justify-between py-2 font-bold text-lg">
           <span>Total</span>

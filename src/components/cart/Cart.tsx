@@ -19,6 +19,8 @@ import axios from "axios"
 import ProductCard from "@/components/layout/product-card"
 import "swiper/css"
 import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle } from "lucide-react"
+import { AuthModal } from "@/components/auth/auth-modal"
+import { getCurrentUser } from "@/actions/auth"
 
 interface Product {
   product_id: number
@@ -73,7 +75,7 @@ const browsingHistory: BrowsingHistoryProduct[] = [
     product_id: 4,
     title: "Smartwatch",
     image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
   },
   {
     product_id: 5,
@@ -158,6 +160,25 @@ export default function Cart() {
   const cartItems = useSelector((state: RootState) => state.cart.items)
   const [stockWarnings, setStockWarnings] = useState<Record<string, boolean>>({})
   const [isLoadingStock, setIsLoadingStock] = useState(false)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [isCheckingUser, setIsCheckingUser] = useState(true)
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const user = await getCurrentUser()
+        setCurrentUser(user)
+      } catch (error) {
+        console.error("Error checking user:", error)
+      } finally {
+        setIsCheckingUser(false)
+      }
+    }
+
+    checkUser()
+  }, [])
 
   // Fetch real-time stock information for all cart items
   useEffect(() => {
@@ -335,8 +356,28 @@ export default function Cart() {
     router.push("/")
   }
 
-  const handleProceedToCheckout = () => {
-    console.log("Proceed to checkout clicked")
+  const handleProceedToCheckout = async () => {
+    // Check if user is logged in
+    try {
+      const user = await getCurrentUser()
+      if (user) {
+        // User is logged in, proceed to checkout
+        router.push("/checkout")
+      } else {
+        // User is not logged in, show auth modal
+        setIsAuthModalOpen(true)
+      }
+    } catch (error) {
+      console.error("Error checking user:", error)
+      // If there's an error, show auth modal to be safe
+      setIsAuthModalOpen(true)
+    }
+  }
+
+  const handleAuthSuccess = () => {
+    // Close the auth modal
+    setIsAuthModalOpen(false)
+    // Redirect to checkout page
     router.push("/checkout")
   }
 
@@ -398,7 +439,7 @@ export default function Cart() {
                           <div className="ml-3 sm:ml-4 flex-1">
                             <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
                             {/* Mobile only price */}
-                            <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price}</p>
+                            <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
                             {/* Stock information */}
                             <p className="text-xs text-gray-500 mt-1">
                               Available: {item.stock} {item.stock === 1 ? "unit" : "units"}
@@ -408,7 +449,7 @@ export default function Cart() {
 
                         {/* Price - Hidden on mobile, shown on larger screens */}
                         <div className="hidden sm:block sm:w-1/4 text-right">
-                          <p>₹{item.price}</p>
+                          <p>₹{item.price.toFixed(2)}</p>
                         </div>
 
                         {/* Quantity controls - Full width on mobile, 1/4 on larger screens */}
@@ -448,7 +489,7 @@ export default function Cart() {
                         <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center">
                           <span className="sm:hidden text-sm font-medium">Subtotal:</span>
                           <div className="flex items-center">
-                            <p className="mr-3">₹{calculateSubTotal(item.price, item.quantity)}</p>
+                            <p className="mr-3">₹{calculateSubTotal(item.price, item.quantity).toFixed(2)}</p>
                             <button
                               onClick={() => handleRemoveItem(item.id)}
                               className="text-gray-500 hover:text-red-500 transition-colors"
@@ -526,7 +567,7 @@ export default function Cart() {
               <h2 className="font-semibold border-b text-lg sm:text-xl pb-2">Cart Totals</h2>
               <div className="flex justify-between py-2">
                 <span>Sub-total</span>
-                <span>₹{calculateCartSubTotal()}</span>
+                <span>₹{calculateCartSubTotal().toFixed(2)}</span>
               </div>
               <div className="flex justify-between py-2">
                 <span>Shipping</span>
@@ -534,7 +575,7 @@ export default function Cart() {
               </div>
               <div className="flex justify-between py-2">
                 <span>Discount</span>
-                <span>₹24</span>
+                <span>₹24.00</span>
               </div>
               <div className="flex justify-between border-b py-2">
                 <span>Tax</span>
@@ -542,7 +583,7 @@ export default function Cart() {
               </div>
               <div className="flex justify-between py-2 font-bold">
                 <span>Total</span>
-                <span>₹{calculateTotal()}</span>
+                <span>₹{calculateTotal().toFixed(2)}</span>
               </div>
 
               <button
@@ -677,6 +718,9 @@ export default function Cart() {
           </div>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </div>
   )
 }

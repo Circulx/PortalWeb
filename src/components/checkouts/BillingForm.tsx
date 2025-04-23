@@ -6,7 +6,7 @@ import TextField from "@/components/ui/TextField"
 import { Country, State, City } from "country-state-city"
 
 interface BillingFormProps {
-  onBillingDetailsSubmit: (billingDetails: BillingDetails, warehouseNeeded: boolean, logisticsNeeded: boolean) => void
+  onBillingDetailsSubmit: (billingDetails: BillingDetails) => void
 }
 
 export interface BillingDetails {
@@ -35,8 +35,6 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
     email: "",
     phoneNumber: "",
   })
-  const [warehouseNeeded, setWarehouseNeeded] = useState(false)
-  const [logisticsNeeded, setLogisticsNeeded] = useState(false)
   const [countries, setCountries] = useState<any[]>([])
   const [states, setStates] = useState<any[]>([])
   const [cities, setCities] = useState<any[]>([])
@@ -196,7 +194,7 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
 
     const isValid = validateForm()
     if (isValid) {
-      onBillingDetailsSubmit(billingDetails, warehouseNeeded, logisticsNeeded)
+      onBillingDetailsSubmit(billingDetails)
     } else {
       // Scroll to the first error
       const firstErrorField = document.querySelector(".text-red-500")
@@ -377,38 +375,6 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => 
             onBlur={() => handleBlur("phoneNumber")}
             error={shouldShowError("phoneNumber") ? errors.phoneNumber : undefined}
           />
-        </div>
-      </div>
-
-      <div className="mt-6">
-        <h3 className="text-lg font-medium mb-4">Additional Information</h3>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Do you want to select a Warehouse</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer"
-                checked={warehouseNeeded}
-                onChange={() => setWarehouseNeeded(!warehouseNeeded)}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Do you want to select a Logistics</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                className="sr-only peer "
-                checked={logisticsNeeded}
-                onChange={() => setLogisticsNeeded(!logisticsNeeded)}
-              />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-orange-300 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
-            </label>
-          </div>
         </div>
       </div>
 
