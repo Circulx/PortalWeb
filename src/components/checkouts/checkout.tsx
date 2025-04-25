@@ -172,13 +172,7 @@ export default function CheckoutPage() {
   }
 
   // Handle payment method selection
-  const handlePaymentMethodSelect = (
-    method: PaymentMethod,
-    paymentDetails?: {
-      paymentId: string
-      orderId: string
-    },
-  ) => {
+  const handlePaymentMethodSelect = (method: PaymentMethod) => {
     setPaymentMethod(method)
 
     // Collapse payment section and expand additional info
@@ -353,9 +347,7 @@ export default function CheckoutPage() {
                 <div className="transition-all duration-300">
                   <PaymentOptions
                     onPaymentMethodSelect={handlePaymentMethodSelect}
-                    disabled={currentStep !== CheckoutStep.PAYMENT}
-                    amount={totalAmount} // Pass the total amount to PaymentOptions
-                  />
+                    disabled={currentStep !== CheckoutStep.PAYMENT} amount={0}                  />
                 </div>
               )}
             </div>
