@@ -9,7 +9,7 @@ export async function POST(request: Request) {
 
     // Validate required fields
     if (!amount) {
-      return NextResponse.json({ success: false, error: "Amount is required" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "Total Amount is required" }, { status: 400 })
     }
 
     // Convert amount to paise (Razorpay expects amount in smallest currency unit)
