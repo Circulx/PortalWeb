@@ -1,12 +1,15 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Heart, ShoppingCart, Zap } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { addItem } from "@/store/slices/cartSlice"
 import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice"
 import type { RootState } from "@/store"
 import { toast } from "react-hot-toast"
+import { AuthModal } from "@/components/auth/auth-modal"
+import { getCurrentUser } from "@/actions/auth"
 
 interface ProductActionsProps {
   productId: string
@@ -33,6 +36,10 @@ export default function ProductActions({
 }: ProductActionsProps) {
   const dispatch = useDispatch()
   const [isWishlisted, setIsWishlisted] = useState(false)
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [buyNowClicked, setBuyNowClicked] = useState(false)
+  const [isCheckingUser, setIsCheckingUser] = useState(false)
+  const router = useRouter()
 
   // Get wishlist items from Redux store
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
@@ -68,6 +75,78 @@ export default function ProductActions({
     })
   }
 
+  // Handle Buy Now functionality
+  const handleBuyNow = async () => {
+    if (stock <= 0) {
+      toast.error("Product is out of stock", {
+        duration: 3000,
+        position: "bottom-center",
+      })
+      return
+    }
+
+    setIsCheckingUser(true)
+    try {
+      const user = await getCurrentUser()
+      if (user) {
+        // User is logged in, add to cart and proceed to checkout
+        dispatch(
+          addItem({
+            item: {
+              id: productId,
+              title,
+              image_link: imageUrl,
+              price: Math.round(price),
+              discount,
+              seller_id: sellerId,
+              units,
+              quantity: 1,
+            },
+            stock,
+          }),
+        )
+        router.push("/checkout")
+      } else {
+        // User is not logged in, show auth modal
+        setBuyNowClicked(true)
+        setIsAuthModalOpen(true)
+      }
+    } catch (error) {
+      console.error("Error checking user:", error)
+      // If there's an error, show auth modal to be safe
+      setBuyNowClicked(true)
+      setIsAuthModalOpen(true)
+    } finally {
+      setIsCheckingUser(false)
+    }
+  }
+
+  const handleAuthSuccess = () => {
+    // Close the auth modal
+    setIsAuthModalOpen(false)
+
+    if (buyNowClicked) {
+      // If buy now was clicked, add to cart and proceed to checkout
+      dispatch(
+        addItem({
+          item: {
+            id: productId,
+            title,
+            image_link: imageUrl,
+            price: Math.round(price),
+            discount,
+            seller_id: sellerId,
+            units,
+            quantity: 1,
+          },
+          stock,
+        }),
+      )
+      router.push("/checkout")
+      setBuyNowClicked(false)
+    }
+  }
+
   // Handle toggling wishlist
   const handleToggleWishlist = () => {
     if (isWishlisted) {
@@ -89,7 +168,7 @@ export default function ProductActions({
           discount,
           seller_id: sellerId,
           units: undefined,
-          stock: 0
+          stock: 0,
         }),
       )
       toast.success("Added to wishlist successfully!", {
@@ -124,17 +203,25 @@ export default function ProductActions({
             <button
               onClick={handleAddToCart}
               className="bg-orange-400 hover:bg-orange-500 text-white py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors"
+              disabled={isCheckingUser}
             >
               <ShoppingCart className="w-5 h-5 mr-2" />
               ADD TO CART
             </button>
-            <button className="bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors">
+            <button
+              onClick={handleBuyNow}
+              className="bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors"
+              disabled={isCheckingUser}
+            >
               <Zap className="w-5 h-5 mr-2" />
-              BUY NOW
+              {isCheckingUser ? "PLEASE WAIT..." : "BUY NOW"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Auth Modal */}
+      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </>
   )
 }

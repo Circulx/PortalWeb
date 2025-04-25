@@ -9,6 +9,7 @@ interface LogisticsOption {
   name: string
   logo: string
   provider: string
+  charge: number
 }
 
 interface LogisticsSelectionProps {
@@ -22,72 +23,84 @@ const logisticsOptions: LogisticsOption[] = [
     name: "Blue Dart",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Blue Dart",
+    charge: 6000,
   },
   {
     id: "delhivery1",
     name: "Delhivery",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Delhivery",
+    charge: 6000,
   },
   {
     id: "fedex1",
     name: "FedEx",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "FedEx",
+    charge: 6000,
   },
   {
     id: "ekart1",
     name: "Ekart",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Ekart",
+    charge: 6000,
   },
   {
     id: "ecomexpress1",
     name: "Ecom Express",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Ecom Express",
+    charge: 6000,
   },
   {
     id: "dhl1",
     name: "DHL",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "DHL",
+    charge: 6000,
   },
   {
     id: "shadowfax1",
     name: "Shadowfax",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Shadowfax",
+    charge: 6000,
   },
   {
     id: "gati1",
     name: "GATI",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "GATI",
+    charge: 6000,
   },
   {
     id: "safeexpress1",
     name: "Safeexpress",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Safeexpress",
+    charge: 6000,
   },
   {
     id: "fmlogistic1",
     name: "FM Logistic",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "FM Logistic",
+    charge: 6000,
   },
   {
     id: "dtdc1",
     name: "DTDC",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "DTDC",
+    charge: 6000,
   },
   {
     id: "xpressbees1",
     name: "Xpressbees",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Xpressbees",
+    charge: 6000,
   },
 ]
 
@@ -139,7 +152,9 @@ const LogisticsSelection: React.FC<LogisticsSelectionProps> = ({ onLogisticsSele
             <div className="w-16 h-16 mb-3 flex items-center justify-center">
               <Image src={logistics.logo || "/placeholder.svg"} alt={logistics.name} width={60} height={60} />
             </div>
-            <h3 className="text-sm font-medium mb-2">{logistics.provider}</h3>
+            <h3 className="text-sm font-medium mb-1">{logistics.provider}</h3>
+            <p className="text-orange-600 font-medium text-sm mb-1">₹{logistics.charge.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mb-3">For 500 products</p>
             <button
               onClick={() => handleLogisticsSelect(logistics.id)}
               className={`px-4 py-1 rounded text-sm font-medium ${

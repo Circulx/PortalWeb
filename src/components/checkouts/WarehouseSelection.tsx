@@ -10,6 +10,7 @@ interface WarehouseOption {
   name: string
   logo: string
   provider: string
+  charge: number
 }
 
 interface WarehouseSelectionProps {
@@ -23,54 +24,63 @@ const warehouseOptions: WarehouseOption[] = [
     name: "AAJ Supply Chain",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "AAJ Supply Chain",
+    charge: 8000,
   },
   {
     id: "mahindra1",
     name: "Mahindra Logistics",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Mahindra Logistics",
+    charge: 8000,
   },
   {
     id: "shiprocket1",
     name: "Shiprocket",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Shiprocket",
+    charge: 8000,
   },
   {
     id: "holisol1",
     name: "Holisol Logistics",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Holisol Logistics",
+    charge: 8000,
   },
   {
     id: "pingo1",
     name: "Pingo",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Pingo",
+    charge: 8000,
   },
   {
     id: "tvs1",
     name: "TVS Supply Chain",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "TVS Supply Chain",
+    charge: 8000,
   },
   {
     id: "warehousing1",
     name: "Warehousing Express",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Warehousing Express",
+    charge: 8000,
   },
   {
     id: "warehouse-now1",
     name: "Warehouse Now",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Warehouse Now",
+    charge: 8000,
   },
   {
     id: "etrezi1",
     name: "Etrezi",
     logo: "/placeholder.svg?height=60&width=60",
     provider: "Etrezi",
+    charge: 8000,
   },
 ]
 
@@ -89,15 +99,6 @@ const WarehouseSelection: React.FC<WarehouseSelectionProps> = ({ onWarehouseSele
       <div className="text-center mb-6">
         <h2 className="text-xl font-semibold mb-2">Choose a Warehouse</h2>
         <div className="border-b-2 border-blue-500 w-64 mx-auto mb-4"></div>
-        <div className="flex justify-center mb-6">
-          <Image
-            src="/placeholder.svg?height=150&width=250"
-            alt="Warehouse illustration"
-            width={250}
-            height={150}
-            className="rounded-lg"
-          />
-        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -113,7 +114,9 @@ const WarehouseSelection: React.FC<WarehouseSelectionProps> = ({ onWarehouseSele
             <div className="w-16 h-16 mb-3 flex items-center justify-center">
               <Image src={warehouse.logo || "/placeholder.svg"} alt={warehouse.name} width={60} height={60} />
             </div>
-            <h3 className="text-sm font-medium mb-2">{warehouse.provider}</h3>
+            <h3 className="text-sm font-medium mb-1">{warehouse.provider}</h3>
+            <p className="text-orange-600 font-medium text-sm mb-2">₹{warehouse.charge.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mb-3">For 500 products</p>
             <button
               onClick={() => handleWarehouseSelect(warehouse.id)}
               className={`px-4 py-1 rounded text-sm font-medium ${
@@ -126,16 +129,6 @@ const WarehouseSelection: React.FC<WarehouseSelectionProps> = ({ onWarehouseSele
             </button>
           </div>
         ))}
-      </div>
-
-      <div className="mt-6 flex justify-end">
-        <button
-          onClick={() => onWarehouseSelect(selectedWarehouse)}
-          disabled={!selectedWarehouse}
-          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          Continue to Payment
-        </button>
       </div>
     </div>
   )

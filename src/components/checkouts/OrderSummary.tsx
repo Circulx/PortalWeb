@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import Image from "next/image"
@@ -22,11 +23,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
   }
 
   const calculateDiscount = () => {
-    return 0 // Fixed discount for demo
+    return 24 // Fixed discount for demo
   }
 
   const calculateTax = () => {
-    return 0.00 // Fixed tax for demo
+    return 61.99 // Fixed tax for demo
   }
 
   const calculateTotal = () => {
@@ -36,10 +37,11 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
     return subTotal - discount + tax
   }
 
-  React.useEffect(() => {
+  // Update total amount whenever cart items change
+  useEffect(() => {
     const totalAmount = calculateTotal()
     onTotalAmountChange(totalAmount)
-  }, [cartItems])
+  }, [cartItems, onTotalAmountChange])
 
   return (
     <div className="bg-white rounded-lg shadow-md">

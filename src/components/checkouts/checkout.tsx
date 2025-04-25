@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useSelector } from "react-redux"
+import { ChevronDown, ChevronUp, Check } from "lucide-react"
 import type { RootState } from "@/store"
 import BillingForm from "./BillingForm"
 import AdditionalServicesCard from "./AdditionalServicesCard"
@@ -38,6 +39,26 @@ export default function CheckoutPage() {
   const [totalAmount, setTotalAmount] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)
 
+  // Track expanded/collapsed state of each section
+  const [expandedSections, setExpandedSections] = useState<Record<CheckoutStep, boolean>>({
+    [CheckoutStep.BILLING]: true,
+    [CheckoutStep.ADDITIONAL_SERVICES]: false,
+    [CheckoutStep.WAREHOUSE]: false,
+    [CheckoutStep.LOGISTICS]: false,
+    [CheckoutStep.PAYMENT]: false,
+    [CheckoutStep.ADDITIONAL_INFO]: false,
+  })
+
+  // Refs for scrolling to sections
+  const sectionRefs = {
+    [CheckoutStep.BILLING]: useRef<HTMLDivElement>(null),
+    [CheckoutStep.ADDITIONAL_SERVICES]: useRef<HTMLDivElement>(null),
+    [CheckoutStep.WAREHOUSE]: useRef<HTMLDivElement>(null),
+    [CheckoutStep.LOGISTICS]: useRef<HTMLDivElement>(null),
+    [CheckoutStep.PAYMENT]: useRef<HTMLDivElement>(null),
+    [CheckoutStep.ADDITIONAL_INFO]: useRef<HTMLDivElement>(null),
+  }
+
   // Redirect to cart if cart is empty
   useEffect(() => {
     if (cartItems.length === 0) {
@@ -45,11 +66,36 @@ export default function CheckoutPage() {
     }
   }, [cartItems, router])
 
+  // Scroll to current step when it changes
+  useEffect(() => {
+    const currentRef = sectionRefs[currentStep]?.current
+    if (currentRef) {
+      currentRef.scrollIntoView({ behavior: "smooth", block: "start" })
+    }
+  }, [currentStep])
+
+  // Toggle section expanded/collapsed state
+  const toggleSection = (step: CheckoutStep) => {
+    // Only allow toggling completed steps
+    if (step < currentStep) {
+      setExpandedSections((prev) => ({
+        ...prev,
+        [step]: !prev[step],
+      }))
+    }
+  }
+
   // Handle billing details submission
   const handleBillingDetailsSubmit = (details: BillingDetails) => {
     setBillingDetails(details)
     setCurrentStep(CheckoutStep.ADDITIONAL_SERVICES)
-    window.scrollTo(0, 0)
+
+    // Collapse billing section and expand additional services
+    setExpandedSections((prev) => ({
+      ...prev,
+      [CheckoutStep.BILLING]: false,
+      [CheckoutStep.ADDITIONAL_SERVICES]: true,
+    }))
   }
 
   // Handle additional services selection
@@ -57,49 +103,98 @@ export default function CheckoutPage() {
     setWarehouseNeeded(warehouse)
     setLogisticsNeeded(logistics)
 
+    // Collapse additional services section
+    setExpandedSections((prev) => ({
+      ...prev,
+      [CheckoutStep.ADDITIONAL_SERVICES]: false,
+    }))
+
     // Determine next step based on selections
     if (warehouse) {
       setCurrentStep(CheckoutStep.WAREHOUSE)
+      setExpandedSections((prev) => ({
+        ...prev,
+        [CheckoutStep.WAREHOUSE]: true,
+      }))
     } else if (logistics) {
       setCurrentStep(CheckoutStep.LOGISTICS)
+      setExpandedSections((prev) => ({
+        ...prev,
+        [CheckoutStep.LOGISTICS]: true,
+      }))
     } else {
       setCurrentStep(CheckoutStep.PAYMENT)
+      setExpandedSections((prev) => ({
+        ...prev,
+        [CheckoutStep.PAYMENT]: true,
+      }))
     }
-    window.scrollTo(0, 0)
   }
 
   // Handle warehouse selection
   const handleWarehouseSelect = (warehouseId: string | null) => {
     setSelectedWarehouse(warehouseId)
 
+    // Collapse warehouse section
+    setExpandedSections((prev) => ({
+      ...prev,
+      [CheckoutStep.WAREHOUSE]: false,
+    }))
+
     // If logistics is also needed, go to logistics step, otherwise go to payment
     if (logisticsNeeded) {
       setCurrentStep(CheckoutStep.LOGISTICS)
+      setExpandedSections((prev) => ({
+        ...prev,
+        [CheckoutStep.LOGISTICS]: true,
+      }))
     } else {
       setCurrentStep(CheckoutStep.PAYMENT)
+      setExpandedSections((prev) => ({
+        ...prev,
+        [CheckoutStep.PAYMENT]: true,
+      }))
     }
-    window.scrollTo(0, 0)
   }
 
   // Handle logistics selection
   const handleLogisticsSelect = (logisticsId: string | null) => {
     setSelectedLogistics(logisticsId)
+
+    // Collapse logistics section and expand payment
+    setExpandedSections((prev) => ({
+      ...prev,
+      [CheckoutStep.LOGISTICS]: false,
+      [CheckoutStep.PAYMENT]: true,
+    }))
+
     setCurrentStep(CheckoutStep.PAYMENT)
-    window.scrollTo(0, 0)
   }
 
   // Handle payment method selection
-  const handlePaymentMethodSelect = (method: PaymentMethod) => {
+  const handlePaymentMethodSelect = (
+    method: PaymentMethod,
+    paymentDetails?: {
+      paymentId: string
+      orderId: string
+    },
+  ) => {
     setPaymentMethod(method)
+
+    // Collapse payment section and expand additional info
+    setExpandedSections((prev) => ({
+      ...prev,
+      [CheckoutStep.PAYMENT]: false,
+      [CheckoutStep.ADDITIONAL_INFO]: true,
+    }))
+
     setCurrentStep(CheckoutStep.ADDITIONAL_INFO)
-    window.scrollTo(0, 0)
   }
 
   // Handle additional info submission
   const handleAdditionalInfoSubmit = (notes: string) => {
     setAdditionalNotes(notes)
     handlePlaceOrder()
-    window.scrollTo(0, 0)
   }
 
   // Handle order placement
@@ -138,6 +233,33 @@ export default function CheckoutPage() {
     setTotalAmount(amount)
   }
 
+  // Render section header with toggle functionality
+  const renderSectionHeader = (step: CheckoutStep, title: string, isCompleted: boolean) => {
+    return (
+      <div
+        className={`flex items-center justify-between p-4 border-b ${
+          currentStep === step ? "bg-orange-50" : ""
+        } ${isCompleted ? "cursor-pointer" : ""}`}
+        onClick={() => (isCompleted ? toggleSection(step) : null)}
+      >
+        <div className="flex items-center">
+          {isCompleted && (
+            <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center mr-2">
+              <Check className="w-4 h-4 text-white" />
+            </div>
+          )}
+          <h3 className="font-medium">{title}</h3>
+        </div>
+        {isCompleted &&
+          (expandedSections[step] ? (
+            <ChevronUp className="w-5 h-5 text-gray-500" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-gray-500" />
+          ))}
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto pb-20">
       <h1 className="text-2xl font-bold text-center mb-8">Shopping Checkout</h1>
@@ -146,77 +268,116 @@ export default function CheckoutPage() {
         {/* Main checkout content - takes 2/3 of the space */}
         <div className="lg:col-span-2 space-y-6">
           {/* Billing Information */}
-          <div className={`transition-opacity duration-300 ${currentStep !== CheckoutStep.BILLING && "opacity-60"}`}>
-            <BillingForm onBillingDetailsSubmit={handleBillingDetailsSubmit} />
+          <div
+            ref={sectionRefs[CheckoutStep.BILLING]}
+            className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+          >
+            {renderSectionHeader(
+              CheckoutStep.BILLING,
+              "Billing and Shipping Information",
+              currentStep > CheckoutStep.BILLING,
+            )}
+            {expandedSections[CheckoutStep.BILLING] && (
+              <div className="transition-all duration-300">
+                <BillingForm onBillingDetailsSubmit={handleBillingDetailsSubmit} />
+              </div>
+            )}
           </div>
 
           {/* Additional Services Card */}
-          <div
-            className={`transition-opacity duration-300 ${
-              currentStep !== CheckoutStep.ADDITIONAL_SERVICES &&
-              (currentStep < CheckoutStep.ADDITIONAL_SERVICES ? "opacity-50" : "opacity-60")
-            }`}
-          >
-            <AdditionalServicesCard
-              onSubmit={handleAdditionalServicesSubmit}
-              disabled={currentStep !== CheckoutStep.ADDITIONAL_SERVICES}
-            />
-          </div>
+          {currentStep >= CheckoutStep.ADDITIONAL_SERVICES && (
+            <div
+              ref={sectionRefs[CheckoutStep.ADDITIONAL_SERVICES]}
+              className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+            >
+              {renderSectionHeader(
+                CheckoutStep.ADDITIONAL_SERVICES,
+                "Additional Services",
+                currentStep > CheckoutStep.ADDITIONAL_SERVICES,
+              )}
+              {expandedSections[CheckoutStep.ADDITIONAL_SERVICES] && (
+                <div className="transition-all duration-300">
+                  <AdditionalServicesCard
+                    onSubmit={handleAdditionalServicesSubmit}
+                    disabled={currentStep !== CheckoutStep.ADDITIONAL_SERVICES}
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Warehouse Selection - only shown if warehouse is needed */}
-          {warehouseNeeded && (
+          {warehouseNeeded && currentStep >= CheckoutStep.WAREHOUSE && (
             <div
-              className={`transition-opacity duration-300 ${
-                currentStep !== CheckoutStep.WAREHOUSE &&
-                (currentStep < CheckoutStep.WAREHOUSE ? "opacity-50" : "opacity-60")
-              }`}
+              ref={sectionRefs[CheckoutStep.WAREHOUSE]}
+              className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
             >
-              <WarehouseSelection
-                onWarehouseSelect={handleWarehouseSelect}
-                disabled={currentStep !== CheckoutStep.WAREHOUSE}
-              />
+              {renderSectionHeader(CheckoutStep.WAREHOUSE, "Warehouse Selection", currentStep > CheckoutStep.WAREHOUSE)}
+              {expandedSections[CheckoutStep.WAREHOUSE] && (
+                <div className="transition-all duration-300">
+                  <WarehouseSelection
+                    onWarehouseSelect={handleWarehouseSelect}
+                    disabled={currentStep !== CheckoutStep.WAREHOUSE}
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {/* Logistics Selection - only shown if logistics is needed */}
-          {logisticsNeeded && (
+          {logisticsNeeded && currentStep >= CheckoutStep.LOGISTICS && (
             <div
-              className={`transition-opacity duration-300 ${
-                currentStep !== CheckoutStep.LOGISTICS &&
-                (currentStep < CheckoutStep.LOGISTICS ? "opacity-50" : "opacity-60")
-              }`}
+              ref={sectionRefs[CheckoutStep.LOGISTICS]}
+              className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
             >
-              <LogisticsSelection
-                onLogisticsSelect={handleLogisticsSelect}
-                disabled={currentStep !== CheckoutStep.LOGISTICS}
-              />
+              {renderSectionHeader(CheckoutStep.LOGISTICS, "Logistics Selection", currentStep > CheckoutStep.LOGISTICS)}
+              {expandedSections[CheckoutStep.LOGISTICS] && (
+                <div className="transition-all duration-300">
+                  <LogisticsSelection
+                    onLogisticsSelect={handleLogisticsSelect}
+                    disabled={currentStep !== CheckoutStep.LOGISTICS}
+                  />
+                </div>
+              )}
             </div>
           )}
 
           {/* Payment Options */}
-          <div
-            className={`transition-opacity duration-300 ${
-              currentStep !== CheckoutStep.PAYMENT && (currentStep < CheckoutStep.PAYMENT ? "opacity-50" : "opacity-60")
-            }`}
-          >
-            <PaymentOptions
-              onPaymentMethodSelect={handlePaymentMethodSelect}
-              disabled={currentStep !== CheckoutStep.PAYMENT}
-            />
-          </div>
+          {currentStep >= CheckoutStep.PAYMENT && (
+            <div
+              ref={sectionRefs[CheckoutStep.PAYMENT]}
+              className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+            >
+              {renderSectionHeader(CheckoutStep.PAYMENT, "Payment Options", currentStep > CheckoutStep.PAYMENT)}
+              {expandedSections[CheckoutStep.PAYMENT] && (
+                <div className="transition-all duration-300">
+                  <PaymentOptions
+                    onPaymentMethodSelect={handlePaymentMethodSelect}
+                    disabled={currentStep !== CheckoutStep.PAYMENT}
+                    amount={totalAmount} // Pass the total amount to PaymentOptions
+                  />
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Additional Information */}
-          <div
-            className={`transition-opacity duration-300 ${
-              currentStep !== CheckoutStep.ADDITIONAL_INFO &&
-              (currentStep < CheckoutStep.ADDITIONAL_INFO ? "opacity-50" : "opacity-60")
-            }`}
-          >
-            <AdditionalInfo
-              onSubmit={handleAdditionalInfoSubmit}
-              disabled={currentStep !== CheckoutStep.ADDITIONAL_INFO}
-            />
-          </div>
+          {currentStep >= CheckoutStep.ADDITIONAL_INFO && (
+            <div
+              ref={sectionRefs[CheckoutStep.ADDITIONAL_INFO]}
+              className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+            >
+              {renderSectionHeader(CheckoutStep.ADDITIONAL_INFO, "Additional Information", false)}
+              {expandedSections[CheckoutStep.ADDITIONAL_INFO] && (
+                <div className="transition-all duration-300">
+                  <AdditionalInfo
+                    onSubmit={handleAdditionalInfoSubmit}
+                    disabled={currentStep !== CheckoutStep.ADDITIONAL_INFO}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Order Summary - takes 1/3 of the space */}
