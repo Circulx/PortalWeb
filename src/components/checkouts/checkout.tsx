@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { useSelector } from "react-redux"
+import { useSelector, useDispatch } from "react-redux"
 import { ChevronDown, ChevronUp, Check } from "lucide-react"
 import type { RootState } from "@/store"
+import { clearCart } from "@/store/slices/cartSlice"
 import BillingForm from "./BillingForm"
 import AdditionalServicesCard from "./AdditionalServicesCard"
 import PaymentOptions from "./paymentOptions"
@@ -14,6 +15,7 @@ import LogisticsSelection from "./LogisticsSelection"
 import type { BillingDetails } from "./BillingForm"
 import type { PaymentMethod } from "./paymentOptions"
 import AdditionalInfo from "./AdditionalInfo"
+import { getCurrentUser } from "@/actions/auth"
 
 // Define checkout steps
 enum CheckoutStep {
@@ -27,6 +29,7 @@ enum CheckoutStep {
 
 export default function CheckoutPage() {
   const router = useRouter()
+  const dispatch = useDispatch()
   const cartItems = useSelector((state: RootState) => state.cart.items)
   const [currentStep, setCurrentStep] = useState<CheckoutStep>(CheckoutStep.BILLING)
   const [billingDetails, setBillingDetails] = useState<BillingDetails | null>(null)
@@ -38,6 +41,11 @@ export default function CheckoutPage() {
   const [additionalNotes, setAdditionalNotes] = useState("")
   const [totalAmount, setTotalAmount] = useState(0)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [paymentDetails, setPaymentDetails] = useState<{
+    paymentId: string
+    orderId: string
+    signature: string
+  } | null>(null)
 
   // Track expanded/collapsed state of each section
   const [expandedSections, setExpandedSections] = useState<Record<CheckoutStep, boolean>>({
@@ -61,7 +69,7 @@ export default function CheckoutPage() {
 
   // Redirect to cart if cart is empty
   useEffect(() => {
-    if (cartItems.length === 0) {
+    if (cartItems.length === 0 && !sessionStorage.getItem("lastOrderCompleted")) {
       router.push("/cart")
     }
   }, [cartItems, router])
@@ -174,12 +182,16 @@ export default function CheckoutPage() {
   // Handle payment method selection
   const handlePaymentMethodSelect = (
     method: PaymentMethod,
-    paymentDetails?: {
+    details?: {
       paymentId: string
       orderId: string
+      signature: string
     },
   ) => {
     setPaymentMethod(method)
+    if (details) {
+      setPaymentDetails(details)
+    }
 
     // Collapse payment section and expand additional info
     setExpandedSections((prev) => ({
@@ -197,6 +209,22 @@ export default function CheckoutPage() {
     handlePlaceOrder()
   }
 
+  // Calculate subtotal
+  const calculateSubTotal = () => {
+    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
+  }
+
+  // Calculate discount (for demo purposes)
+  const calculateDiscount = () => {
+    return 0 // No discount for now
+  }
+
+  // Calculate tax (for demo purposes)
+  const calculateTax = () => {
+    const subtotal = calculateSubTotal()
+    return subtotal * 0.18 // 18% tax
+  }
+
   // Handle order placement
   const handlePlaceOrder = async () => {
     if (!billingDetails || !paymentMethod) {
@@ -206,26 +234,77 @@ export default function CheckoutPage() {
     setIsProcessing(true)
 
     try {
-      // Here you would typically send the order to your backend
-      // Include selected warehouse and logistics if applicable
-      const orderData = {
-        billingDetails,
-        paymentMethod,
-        additionalNotes,
-        warehouseId: warehouseNeeded ? selectedWarehouse : null,
-        logisticsId: logisticsNeeded ? selectedLogistics : null,
+      // Get current user
+      const user = await getCurrentUser()
+      if (!user) {
+        router.push("/login")
+        return
       }
 
-      console.log("Order data:", orderData)
+      // Prepare order data
+      const orderData = {
+        userId: user.id,
+        products: cartItems.map((item) => ({
+          productId: item.id,
+          title: item.title,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image_link,
+        })),
+        billingDetails,
+        totalAmount,
+        subTotal: calculateSubTotal(),
+        discount: calculateDiscount(),
+        tax: calculateTax(),
+        warehouseSelected: warehouseNeeded,
+        warehouseId: warehouseNeeded ? selectedWarehouse : null,
+        logisticsSelected: logisticsNeeded,
+        logisticsId: logisticsNeeded ? selectedLogistics : null,
+        paymentMethod,
+        paymentDetails: paymentMethod === "ONLINE" ? paymentDetails : null,
+        additionalNotes,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      }
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      console.log("Creating order with data:", orderData)
 
-      // Redirect to a success page or show a success message
-      router.push("/checkout/success")
+      // Create the order
+      const response = await fetch("/api/orders/create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(orderData),
+      })
+
+      const result = await response.json()
+      console.log("Order creation result:", result)
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to create order")
+      }
+
+      // Clear cart and redirect to success page
+      dispatch(clearCart())
+
+      // Store order completion status in session storage
+      sessionStorage.setItem("lastOrderCompleted", "true")
+      sessionStorage.setItem(
+        "orderDetails",
+        JSON.stringify({
+          orderId: result.orderId,
+          totalAmount,
+          products: cartItems.length,
+        }),
+      )
+
+      console.log("Redirecting to success page with orderId:", result.orderId)
+      router.push(`/checkout/success?orderId=${result.orderId}`)
     } catch (error) {
       console.error("Error placing order:", error)
       setIsProcessing(false)
+      alert(`Error: ${error instanceof Error ? error.message : "Failed to place order"}`)
     }
   }
 
@@ -387,6 +466,7 @@ export default function CheckoutPage() {
               onPlaceOrder={handlePlaceOrder}
               onTotalAmountChange={handleTotalAmountChange}
               isProcessing={isProcessing}
+              paymentMethod={paymentMethod}
             />
           </div>
         </div>

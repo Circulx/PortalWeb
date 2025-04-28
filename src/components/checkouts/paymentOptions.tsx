@@ -1,10 +1,10 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Script from "next/script"
 
-export type PaymentMethod = "cash" | "online"
+export type PaymentMethod = "COD" | "ONLINE"
 
 interface PaymentOptionsProps {
   onPaymentMethodSelect: (
@@ -12,13 +12,19 @@ interface PaymentOptionsProps {
     paymentDetails?: {
       paymentId: string
       orderId: string
+      signature: string
     },
   ) => void
   disabled?: boolean
   amount: number // Total amount to be paid
 }
 
-// Define the correct RazorpayOptions interface with amount as number only
+interface RazorpayPaymentResponse {
+  razorpay_payment_id: string
+  razorpay_order_id: string
+  razorpay_signature: string
+}
+
 interface RazorpayOptions {
   key: string
   amount: number
@@ -35,42 +41,21 @@ interface RazorpayOptions {
   theme: {
     color: string
   }
-  modal: {
+  modal?: {
     ondismiss: () => void
   }
 }
 
-interface RazorpayPaymentResponse {
-  razorpay_payment_id: string
-  razorpay_order_id: string
-  razorpay_signature: string
-}
-
 const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, disabled = false, amount }) => {
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("online")
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("COD")
   const [isProcessing, setIsProcessing] = useState(false)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
-  const [paymentDetails, setPaymentDetails] = useState<
-    | {
-        paymentId: string
-        orderId: string
-      }
-    | undefined
-  >(undefined)
+  const [paymentDetails, setPaymentDetails] = useState<{
+    paymentId: string
+    orderId: string
+    signature: string
+  } | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [razorpayKey, setRazorpayKey] = useState<string>("")
-
-  // Get the Razorpay key from environment variables
-  useEffect(() => {
-    // Use the NEXT_PUBLIC_ prefixed environment variable
-    const key = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
-    if (!key) {
-      console.error("Razorpay key is not defined in environment variables")
-      setError("Payment configuration error. Please contact support.")
-    } else {
-      setRazorpayKey(key)
-    }
-  }, [])
 
   // Handle Razorpay script loading
   const handleRazorpayLoad = () => {
@@ -81,7 +66,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
   const handleMethodSelect = (method: PaymentMethod) => {
     setSelectedMethod(method)
     // Reset payment details when changing methods
-    setPaymentDetails(undefined)
+    setPaymentDetails(null)
     setError(null)
   }
 
@@ -89,12 +74,6 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
   const initializeRazorpay = async () => {
     if (!razorpayLoaded) {
       setError("Payment gateway is still loading. Please try again in a moment.")
-      return
-    }
-
-    if (!razorpayKey) {
-      setError("Payment configuration error. Please contact support.")
-      console.error("Razorpay key is not available")
       return
     }
 
@@ -106,6 +85,13 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
 
     setIsProcessing(true)
     setError(null)
+
+    // Check if Razorpay key is available
+    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+      setError("Payment configuration error. Please contact support.")
+      setIsProcessing(false)
+      return
+    }
 
     try {
       console.log("Creating Razorpay order with amount:", amount)
@@ -141,50 +127,29 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
 
       // Configure Razorpay options
       const options: RazorpayOptions = {
-        key: razorpayKey, // Use the key from state
-        amount: Number(orderData.amount), // Ensure amount is a number
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+        amount: Number(orderData.amount),
         currency: orderData.currency,
         name: "Your Store Name",
         description: "Purchase Payment",
         order_id: orderData.id,
-        handler: async (response: RazorpayPaymentResponse) => {
+        handler: (response: RazorpayPaymentResponse) => {
           // This function runs when payment is successful
-          try {
-            console.log("Payment successful, verifying payment:", response)
+          console.log("Payment successful:", response)
+          setPaymentDetails({
+            paymentId: response.razorpay_payment_id,
+            orderId: response.razorpay_order_id,
+            signature: response.razorpay_signature,
+          })
 
-            // Verify the payment on the server
-            const verifyResponse = await fetch("/api/payments/verify-payment", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            })
+          // Call the onPaymentMethodSelect with payment details
+          onPaymentMethodSelect("ONLINE", {
+            paymentId: response.razorpay_payment_id,
+            orderId: response.razorpay_order_id,
+            signature: response.razorpay_signature,
+          })
 
-            const verifyData = await verifyResponse.json()
-
-            if (verifyData.success) {
-              // Payment verified successfully
-              console.log("Payment verified successfully")
-              setPaymentDetails({
-                paymentId: response.razorpay_payment_id,
-                orderId: response.razorpay_order_id,
-              })
-            } else {
-              // Payment verification failed
-              console.error("Payment verification failed:", verifyData)
-              setError("Payment verification failed. Please try again.")
-            }
-          } catch (error) {
-            console.error("Payment verification error:", error)
-            setError("Error verifying payment. Please contact support.")
-          } finally {
-            setIsProcessing(false)
-          }
+          setIsProcessing(false)
         },
         prefill: {
           name: "Customer Name",
@@ -202,11 +167,6 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
         },
       }
 
-      console.log("Initializing Razorpay with options:", {
-        ...options,
-        key: options.key ? "PRESENT" : "MISSING", // Log presence of key without revealing it
-      })
-
       // Open Razorpay payment form
       const razorpay = new window.Razorpay(options)
       razorpay.open()
@@ -218,14 +178,14 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
   }
 
   const handleContinue = () => {
-    if (selectedMethod === "cash") {
+    if (selectedMethod === "COD") {
       // For cash on delivery, just proceed
-      onPaymentMethodSelect(selectedMethod)
+      onPaymentMethodSelect("COD")
     } else {
       // For online payment methods
       if (paymentDetails) {
         // If payment is already completed, proceed with the payment details
-        onPaymentMethodSelect(selectedMethod, paymentDetails)
+        onPaymentMethodSelect("ONLINE", paymentDetails)
       } else {
         // Otherwise initialize Razorpay
         initializeRazorpay()
@@ -285,9 +245,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
           {/* Cash on Delivery */}
           <div
             className={`w-full flex items-center justify-between p-4 cursor-pointer transition-all ${
-              selectedMethod === "cash" ? "bg-orange-50" : "hover:bg-gray-50"
+              selectedMethod === "COD" ? "bg-orange-50" : "hover:bg-gray-50"
             }`}
-            onClick={() => handleMethodSelect("cash")}
+            onClick={() => handleMethodSelect("COD")}
           >
             <div className="flex items-center">
               <div className="relative w-8 h-8 mr-3">
@@ -312,7 +272,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
             </div>
 
             {/* Selection Circle */}
-            {selectedMethod === "cash" ? (
+            {selectedMethod === "COD" ? (
               <div className="relative h-4 w-4">
                 <div className="h-4 w-4 rounded-full bg-orange-500"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white"></div>
@@ -327,9 +287,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
           {/* Online Payment (Razorpay) */}
           <div
             className={`w-full flex items-center justify-between p-4 cursor-pointer transition-all ${
-              selectedMethod === "online" ? "bg-orange-50" : "hover:bg-gray-50"
+              selectedMethod === "ONLINE" ? "bg-orange-50" : "hover:bg-gray-50"
             }`}
-            onClick={() => handleMethodSelect("online")}
+            onClick={() => handleMethodSelect("ONLINE")}
           >
             <div className="flex items-center">
               <div className="relative w-8 h-8 mr-3">
@@ -355,7 +315,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
               </div>
             </div>
 
-            {selectedMethod === "online" ? (
+            {selectedMethod === "ONLINE" ? (
               <div className="relative h-4 w-4">
                 <div className="h-4 w-4 rounded-full bg-orange-500"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white"></div>
@@ -371,9 +331,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
           {/* Cash on Delivery */}
           <div
             className={`flex-1 flex flex-col items-center justify-center p-4 cursor-pointer transition-all relative ${
-              selectedMethod === "cash" ? "bg-orange-50" : "hover:bg-gray-50"
+              selectedMethod === "COD" ? "bg-orange-50" : "hover:bg-gray-50"
             }`}
-            onClick={() => handleMethodSelect("cash")}
+            onClick={() => handleMethodSelect("COD")}
           >
             <div className="w-8 h-8 flex items-center justify-center text-green-500 mb-2">
               <svg
@@ -395,7 +355,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
 
             {/* Circle at the Bottom */}
             <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-              {selectedMethod === "cash" ? (
+              {selectedMethod === "COD" ? (
                 <div className="relative h-4 w-4">
                   <div className="h-4 w-4 rounded-full bg-orange-500"></div>
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white"></div>
@@ -412,9 +372,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
           {/* Online Payment (Razorpay) */}
           <div
             className={`flex-1 flex flex-col items-center justify-center p-4 cursor-pointer transition-all relative ${
-              selectedMethod === "online" ? "bg-orange-50" : "hover:bg-gray-50"
+              selectedMethod === "ONLINE" ? "bg-orange-50" : "hover:bg-gray-50"
             }`}
-            onClick={() => handleMethodSelect("online")}
+            onClick={() => handleMethodSelect("ONLINE")}
           >
             <div className="w-8 h-8 flex items-center justify-center text-purple-500 mb-2">
               <svg
@@ -435,7 +395,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
             <span className="text-xs font-medium text-orange-600 mt-1 mb-4">Pay Amount INR {amount.toFixed(2)}</span>
 
             <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-              {selectedMethod === "online" ? (
+              {selectedMethod === "ONLINE" ? (
                 <div className="relative h-4 w-4">
                   <div className="h-4 w-4 rounded-full bg-orange-500"></div>
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white"></div>
@@ -451,7 +411,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
         <div className="w-full h-px bg-gray-200 mt-4 mb-6"></div>
 
         {/* Payment Status */}
-        {paymentDetails && selectedMethod === "online" && (
+        {paymentDetails && selectedMethod === "ONLINE" && (
           <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-md">
             <div className="flex items-center">
               <svg
@@ -496,9 +456,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
                 </svg>
                 Processing...
               </>
-            ) : paymentDetails && selectedMethod === "online" ? (
+            ) : paymentDetails && selectedMethod === "ONLINE" ? (
               "Continue to Review"
-            ) : selectedMethod === "cash" ? (
+            ) : selectedMethod === "COD" ? (
               "Continue with Cash on Delivery"
             ) : (
               "Pay Now"

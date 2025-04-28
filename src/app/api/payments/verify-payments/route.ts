@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server"
 import crypto from "crypto"
+import { connectProfileDB } from "@/lib/profileDb"
 
 export async function POST(request: Request) {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await request.json()
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, orderData } = await request.json()
 
     // Validate required fields
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -22,6 +23,29 @@ export async function POST(request: Request) {
     const isSignatureValid = expectedSignature === razorpay_signature
 
     if (isSignatureValid) {
+      // If orderData is provided, save the order to the database
+      if (orderData) {
+        try {
+          const conn = await connectProfileDB()
+          const OrderModel = conn.models.Order
+
+          // Add payment details to the order
+          const orderWithPayment = {
+            ...orderData,
+            paymentDetails: {
+              paymentId: razorpay_payment_id,
+              orderId: razorpay_order_id,
+              signature: razorpay_signature,
+            },
+          }
+
+          await OrderModel.create(orderWithPayment)
+        } catch (dbError) {
+          console.error("Error saving order to database:", dbError)
+          // Continue with payment verification even if order saving fails
+        }
+      }
+
       // Payment is verified successfully
       return NextResponse.json({
         success: true,

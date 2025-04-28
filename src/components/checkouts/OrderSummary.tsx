@@ -1,136 +1,122 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect } from "react"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
-import Image from "next/image"
+import type { PaymentMethod } from "./paymentOptions"
 
 interface OrderSummaryProps {
   onPlaceOrder: () => void
   onTotalAmountChange: (amount: number) => void
-  isProcessing?: boolean
+  isProcessing: boolean
+  paymentMethod: PaymentMethod | null
 }
 
-const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmountChange, isProcessing = false }) => {
+const OrderSummary: React.FC<OrderSummaryProps> = ({
+  onPlaceOrder,
+  onTotalAmountChange,
+  isProcessing,
+  paymentMethod,
+}) => {
   const cartItems = useSelector((state: RootState) => state.cart.items)
   const [termsAccepted, setTermsAccepted] = useState(false)
-  const [emailSignup, setEmailSignup] = useState(false)
+  const [subTotal, setSubTotal] = useState(0)
+  const [discount, setDiscount] = useState(0)
+  const [tax, setTax] = useState(0)
+  const [total, setTotal] = useState(0)
 
   // Calculate totals
-  const calculateSubTotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0)
-  }
-
-  const calculateDiscount = () => {
-    return 24 // Fixed discount for demo
-  }
-
-  const calculateTax = () => {
-    return 61.99 // Fixed tax for demo
-  }
-
-  const calculateTotal = () => {
-    const subTotal = calculateSubTotal()
-    const discount = calculateDiscount()
-    const tax = calculateTax()
-    return subTotal - discount + tax
-  }
-
-  // Update total amount whenever cart items change
   useEffect(() => {
-    const totalAmount = calculateTotal()
-    onTotalAmountChange(totalAmount)
+    const calculatedSubTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const calculatedDiscount = 0 // For demo purposes
+    const calculatedTax = calculatedSubTotal * 0.18 // 18% tax for demo
+    const calculatedTotal = calculatedSubTotal - calculatedDiscount + calculatedTax
+
+    setSubTotal(calculatedSubTotal)
+    setDiscount(calculatedDiscount)
+    setTax(calculatedTax)
+    setTotal(calculatedTotal)
+
+    // Notify parent component of total amount
+    onTotalAmountChange(calculatedTotal)
   }, [cartItems, onTotalAmountChange])
 
+  const handlePlaceOrder = () => {
+    if (!termsAccepted) {
+      alert("Please accept the terms and conditions to proceed.")
+      return
+    }
+    onPlaceOrder()
+  }
+
   return (
-    <div className="bg-white rounded-lg shadow-md">
-      {/* Header - Centered title */}
-      <div className="p-4 border-b border-gray-200 text-center">
-        <h2 className="text-xl font-medium">Order Summary</h2>
-      </div>
+    <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+      <div className="p-6">
+        <h2 className="text-lg font-medium mb-4">Order Summary</h2>
 
-      {/* Cart Items */}
-      <div className="border-b border-gray-200">
-        {cartItems.map((item) => (
-          <div key={item.id} className="flex items-center p-4 border-b border-gray-100 last:border-b-0">
-            <div className="relative w-16 h-16 flex-shrink-0">
-              <Image src={item.image_link || "/placeholder.svg"} alt={item.title} fill className="object-cover" />
-            </div>
-            <div className="ml-4 flex-1">
-              <h4 className="font-medium line-clamp-1">{item.title}</h4>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-gray-500">
-                  {item.quantity} × ₹{item.price.toFixed(2)}
+        {/* Order Items */}
+        <div className="space-y-3 mb-6">
+          {cartItems.map((item) => (
+            <div key={item.id} className="flex justify-between items-center">
+              <div className="flex items-center">
+                <span className="bg-gray-100 text-gray-700 w-6 h-6 rounded-full flex items-center justify-center text-xs mr-2">
+                  {item.quantity}
                 </span>
-                <span className="font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
+                <span className="text-sm text-gray-700 truncate max-w-[180px]">{item.title}</span>
               </div>
+              <span className="text-sm font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
             </div>
+          ))}
+        </div>
+
+        {/* Divider */}
+        <div className="w-full h-px bg-gray-200 my-4"></div>
+
+        {/* Price Breakdown */}
+        <div className="space-y-2 mb-6">
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Subtotal</span>
+            <span>₹{subTotal.toFixed(2)}</span>
           </div>
-        ))}
-      </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Discount</span>
+            <span className="text-green-600">-₹{discount.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-gray-600">Tax (18%)</span>
+            <span>₹{tax.toFixed(2)}</span>
+          </div>
+        </div>
 
-      {/* Price Summary */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex justify-between py-2">
-          <span className="text-gray-600">Sub-total</span>
-          <span>₹{calculateSubTotal().toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between py-2">
-          <span className="text-gray-600">Shipping</span>
-          <span className="text-green-600">Free</span>
-        </div>
-        <div className="flex justify-between py-2">
-          <span className="text-gray-600">Discount</span>
-          <span>-₹{calculateDiscount().toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between py-2">
-          <span className="text-gray-600">Tax</span>
-          <span>₹{calculateTax().toFixed(2)}</span>
-        </div>
-        <div className="flex justify-between py-2 font-bold text-lg">
-          <span>Total</span>
-          <span>₹{calculateTotal().toFixed(2)} INR</span>
-        </div>
-      </div>
+        {/* Divider */}
+        <div className="w-full h-px bg-gray-200 my-4"></div>
 
-      {/* Terms and Checkout Button */}
-      <div className="p-4">
-        <div className="mb-3">
-          <label className="flex items-start cursor-pointer">
+        {/* Total */}
+        <div className="flex justify-between items-center mb-6">
+          <span className="font-medium">Total</span>
+          <span className="text-lg font-bold">₹{total.toFixed(2)}</span>
+        </div>
+
+        {/* Terms and Conditions */}
+        <div className="mb-6">
+          <label className="flex items-center cursor-pointer">
             <input
               type="checkbox"
-              className="mt-1 mr-2"
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
+              className="form-checkbox h-4 w-4 text-orange-500 rounded border-gray-300 focus:ring-orange-500"
             />
-            <span className="text-sm">
-              I agree to the{" "}
-              <a href="#" className="text-blue-500">
-                Terms & conditions
-              </a>
-            </span>
+            <span className="ml-2 text-sm text-gray-600">I agree to the Terms & conditions</span>
           </label>
         </div>
 
-        <div className="mb-4">
-          <label className="flex items-start cursor-pointer">
-            <input
-              type="checkbox"
-              className="mt-1 mr-2"
-              checked={emailSignup}
-              onChange={(e) => setEmailSignup(e.target.checked)}
-            />
-            <span className="text-sm">Sign me up to the email list</span>
-          </label>
-        </div>
-
+        {/* Place Order Button */}
         <button
-          onClick={onPlaceOrder}
-          disabled={!termsAccepted || isProcessing}
-          className={`w-full bg-orange-300 hover:bg-orange-400 text-white py-3 rounded-lg transition-colors flex items-center justify-center ${
-            !termsAccepted || isProcessing ? "opacity-60 cursor-not-allowed" : ""
-          }`}
+          onClick={handlePlaceOrder}
+          disabled={isProcessing || !termsAccepted}
+          className="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-md font-medium flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isProcessing ? (
             <>
@@ -149,6 +135,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ onPlaceOrder, onTotalAmount
               </svg>
               Processing...
             </>
+          ) : paymentMethod === "ONLINE" ? (
+            "PAY AND PLACE ORDER →"
           ) : (
             "PLACE ORDER →"
           )}

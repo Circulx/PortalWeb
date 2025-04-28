@@ -1,8 +1,6 @@
 import mongoose, { type Connection } from "mongoose"
 import type { IBusinessDetails } from "@/models/profile/business"
 import type { IContactDetails } from "@/models/profile/contact"
-// Remove the problematic import entirely and use a direct interface definition
-// We'll define the interface structure based on how it's used in the schema
 import type { IAddress } from "@/models/profile/address"
 import type { IBank } from "@/models/profile/bank"
 import type { IDocument } from "@/models/profile/document"
@@ -60,6 +58,13 @@ export async function connectProfileDB(): Promise<Connection> {
     })
 
   return connectionPromise
+}
+
+export async function disconnectProfileDB() {
+  if (cachedConnection) {
+    await cachedConnection.close()
+    cachedConnection = null
+  }
 }
 
 // Define schemas
@@ -196,7 +201,60 @@ const ProductSchema = new mongoose.Schema({
   isActive: { type: Boolean, default: true },
 })
 
-// Function to register models
+// Define Order schema
+const OrderSchema = new mongoose.Schema(
+  {
+    userId: { type: String, required: true, index: true },
+    products: [
+      {
+        productId: { type: String, required: true },
+        title: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
+        image_link: String,
+      },
+    ],
+    billingDetails: {
+      firstName: String,
+      lastName: String,
+      email: String,
+      phone: String,
+      address: String,
+      city: String,
+      state: String,
+      zipCode: String,
+      country: String,
+    },
+    totalAmount: { type: Number, required: true },
+    subTotal: { type: Number, required: true },
+    discount: { type: Number, default: 0 },
+    tax: { type: Number, default: 0 },
+    warehouseSelected: { type: Boolean, default: false },
+    warehouseId: String,
+    logisticsSelected: { type: Boolean, default: false },
+    logisticsId: String,
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "ONLINE"],
+      required: true,
+    },
+    paymentDetails: {
+      paymentId: String,
+      orderId: String,
+      signature: String,
+    },
+    status: {
+      type: String,
+      enum: ["PENDING", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED"],
+      default: "PENDING",
+    },
+    additionalNotes: String,
+    createdAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true },
+)
+
+// Update the registerModels function to include the Order model
 function registerModels(connection: Connection) {
   // Only register models if they don't already exist
   if (!connection.models.Business) {
@@ -223,6 +281,9 @@ function registerModels(connection: Connection) {
   if (!connection.models.Product) {
     connection.model("Product", ProductSchema)
   }
+  if (!connection.models.Order) {
+    connection.model("Order", OrderSchema)
+  }
 }
 
 // Export schemas for use in other files
@@ -235,4 +296,5 @@ export {
   DocumentSchema,
   ProfileProgressSchema,
   ProductSchema,
+  OrderSchema,
 }
