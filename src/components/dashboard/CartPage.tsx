@@ -13,7 +13,7 @@ import { getCurrentUser } from "@/actions/auth"
 import { updateItemStock, decreaseQuantity, increaseQuantity } from "@/store/slices/cartSlice"
 import axios from "axios"
 import { Toaster } from "@/components/ui/sonner"
-import { toast } from "@/components/ui/use-toast"
+//import { toast } from "@/components/ui/use-toast"
 
 export default function CartPage() {
   const router = useRouter()
@@ -137,11 +137,7 @@ export default function CartPage() {
         setStockWarnings((prev) => ({ ...prev, [id]: true }))
 
         // Show toast notification with accurate message
-        toast({
-          title: "Stock limit reached",
-          description: `Only ${item.stock} units of "${item.title}" are available.`,
-          duration: 3000,
-        })
+        
 
         return
       }
