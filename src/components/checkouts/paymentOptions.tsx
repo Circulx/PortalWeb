@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Script from "next/script"
 
 export type PaymentMethod = "COD" | "ONLINE"
@@ -46,10 +46,13 @@ interface RazorpayOptions {
   }
 }
 
+// Remove the global declaration since it's already defined in razorpay.d.ts
+
 const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, disabled = false, amount }) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("COD")
   const [isProcessing, setIsProcessing] = useState(false)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
+  const [scriptLoading, setScriptLoading] = useState(true)
   const [paymentDetails, setPaymentDetails] = useState<{
     paymentId: string
     orderId: string
@@ -57,10 +60,58 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
   } | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  // Check if Razorpay is already loaded and preload it
+  useEffect(() => {
+    // Check if Razorpay is already available in the window object
+    if (typeof window !== "undefined" && window.Razorpay) {
+      console.log("Razorpay already available in window")
+      setRazorpayLoaded(true)
+      setScriptLoading(false)
+      return
+    }
+
+    // If not available, try to load it immediately
+    const loadRazorpayScript = () => {
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.async = true
+      script.onload = () => {
+        console.log("Manually loaded Razorpay script on mount")
+        setRazorpayLoaded(true)
+        setScriptLoading(false)
+      }
+      script.onerror = () => {
+        console.error("Failed to manually load Razorpay script on mount")
+        setScriptLoading(false)
+      }
+      document.body.appendChild(script)
+    }
+
+    // Load the script
+    loadRazorpayScript()
+
+    // Set a timeout to check if script loaded
+    const timeoutId = setTimeout(() => {
+      if (!razorpayLoaded && typeof window !== "undefined") {
+        console.log("Razorpay script loading timed out, retrying...")
+        loadRazorpayScript() // Try loading again
+      }
+    }, 2000)
+
+    return () => clearTimeout(timeoutId)
+  }, [razorpayLoaded])
+
   // Handle Razorpay script loading
   const handleRazorpayLoad = () => {
     console.log("Razorpay script loaded successfully")
     setRazorpayLoaded(true)
+    setScriptLoading(false)
+  }
+
+  const handleScriptLoadError = () => {
+    console.error("Failed to load Razorpay script")
+    setError("Failed to load payment gateway. Please try again later.")
+    setScriptLoading(false)
   }
 
   const handleMethodSelect = (method: PaymentMethod) => {
@@ -68,13 +119,81 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
     // Reset payment details when changing methods
     setPaymentDetails(null)
     setError(null)
+
+    // If selecting online payment, ensure Razorpay is loaded
+    if (method === "ONLINE" && !razorpayLoaded) {
+      // Try to load Razorpay immediately if not already loaded
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.async = true
+      script.onload = () => {
+        console.log("Manually loaded Razorpay script on selection")
+        setRazorpayLoaded(true)
+        setScriptLoading(false)
+      }
+      script.onerror = () => {
+        console.error("Failed to manually load Razorpay script on selection")
+        setError("Failed to load payment gateway. Please try again.")
+        setScriptLoading(false)
+      }
+      document.body.appendChild(script)
+    }
   }
 
   // Initialize Razorpay payment
   const initializeRazorpay = async () => {
-    if (!razorpayLoaded) {
-      setError("Payment gateway is still loading. Please try again in a moment.")
-      return
+    // Clear any previous errors
+    setError(null)
+
+    // If Razorpay is available in window but our state doesn't reflect it, update state
+    if (typeof window !== "undefined" && window.Razorpay && !razorpayLoaded) {
+      setRazorpayLoaded(true)
+      setScriptLoading(false)
+    }
+
+    // Check if Razorpay is loaded
+    if (!razorpayLoaded || typeof window.Razorpay !== "function") {
+      console.log("Razorpay not loaded yet, attempting to load it now")
+
+      // Show processing state but don't show error yet
+      setIsProcessing(true)
+
+      // Try to load the script immediately
+      const script = document.createElement("script")
+      script.src = "https://checkout.razorpay.com/v1/checkout.js"
+      script.async = true
+
+      // Create a promise to wait for script load
+      const scriptLoadPromise = new Promise((resolve, reject) => {
+        script.onload = () => {
+          console.log("Razorpay script loaded successfully in initializeRazorpay")
+          setRazorpayLoaded(true)
+          setScriptLoading(false)
+          resolve(true)
+        }
+        script.onerror = () => {
+          console.error("Failed to load Razorpay script in initializeRazorpay")
+          setError("Failed to load payment gateway. Please refresh the page and try again.")
+          setScriptLoading(false)
+          setIsProcessing(false)
+          reject(new Error("Failed to load Razorpay script"))
+        }
+      })
+
+      document.body.appendChild(script)
+
+      // Wait for script to load with timeout
+      try {
+        await Promise.race([
+          scriptLoadPromise,
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Script loading timed out")), 5000)),
+        ])
+      } catch (error) {
+        console.error("Error loading Razorpay script:", error)
+        setError("Payment gateway loading timed out. Please refresh and try again.")
+        setIsProcessing(false)
+        return
+      }
     }
 
     if (!amount || amount <= 0) {
@@ -84,12 +203,13 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
     }
 
     setIsProcessing(true)
-    setError(null)
 
     // Check if Razorpay key is available
-    if (!process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID) {
+    const razorpayKey = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID
+    if (!razorpayKey) {
       setError("Payment configuration error. Please contact support.")
       setIsProcessing(false)
+      console.error("Razorpay key is not available")
       return
     }
 
@@ -112,25 +232,21 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
         }),
       })
 
-      if (!orderResponse.ok) {
-        const errorData = await orderResponse.json()
-        throw new Error(errorData.error || "Failed to create order")
-      }
-
       const orderData = await orderResponse.json()
 
-      if (!orderData.success) {
-        throw new Error(orderData.error || "Failed to create order")
+      if (!orderResponse.ok || !orderData.success) {
+        console.error("Failed to create order:", orderData)
+        throw new Error(orderData.error || orderData.details || "Failed to create order")
       }
 
       console.log("Order created successfully:", orderData)
 
       // Configure Razorpay options
       const options: RazorpayOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "",
+        key: razorpayKey,
         amount: Number(orderData.amount),
         currency: orderData.currency,
-        name: "Your Store Name",
+        name: "IND2B", // Updated store name
         description: "Purchase Payment",
         order_id: orderData.id,
         handler: (response: RazorpayPaymentResponse) => {
@@ -199,11 +315,9 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
       <Script
         src="https://checkout.razorpay.com/v1/checkout.js"
         onLoad={handleRazorpayLoad}
-        onError={() => {
-          console.error("Failed to load Razorpay script")
-          setError("Failed to load payment gateway. Please try again later.")
-        }}
-        strategy="lazyOnload"
+        onError={handleScriptLoadError}
+        strategy="afterInteractive"
+        
       />
 
       <div
@@ -237,6 +351,33 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
               <span className="text-red-700 font-medium">Error</span>
             </div>
             <p className="text-red-600 text-sm mt-1 ml-7">{error}</p>
+            <div className="mt-2 ml-7">
+              <button onClick={() => setError(null)} className="text-xs text-red-600 underline hover:text-red-800">
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Script loading indicator - make it smaller and less intrusive */}
+        {scriptLoading && selectedMethod === "ONLINE" && (
+          <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="flex items-center">
+              <svg
+                className="animate-spin h-4 w-4 text-blue-500 mr-2"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span className="text-blue-700 text-sm">Initializing payment...</span>
+            </div>
           </div>
         )}
 

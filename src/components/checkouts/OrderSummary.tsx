@@ -136,7 +136,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
               Processing...
             </>
           ) : paymentMethod === "ONLINE" ? (
-            "PAY AND PLACE ORDER →"
+            "PLACE ORDER →"
           ) : (
             "PLACE ORDER →"
           )}
