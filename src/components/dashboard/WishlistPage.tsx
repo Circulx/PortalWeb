@@ -153,7 +153,7 @@ export default function WishlistPage() {
                 </Button>
                 <Button
                   variant="outline"
-                  className="hover:bg-green-600 hover:text-white"
+                  className="hover:bg-green-600 hover:text-white  bg-orange-300"
                   onClick={() => handleAddToCart(item)}
                 >
                   Add to Cart
@@ -162,18 +162,15 @@ export default function WishlistPage() {
             </Card>
           ))}
           <div className="flex justify-between items-center pt-4 border-t">
-            <div>
+           
               <p className="text-gray-600">Total</p>
               <p className="text-2xl font-bold">₹{calculateTotal()}</p>
-            </div>
-            <Button className="bg-green-700 hover:bg-orange-500" onClick={handleAddAllToCart}>
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Add All To Cart
-            </Button>
+           
+            
           </div>
         </div>
       )}
-      <Button variant="outline" onClick={handleReturnToShop} className="mt-4">
+      <Button variant="outline" onClick={handleReturnToShop} className="mt-4 bg-orange-300 hover:bg-green-600">
         Return to Shop
       </Button>
     </Card>
