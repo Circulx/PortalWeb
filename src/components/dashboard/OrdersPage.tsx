@@ -1,22 +1,22 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
-import { Card } from "@/components/ui/card"
+import { Card, CardHeader, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Image from "next/image"
-import { Star, MoreHorizontal } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { format, subMonths, isWithinInterval, parseISO, startOfYear } from "date-fns"
+import { Star, Package, Truck, CheckCircle, Clock, AlertCircle, ChevronDown, ChevronUp } from "lucide-react"
+import { format, parseISO } from "date-fns"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
 
 interface OrderItem {
   id: string
   name: string
   image: string
-  returnEligible: boolean
-  returnDate: string
   price: number
+  quantity: number
 }
 
 interface Order {
@@ -25,179 +25,182 @@ interface Order {
   total: number
   shipTo: string
   status: string
+  paymentMethod?: string
   items: OrderItem[]
 }
 
-// Mock data with more orders and different dates
-// const mockOrders: Order[] = [
-//   {
-//     id: "112-0822160-5390023",
-//     date: "2024-01-15",
-//     total: 157.99,
-//     shipTo: "Irakli Lolashvili",
-//     status: "Delivered",
-//     items: [
-//       {
-//         id: "1",
-//         name: "SAMSUNG 980 PRO SSD 2TB PCIe NVMe Gen 4 Gaming M.2 Internal Solid State Drive Memory Card",
-//         image: "/login.png",
-//         returnEligible: true,
-//         returnDate: "2024-02-15",
-//         price: 157.99,
-//       },
-//     ],
-//   },
-//   {
-//     id: "112-0822160-5390024",
-//     date: "2023-11-20",
-//     total: 299.99,
-//     shipTo: "Irakli Lolashvili",
-//     status: "Delivered",
-//     items: [
-//       {
-//         id: "2",
-//         name: "Gaming Monitor 27-inch 4K",
-//         image: "/login.png",
-//         returnEligible: false,
-//         returnDate: "2023-12-20",
-//         price: 299.99,
-//       },
-//     ],
-//   },
-//   {
-//     id: "112-0822160-5390025",
-//     date: "2023-06-10",
-//     total: 79.99,
-//     shipTo: "Irakli Lolashvili",
-//     status: "Delivered",
-//     items: [
-//       {
-//         id: "3",
-//         name: "Wireless Gaming Mouse",
-//         image: "/placeholder.svg",
-//         returnEligible: false,
-//         returnDate: "2023-07-10",
-//         price: 79.99,
-//       },
-//     ],
-//   },
-// ]
-
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("orders")
-  const [timeFilter, setTimeFilter] = useState("past3Months")
+  const [timeFilter, setTimeFilter] = useState("all")
   const [hiddenRatingBanners, setHiddenRatingBanners] = useState<string[]>([])
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expandedOrders, setExpandedOrders] = useState<string[]>([])
 
   // Fetch orders from the API
   useEffect(() => {
     const fetchOrders = async () => {
       try {
+        setLoading(true)
         const response = await fetch("/api/orders", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
           },
-        });
+        })
 
         if (!response.ok) {
-          throw new Error("Failed to fetch orders");
+          throw new Error("Failed to fetch orders")
         }
 
-        const data = await response.json();
-        console.log(data[0]);
+        const data = await response.json()
 
+        // Map the API response to the Order interface
         const mappedOrders: Order[] = data.map((order: any) => ({
-          id: order._id.$oid || order.order_id, // Use _id.$oid or order_id as id
-          date: order.order_date,
-          total: order.amount,
-          shipTo: order.billingDetails.name, // Use billingDetails.name as shipTo
-          status: order.status,
-          items: [
-            {
-              id: order.order_id, // Use order_id as item id
-              name: "Order Item", // Placeholder name (update if item details are available)
-              image: "/placeholder.svg", // Placeholder image (update if item images are available)
-              returnEligible: false, // Placeholder return eligibility
-              returnDate: "", // Placeholder return date
-              price: order.amount, // Use order amount as item price
-            },
-          ],
-        }));
-        console.log("mapped: ", mappedOrders);
-        setOrders(mappedOrders); // Set fetched orders
-      } catch (error) {
-        console.error("Error fetching orders:", error);
-      } finally {
-        setLoading(false); // Stop loading
-      }
-    };
+          id: order._id || order.orderId || "N/A",
+          date: order.createdAt || new Date().toISOString(),
+          total: order.totalAmount || order.subTotal || 0,
+          shipTo: order.billingDetails?.firstName
+            ? `${order.billingDetails.firstName} ${order.billingDetails.lastName || ""}`
+            : "N/A",
+          status: order.status || "PENDING",
+          items:
+            order.products?.map((product: any) => ({
+              id: product.productId || "N/A",
+              name: product.title || "Product",
+              image: product.image_link || "/placeholder.svg",
+              price: product.price || 0,
+              quantity: product.quantity || 1,
+            })) || [],
+          paymentMethod: order.paymentMethod || "Online",
+        }))
 
-    fetchOrders();
-  }, []);
+        setOrders(mappedOrders)
+      } catch (error) {
+        console.error("Error fetching orders:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchOrders()
+  }, [])
 
   const filteredOrders = useMemo(() => {
-    const now = new Date()
-    let filterDate: Date
-
-    switch (timeFilter) {
-      case "past3Months":
-        filterDate = subMonths(now, 3)
-        break
-      case "past6Months":
-        filterDate = subMonths(now, 6)
-        break
-      case "2024":
-        filterDate = startOfYear(new Date(2024, 0, 1))
-        break
-      case "2023":
-        filterDate = startOfYear(new Date(2023, 0, 1))
-        break
-      default:
-        filterDate = subMonths(now, 3)
+    // If filter is "all", return all orders sorted by date
+    if (timeFilter === "all") {
+      return orders
+        .filter((order) => {
+          const orderDate = parseISO(order.date)
+          return !isNaN(orderDate.getTime()) // Only filter out invalid dates
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     }
+
+    const now = new Date()
+    const year = timeFilter === "2024" ? 2024 : timeFilter === "2023" ? 2023 : null
 
     return orders
       .filter((order) => {
-        const orderDate = parseISO(order.date);
+        const orderDate = parseISO(order.date)
+        if (isNaN(orderDate.getTime())) return false
 
-        if (isNaN(orderDate.getTime())) {
-          console.log("Invalid order date:", order.date);
-          return false;
-        }
-        if (timeFilter === "2024" || timeFilter === "2023") {
-          const year = timeFilter === "2024" ? 2024 : 2023
+        if (year) {
           return orderDate.getFullYear() === year
         }
-        return isWithinInterval(orderDate, {
-          start: filterDate,
-          end: now,
-        })
+
+        // For past3Months and past6Months
+        const months = timeFilter === "past3Months" ? 3 : 6
+        const filterDate = new Date()
+        filterDate.setMonth(filterDate.getMonth() - months)
+
+        return orderDate >= filterDate && orderDate <= now
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-  }, [timeFilter])
+  }, [timeFilter, orders])
 
   const hideRatingBanner = (orderId: string) => {
     setHiddenRatingBanners((prev) => [...prev, orderId])
   }
 
+  const toggleOrderExpand = (orderId: string) => {
+    setExpandedOrders((prev) => (prev.includes(orderId) ? prev.filter((id) => id !== orderId) : [...prev, orderId]))
+  }
+
+  const getStatusBadge = (status: string) => {
+    const statusLower = status.toLowerCase()
+
+    if (statusLower.includes("delivered")) {
+      return (
+        <Badge className="bg-green-100 text-green-800 hover:bg-green-200 flex items-center gap-1">
+          <CheckCircle className="h-3 w-3" />
+          Delivered
+        </Badge>
+      )
+    } else if (statusLower.includes("shipped")) {
+      return (
+        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 flex items-center gap-1">
+          <Truck className="h-3 w-3" />
+          Shipped
+        </Badge>
+      )
+    } else if (statusLower.includes("processing") || statusLower.includes("pending")) {
+      return (
+        <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {statusLower.includes("processing") ? "Processing" : "Pending"}
+        </Badge>
+      )
+    } else if (statusLower.includes("cancelled")) {
+      return (
+        <Badge className="bg-red-100 text-red-800 hover:bg-red-200 flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Cancelled
+        </Badge>
+      )
+    }
+
+    return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">{status}</Badge>
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
-      <Card className="max-w-7xl mx-auto">
-        <div className="p-4 md:p-6">
-          {/* Header Section */}
-          <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center mb-6">
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl md:text-2xl font-bold">Your Orders</h1>
-              <span className="bg-gray-100 px-2 py-1 rounded-full text-sm">{filteredOrders.length}</span>
-            </div>
-            <div className="flex items-center gap-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Your Orders</h1>
+          <p className="text-gray-600">Track, manage, and review your orders</p>
+        </div>
+
+        <div className="flex items-center justify-between mb-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="flex justify-between items-center">
+              <TabsList className="bg-gray-100 p-1 rounded-lg">
+                <TabsTrigger
+                  value="orders"
+                  className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  All Orders
+                </TabsTrigger>
+                <TabsTrigger
+                  value="notShipped"
+                  className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  Not Shipped
+                </TabsTrigger>
+                <TabsTrigger
+                  value="cancelled"
+                  className="rounded-md data-[state=active]:bg-white data-[state=active]:shadow-sm"
+                >
+                  Cancelled
+                </TabsTrigger>
+              </TabsList>
+
               <Select value={timeFilter} onValueChange={setTimeFilter}>
-                <SelectTrigger className="w-[140px] md:w-[180px]">
-                  <SelectValue placeholder="Select time range" />
+                <SelectTrigger className="w-[180px] bg-white border">
+                  <SelectValue placeholder="All Orders" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">All Orders</SelectItem>
                   <SelectItem value="past3Months">Past 3 Months</SelectItem>
                   <SelectItem value="past6Months">Past 6 Months</SelectItem>
                   <SelectItem value="2024">2024</SelectItem>
@@ -205,150 +208,188 @@ export default function OrdersPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
-          {/* Tabs Section */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 bg-transparent overflow-x-auto">
-              <TabsTrigger
-                value="orders"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-900 data-[state=active]:bg-transparent whitespace-nowrap"
-              >
-                Orders
-              </TabsTrigger>
-              <TabsTrigger
-                value="notShipped"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-900 data-[state=active]:bg-transparent whitespace-nowrap"
-              >
-                Not Yet Shipped
-              </TabsTrigger>
-              <TabsTrigger
-                value="cancelled"
-                className="rounded-none border-b-2 border-transparent data-[state=active]:border-emerald-900 data-[state=active]:bg-transparent whitespace-nowrap"
-              >
-                Cancelled Orders
-              </TabsTrigger>
-            </TabsList>
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-900"></div>
+              </div>
+            ) : (
+              <>
+                <TabsContent value="orders" className="mt-6">
+                  {filteredOrders.length > 0 ? (
+                    <div className="space-y-6">
+                      {filteredOrders.map((order) => {
+                        const isExpanded = expandedOrders.includes(order.id)
+                        const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)
 
-            <TabsContent value="orders" className="mt-6 space-y-6">
-              {filteredOrders.length > 0 ? (
-                filteredOrders.map((order) => (
-                  <Card key={order.id} className="overflow-hidden">
-                    {/* Order Header */}
-                    <div className="p-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50">
-                      <div>
-                        <p className="text-sm text-gray-600">Order placed</p>
-                        <p className="font-medium">{format(parseISO(order.date), "MMMM d, yyyy")}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Total</p>
-                        <p className="font-medium">${order.total.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">Ship to</p>
-                        <p className="font-medium">{order.shipTo}</p>
-                      </div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-sm text-gray-600">Order # {order.id}</p>
-                          <div className="flex flex-wrap gap-4 mt-1">
-                            <Button variant="link" className="h-auto p-0 text-emerald-900">
-                              View order details
-                            </Button>
-                            <Button variant="link" className="h-auto p-0 text-emerald-900">
-                              View invoice
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Rating Banner */}
-                    {!hiddenRatingBanners.includes(order.id) && (
-                      <div className="p-4 bg-yellow-50">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                            <span className="text-sm md:text-base">Please rate your experience with the seller</span>
-                          </div>
-                          <button
-                            className="text-gray-500 hover:text-gray-700"
-                            onClick={() => hideRatingBanner(order.id)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Order Items */}
-                    <div className="p-4">
-                      <p className="font-medium text-emerald-900 mb-4">
-                        {order.status} {format(parseISO(order.date), "MMMM d")}
-                      </p>
-                      {order.items.map((item) => (
-                        <div key={item.id} className="flex flex-col md:flex-row gap-6">
-                          <div className="flex-shrink-0 w-full md:w-auto">
-                            <Image
-                              src={item.image || "/placeholder.svg"}
-                              alt={item.name}
-                              width={100}
-                              height={100}
-                              className="object-cover w-full md:w-[100px] h-[100px]"
-                            />
-                          </div>
-                          <div className="flex-grow space-y-4">
-                            <h3 className="font-medium text-sm md:text-base">{item.name}</h3>
-                            {item.returnEligible && (
-                              <p className="text-xs md:text-sm text-gray-600">
-                                Return or replace items: Eligible through{" "}
-                                {format(parseISO(item.returnDate), "MMMM d, yyyy")}
-                              </p>
-                            )}
-                            <div className="flex flex-wrap gap-2">
-                              <Button className="bg-emerald-900 hover:bg-orange-500 text-sm h-8 md:h-10">
-                                Buy it again
-                              </Button>
-                              <Button variant="outline" className="text-sm h-8 md:h-10">
-                                View your item
-                              </Button>
-                              <Button variant="outline" className="text-sm h-8 md:h-10">
-                                Track package
-                              </Button>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="outline" size="icon" className="h-8 w-8 md:h-10 md:w-10">
-                                    <MoreHorizontal className="h-4 w-4" />
+                        return (
+                          <Card key={order.id} className="overflow-hidden">
+                            <CardHeader className="bg-gray-50 p-4 md:p-6">
+                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-medium">Order #{order.id}</h3>
+                                    {getStatusBadge(order.status)}
+                                  </div>
+                                  <p className="text-sm text-gray-600">
+                                    Placed on {format(parseISO(order.date), "MMMM d, yyyy")}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className="text-right">
+                                    <p className="font-medium">₹{order.total.toFixed(2)}</p>
+                                    <p className="text-sm text-gray-600">
+                                      {totalItems} {totalItems === 1 ? "item" : "items"}
+                                    </p>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 px-2"
+                                    onClick={() => toggleOrderExpand(order.id)}
+                                  >
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-5 w-5" />
+                                    ) : (
+                                      <ChevronDown className="h-5 w-5" />
+                                    )}
                                   </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem>Write a product review</DropdownMenuItem>
-                                  <DropdownMenuItem>Archive order</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
+                                </div>
+                              </div>
+                            </CardHeader>
+
+                            {isExpanded && (
+                              <CardContent className="p-4 md:p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                  <div>
+                                    <h4 className="font-medium mb-2 flex items-center gap-2">
+                                      <Package className="h-4 w-4" />
+                                      Order Details
+                                    </h4>
+                                    <div className="space-y-4">
+                                      {order.items.map((item) => (
+                                        <div key={item.id} className="flex gap-4">
+                                          <div className="flex-shrink-0">
+                                            <Image
+                                              src={item.image || "/placeholder.svg"}
+                                              alt={item.name}
+                                              width={80}
+                                              height={80}
+                                              className="object-cover rounded-md"
+                                            />
+                                          </div>
+                                          <div className="flex-grow">
+                                            <h5 className="font-medium text-sm">{item.name}</h5>
+                                            <div className="flex justify-between mt-1">
+                                              <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                                              <p className="text-sm font-medium">₹{item.price.toFixed(2)}</p>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="space-y-6">
+                                    <div>
+                                      <h4 className="font-medium mb-2">Shipping Information</h4>
+                                      <p className="text-sm">{order.shipTo}</p>
+                                    </div>
+
+                                    <div>
+                                      <h4 className="font-medium mb-2">Payment Method</h4>
+                                      <p className="text-sm">{order.paymentMethod}</p>
+                                    </div>
+
+                                    <div>
+                                      <h4 className="font-medium mb-2">Order Summary</h4>
+                                      <div className="space-y-1 text-sm">
+                                        <div className="flex justify-between">
+                                          <span>Subtotal:</span>
+                                          <span>₹{order.total.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Shipping:</span>
+                                          <span>₹0.00</span>
+                                        </div>
+                                        <div className="flex justify-between">
+                                          <span>Tax:</span>
+                                          <span>Included</span>
+                                        </div>
+                                        <Separator className="my-2" />
+                                        <div className="flex justify-between font-medium">
+                                          <span>Total:</span>
+                                          <span>₹{order.total.toFixed(2)}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2 pt-4">
+                                      <Button className="bg-emerald-900 hover:bg-emerald-800">Track Order</Button>
+                                      <Button variant="outline">View Invoice</Button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Rating Banner */}
+                                {!hiddenRatingBanners.includes(order.id) && (
+                                  <div className="mt-6 p-4 bg-yellow-50 rounded-md">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                                        <span className="text-sm md:text-base">
+                                          How was your experience? Rate this order
+                                        </span>
+                                      </div>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-8 px-2"
+                                        onClick={() => hideRatingBanner(order.id)}
+                                      >
+                                        ×
+                                      </Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </CardContent>
+                            )}
+                          </Card>
+                        )
+                      })}
                     </div>
-                  </Card>
-                ))
-              ) : (
-                <div className="text-center py-8 text-gray-600">No orders found for the selected time period</div>
-              )}
-            </TabsContent>
+                  ) : (
+                    <div className="text-center py-16 bg-white rounded-lg border">
+                      <Package className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <h3 className="text-lg font-medium mb-2">No orders found</h3>
+                      <p className="text-gray-500 mb-6">You haven't placed any orders yet or none match your filter.</p>
+                      <Button className="bg-emerald-900 hover:bg-emerald-800">Start Shopping</Button>
+                    </div>
+                  )}
+                </TabsContent>
 
-            <TabsContent value="notShipped">
-              <div className="text-center py-8 text-gray-600">No orders waiting to be shipped</div>
-            </TabsContent>
+                <TabsContent value="notShipped">
+                  <div className="text-center py-16 bg-white rounded-lg border mt-6">
+                    <Truck className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No orders in transit</h3>
+                    <p className="text-gray-500">
+                      All your orders have been delivered or none are currently being shipped.
+                    </p>
+                  </div>
+                </TabsContent>
 
-            <TabsContent value="cancelled">
-              <div className="text-center py-8 text-gray-600">No cancelled orders</div>
-            </TabsContent>
+                <TabsContent value="cancelled">
+                  <div className="text-center py-16 bg-white rounded-lg border mt-6">
+                    <AlertCircle className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <h3 className="text-lg font-medium mb-2">No cancelled orders</h3>
+                    <p className="text-gray-500">You don't have any cancelled orders.</p>
+                  </div>
+                </TabsContent>
+              </>
+            )}
           </Tabs>
         </div>
-      </Card>
+      </div>
     </div>
   )
 }
-
