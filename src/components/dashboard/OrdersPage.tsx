@@ -26,12 +26,16 @@ import {
   Plus,
   Minus,
   Hash,
+  FileText,
 } from "lucide-react"
 import { format, parseISO } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { InvoiceModal } from "./InvoiceModal"
 
-interface OrderItem {
+// Export these interfaces so they can be imported in InvoiceModal
+export interface OrderItem {
+  image_link: string
   id: string
   name: string
   image: string
@@ -39,7 +43,7 @@ interface OrderItem {
   quantity: number
 }
 
-interface ShippingDetails {
+export interface ShippingDetails {
   firstName: string
   lastName: string
   email: string
@@ -50,15 +54,14 @@ interface ShippingDetails {
   country: string
 }
 
-interface LogisticsInfo {
+export interface LogisticsInfo {
   warehouseId: string | null
   logisticsId: string | null
   trackingId?: string
   estimatedDelivery?: string
 }
 
-// Update the Order interface to include subtotal and tax
-interface Order {
+export interface Order {
   id: string
   date: string
   total: number
@@ -82,6 +85,10 @@ export default function OrdersPage() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [debug, setDebug] = useState<any>(null)
+
+  // Add state for invoice modal
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -184,6 +191,12 @@ export default function OrdersPage() {
 
     fetchOrders()
   }, [])
+
+  // Function to handle opening the invoice modal
+  const handleViewInvoice = (order: Order) => {
+    setSelectedOrder(order)
+    setIsInvoiceModalOpen(true)
+  }
 
   // Function to extract image URL from product data
   const extractImageUrl = (product: any): string => {
@@ -611,10 +624,10 @@ export default function OrdersPage() {
                                   <div className="space-y-1">
                                     <div className="flex items-center gap-2">
                                       <span className="bg-emerald-900 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                        #{orderNumber}
+                                        {orderNumber}
                                       </span>
                                       <h3 className="font-medium">
-                                        <span className="text-emerald-800">Order #</span>
+                                        <span className="text-emerald-800">OrderId  </span>
                                         <span className="font-bold">{order.id}</span>
                                       </h3>
                                       {getStatusBadge(order.status)}
@@ -745,7 +758,14 @@ export default function OrdersPage() {
 
                                   <div className="flex flex-wrap gap-2 pt-6">
                                     <Button className="bg-emerald-900 hover:bg-emerald-800">Track Order</Button>
-                                    <Button variant="outline">View Invoice</Button>
+                                    <Button
+                                      variant="outline"
+                                      className="flex items-center gap-1"
+                                      onClick={() => handleViewInvoice(order)}
+                                    >
+                                      <FileText className="h-4 w-4" />
+                                      View Invoice
+                                    </Button>
                                   </div>
 
                                   {/* Rating Banner */}
@@ -811,6 +831,9 @@ export default function OrdersPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Invoice Modal */}
+      <InvoiceModal order={selectedOrder} isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} />
     </div>
   )
 }
