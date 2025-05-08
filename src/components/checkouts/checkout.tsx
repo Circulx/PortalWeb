@@ -241,16 +241,25 @@ export default function CheckoutPage() {
         return
       }
 
-      // Prepare order data
-      const orderData = {
-        userId: user.id,
-        products: cartItems.map((item) => ({
-          productId: item.id,
+      // Generate unique IDs for products that don't have one
+      const productsWithIds = cartItems.map((item, index) => {
+        // Ensure each product has a productId
+        const productId = item.id || `temp-product-${Date.now()}-${index}`
+
+        return {
+          productId: productId,
+          id: productId, // Include both id and productId for redundancy
           title: item.title,
           quantity: item.quantity,
           price: item.price,
-          image: item.image_link,
-        })),
+          image_link: item.image_link, // Use the correct field name
+        }
+      })
+
+      // Prepare order data
+      const orderData = {
+        userId: user.id,
+        products: productsWithIds,
         billingDetails,
         totalAmount,
         subTotal: calculateSubTotal(),

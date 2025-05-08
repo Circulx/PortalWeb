@@ -3,13 +3,13 @@ import axios from "axios"
 
 interface CartItem {
   id: string
-  productId: string // Add productId for database synchronization
+  productId: string
   title: string
   image_link: string
   price: number
   quantity: number
   discount: number
-  seller_id: string | number // Update to accept either string or number
+  // Removed seller_id
   stock: number
   units?: string
 }
@@ -20,6 +20,7 @@ interface CartState {
   error: string | null
   syncing: boolean
   initialized: boolean
+  lastSyncedItems: any[] // Add this to track last synced state
 }
 
 const initialState: CartState = {
@@ -28,6 +29,7 @@ const initialState: CartState = {
   error: null,
   syncing: false,
   initialized: false,
+  lastSyncedItems: [],
 }
 
 // Async thunk to fetch product stock
@@ -61,8 +63,16 @@ export const updateCart = createAsyncThunk("cart/updateCart", async (items: any[
 })
 
 // Async thunk to sync cart to database
-export const syncCart = createAsyncThunk("cart/syncCart", async (items: CartItem[], { rejectWithValue }) => {
+export const syncCart = createAsyncThunk("cart/syncCart", async (items: CartItem[], { rejectWithValue, getState }) => {
   try {
+    // Get the current state
+    const state = getState() as { cart: CartState }
+
+    // Check if items have changed since last sync
+    if (JSON.stringify(items) === JSON.stringify(state.cart.lastSyncedItems)) {
+      return items // No need to sync if items haven't changed
+    }
+
     // Convert Redux cart items to database format
     const dbItems = items.map((item) => ({
       id: item.id,
@@ -70,7 +80,7 @@ export const syncCart = createAsyncThunk("cart/syncCart", async (items: CartItem
       image_link: item.image_link,
       price: Number(item.price),
       discount: Number(item.discount || 0),
-      seller_id: item.seller_id, // Pass as is, schema now handles mixed types
+      // Removed seller_id
       units: item.units,
       quantity: Number(item.quantity || 1),
       stock: Number(item.stock || 0),
@@ -93,20 +103,20 @@ export const addItemToDb = createAsyncThunk(
     try {
       const { item, stock } = payload
       const dbItem = {
-        productId: item.id,
+        id: item.id,
         title: item.title,
         image_link: item.image_link,
         price: Number(item.price),
         discount: Number(item.discount || 0),
-        seller_id: item.seller_id, // Pass as is, schema now handles mixed types
+        // Removed seller_id
         units: item.units,
         quantity: Number(item.quantity || 1),
         stock: Number(stock),
       }
 
-      const response = await axios.post("/api/cart/items", { item: dbItem })
-      if (response.data.cart) {
-        return response.data.cart.items
+      const response = await axios.post("/api/cart/items", { ...dbItem })
+      if (response.data.items) {
+        return response.data.items
       }
       return rejectWithValue(response.data.error || "Failed to add item to cart")
     } catch (error: any) {
@@ -116,33 +126,30 @@ export const addItemToDb = createAsyncThunk(
 )
 
 // Async thunk to remove item from cart in database
-export const removeItemFromDb = createAsyncThunk(
-  "cart/removeItemFromDb",
-  async (productId: string, { rejectWithValue }) => {
-    try {
-      const response = await axios.delete(`/api/cart/items?productId=${productId}`)
-      if (response.data.cart) {
-        return response.data.cart.items
-      }
-      return rejectWithValue(response.data.error || "Failed to remove item from cart")
-    } catch (error: any) {
-      return rejectWithValue(error.response?.data?.message || "Failed to remove item from cart")
+export const removeItemFromDb = createAsyncThunk("cart/removeItemFromDb", async (id: string, { rejectWithValue }) => {
+  try {
+    const response = await axios.delete(`/api/cart/items?id=${id}`)
+    if (response.data.items) {
+      return response.data.items
     }
-  },
-)
+    return rejectWithValue(response.data.error || "Failed to remove item from cart")
+  } catch (error: any) {
+    return rejectWithValue(error.response?.data?.message || "Failed to remove item from cart")
+  }
+})
 
 // Async thunk to update item quantity in database
 export const updateItemQuantityInDb = createAsyncThunk(
   "cart/updateItemQuantityInDb",
-  async (payload: { productId: string; quantity: number }, { rejectWithValue }) => {
+  async (payload: { id: string; quantity: number }, { rejectWithValue }) => {
     try {
-      const { productId, quantity } = payload
+      const { id, quantity } = payload
       const response = await axios.put("/api/cart/items", {
-        productId,
-        updates: { quantity: Number(quantity) },
+        id,
+        quantity: Number(quantity),
       })
-      if (response.data.cart) {
-        return response.data.cart.items
+      if (response.data.items) {
+        return response.data.items
       }
       return rejectWithValue(response.data.error || "Failed to update item quantity")
     } catch (error: any) {
@@ -221,10 +228,12 @@ const cartSlice = createSlice({
           price: Number(item.price),
           quantity: Number(item.quantity),
           discount: Number(item.discount || 0),
-          seller_id: item.seller_id, // Accept as is
+          // Removed seller_id
           stock: Number(item.stock || 0),
           units: item.units,
         }))
+        // Update lastSyncedItems to match current items
+        state.lastSyncedItems = JSON.parse(JSON.stringify(state.items))
       }
       state.initialized = true
     },
@@ -256,6 +265,8 @@ const cartSlice = createSlice({
       .addCase(fetchCart.fulfilled, (state, action) => {
         state.loading = false
         state.items = action.payload
+        // Update lastSyncedItems to match current items
+        state.lastSyncedItems = JSON.parse(JSON.stringify(action.payload))
         state.initialized = true
       })
       .addCase(fetchCart.rejected, (state, action) => {
@@ -270,6 +281,8 @@ const cartSlice = createSlice({
       .addCase(updateCart.fulfilled, (state, action) => {
         state.loading = false
         state.items = action.payload
+        // Update lastSyncedItems to match current items
+        state.lastSyncedItems = JSON.parse(JSON.stringify(action.payload))
       })
       .addCase(updateCart.rejected, (state, action) => {
         state.loading = false
@@ -282,7 +295,11 @@ const cartSlice = createSlice({
       })
       .addCase(syncCart.fulfilled, (state, action) => {
         state.syncing = false
-        state.items = action.payload
+        if (action.payload) {
+          state.items = action.payload
+          // Update lastSyncedItems to match current items
+          state.lastSyncedItems = JSON.parse(JSON.stringify(action.payload))
+        }
       })
       .addCase(syncCart.rejected, (state, action) => {
         state.syncing = false
@@ -293,6 +310,8 @@ const cartSlice = createSlice({
       .addCase(addItemToDb.fulfilled, (state, action) => {
         if (action.payload) {
           state.items = action.payload
+          // Update lastSyncedItems to match current items
+          state.lastSyncedItems = JSON.parse(JSON.stringify(action.payload))
         }
       })
 
@@ -300,6 +319,8 @@ const cartSlice = createSlice({
       .addCase(removeItemFromDb.fulfilled, (state, action) => {
         if (action.payload) {
           state.items = action.payload
+          // Update lastSyncedItems to match current items
+          state.lastSyncedItems = JSON.parse(JSON.stringify(action.payload))
         }
       })
 
@@ -307,12 +328,16 @@ const cartSlice = createSlice({
       .addCase(updateItemQuantityInDb.fulfilled, (state, action) => {
         if (action.payload) {
           state.items = action.payload
+          // Update lastSyncedItems to match current items
+          state.lastSyncedItems = JSON.parse(JSON.stringify(action.payload))
         }
       })
 
       // clearCartInDb
       .addCase(clearCartInDb.fulfilled, (state) => {
         state.items = []
+        // Update lastSyncedItems to match current items
+        state.lastSyncedItems = []
       })
   },
 })
