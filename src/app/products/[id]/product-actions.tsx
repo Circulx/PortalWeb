@@ -4,12 +4,12 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Heart, ShoppingCart, Zap } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
-import { addItem } from "@/store/slices/cartSlice"
 import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice"
 import type { RootState } from "@/store"
 import { toast } from "react-hot-toast"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
+import { useCartSync } from "@/hooks/useCartSync"
 
 interface ProductActionsProps {
   productId: string
@@ -50,23 +50,23 @@ export default function ProductActions({
     setIsWishlisted(itemInWishlist)
   }, [wishlistItems, productId])
 
+  const { addItem } = useCartSync()
+
   // Handle adding to cart
   const handleAddToCart = () => {
-    dispatch(
-      addItem({
-        item: {
-          id: productId,
-          title,
-          image_link: imageUrl,
-          price: Math.round(price),
-          discount,
-          seller_id: sellerId,
-          units,
-          quantity: 1,
-        },
-        stock,
-      }),
-    )
+    addItem({
+      item: {
+        id: productId,
+        title,
+        image_link: imageUrl,
+        price: Math.round(price),
+        discount,
+        seller_id: sellerId,
+        units,
+        quantity: 1,
+      },
+      stock,
+    })
 
     // Show success toast
     toast.success("Added to cart successfully!", {
@@ -90,21 +90,19 @@ export default function ProductActions({
       const user = await getCurrentUser()
       if (user) {
         // User is logged in, add to cart and proceed to checkout
-        dispatch(
-          addItem({
-            item: {
-              id: productId,
-              title,
-              image_link: imageUrl,
-              price: Math.round(price),
-              discount,
-              seller_id: sellerId,
-              units,
-              quantity: 1,
-            },
-            stock,
-          }),
-        )
+        addItem({
+          item: {
+            id: productId,
+            title,
+            image_link: imageUrl,
+            price: Math.round(price),
+            discount,
+            seller_id: sellerId,
+            units,
+            quantity: 1,
+          },
+          stock,
+        })
         router.push("/checkout")
       } else {
         // User is not logged in, show auth modal
@@ -127,21 +125,19 @@ export default function ProductActions({
 
     if (buyNowClicked) {
       // If buy now was clicked, add to cart and proceed to checkout
-      dispatch(
-        addItem({
-          item: {
-            id: productId,
-            title,
-            image_link: imageUrl,
-            price: Math.round(price),
-            discount,
-            seller_id: sellerId,
-            units,
-            quantity: 1,
-          },
-          stock,
-        }),
-      )
+      addItem({
+        item: {
+          id: productId,
+          title,
+          image_link: imageUrl,
+          price: Math.round(price),
+          discount,
+          seller_id: sellerId,
+          units,
+          quantity: 1,
+        },
+        stock,
+      })
       router.push("/checkout")
       setBuyNowClicked(false)
     }

@@ -254,7 +254,31 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Update the registerModels function to include the Order model
+// Add the CartSchema after the OrderSchema
+
+// Define Cart schema
+const CartSchema = new mongoose.Schema(
+  {
+    userId: { type: String, required: true, index: true, unique: true },
+    items: [
+      {
+        productId: { type: String, required: true },
+        title: { type: String, required: true },
+        image_link: { type: String, required: true },
+        price: { type: Number, required: true },
+        quantity: { type: Number, required: true, default: 1 },
+        discount: { type: Number, default: 0 },
+        seller_id: { type: Number, required: true },
+        stock: { type: Number, required: true },
+        units: { type: String },
+      },
+    ],
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true },
+)
+
+// Update the registerModels function to include the Cart model
 function registerModels(connection: Connection) {
   // Only register models if they don't already exist
   if (!connection.models.Business) {
@@ -284,6 +308,9 @@ function registerModels(connection: Connection) {
   if (!connection.models.Order) {
     connection.model("Order", OrderSchema)
   }
+  if (!connection.models.Cart) {
+    connection.model("Cart", CartSchema)
+  }
 }
 
 // Export schemas for use in other files
@@ -297,4 +324,5 @@ export {
   ProfileProgressSchema,
   ProductSchema,
   OrderSchema,
+  CartSchema,
 }

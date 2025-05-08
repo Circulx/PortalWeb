@@ -6,14 +6,14 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { useSelector, useDispatch } from "react-redux"
 import type { RootState } from "@/store"
-import { removeItem } from "@/store/slices/cartSlice"
+import { updateItemStock } from "@/store/slices/cartSlice"
 import { useState, useEffect } from "react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
-import { updateItemStock, decreaseQuantity, increaseQuantity } from "@/store/slices/cartSlice"
 import axios from "axios"
 import { Toaster } from "@/components/ui/sonner"
 //import { toast } from "@/components/ui/use-toast"
+import { useCartSync } from "@/hooks/useCartSync"
 
 export default function CartPage() {
   const router = useRouter()
@@ -46,8 +46,10 @@ export default function CartPage() {
     return cartItems.reduce((total, item) => total + item.price * item.quantity, 0).toFixed(2)
   }
 
+  const { removeItem, increaseQuantity, decreaseQuantity } = useCartSync()
+
   const handleRemoveItem = (id: string) => {
-    dispatch(removeItem(id))
+    removeItem(id)
   }
 
   const handleProceedToCheckout = async () => {
@@ -110,11 +112,11 @@ export default function CartPage() {
               if (product.stock > 0) {
                 // Reduce quantity to match available stock
                 while (item.quantity > product.stock) {
-                  dispatch(decreaseQuantity(item.id))
+                  decreaseQuantity(item.id)
                 }
               } else {
                 // If product is out of stock, remove it from cart
-                dispatch(removeItem(item.id))
+                removeItem(item.id)
               }
             }
           }
@@ -127,7 +129,7 @@ export default function CartPage() {
     }
 
     fetchProductStocks()
-  }, [cartItems.length, dispatch])
+  }, [cartItems.length, dispatch, decreaseQuantity, removeItem])
 
   const handleIncrement = (id: string) => {
     const item = cartItems.find((item) => item.id === id)
@@ -135,10 +137,6 @@ export default function CartPage() {
       if (item.quantity >= item.stock) {
         // Show warning if trying to add more than available stock
         setStockWarnings((prev) => ({ ...prev, [id]: true }))
-
-        // Show toast notification with accurate message
-        
-
         return
       }
 
@@ -151,7 +149,7 @@ export default function CartPage() {
         })
       }
 
-      dispatch(increaseQuantity(id))
+      increaseQuantity(id)
     }
   }
 
@@ -159,10 +157,10 @@ export default function CartPage() {
     const item = cartItems.find((item) => item.id === id)
     if (item && item.quantity <= 1) {
       // If quantity is 1 or less, remove the item completely
-      dispatch(removeItem(id))
+      removeItem(id)
     } else {
       // Otherwise just decrease the quantity
-      dispatch(decreaseQuantity(id))
+      decreaseQuantity(id)
 
       // Clear warning if it was previously shown
       if (stockWarnings[id]) {

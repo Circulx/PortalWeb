@@ -5,9 +5,9 @@ import Image from "next/image"
 import Link from "next/link"
 import { Building2, Heart, MapPin, ShoppingCart, Star } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
-import { addItem } from "@/store/slices/cartSlice"
 import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice"
 import type { RootState } from "@/store"
+import { useCartSync } from "@/hooks/useCartSync"
 
 interface ProductCardProps {
   title: string
@@ -97,22 +97,22 @@ export default function ProductCard({
     }
   }
 
+  const { addItem } = useCartSync()
+
   const handleAddToCart = () => {
-    dispatch(
-      addItem({
-        item: {
-          id: href,
-          title,
-          image_link,
-          price: calculatedPrice, // Use the calculated price
-          discount,
-          seller_id,
-          units,
-          quantity: 1,
-        },
-        stock: stock,
-      }),
-    )
+    addItem({
+      item: {
+        id: href,
+        title,
+        image_link,
+        price: calculatedPrice, // Use the calculated price
+        discount,
+        seller_id,
+        units,
+        quantity: 1,
+      },
+      stock: stock,
+    })
 
     // Show custom notification
     showNotification("Added to cart successfully!")
@@ -137,7 +137,7 @@ export default function ProductCard({
           discount,
           seller_id,
           units: undefined,
-          stock: 0
+          stock: 0,
         }),
       )
 

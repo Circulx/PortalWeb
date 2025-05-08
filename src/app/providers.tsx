@@ -2,10 +2,21 @@
 
 import type React from "react"
 
+import { ThemeProvider } from "@/components/theme-provider"
 import { Provider } from "react-redux"
-import store from "../store"
+import { store } from "@/store"
+import { Toaster } from "@/components/ui/toaster"
+import CartProvider from "@/components/providers/CartProvider"
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return <Provider store={store}>{children}</Provider>
+  return (
+    <Provider store={store}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <CartProvider>
+          {children}
+          <Toaster />
+        </CartProvider>
+      </ThemeProvider>
+    </Provider>
+  )
 }
-

@@ -6,10 +6,8 @@ import { useRouter } from "next/navigation"
 import { useDispatch, useSelector } from "react-redux"
 import type { RootState } from "../../store"
 import {
-  increaseQuantity,
-  decreaseQuantity,
-  removeItem,
-  clearCart,
+  decreaseQuantity as decreaseQuantityAction,
+  removeItem as removeItemAction,
   updateItemStock,
 } from "../../store/slices/cartSlice"
 import Image from "next/image"
@@ -21,6 +19,7 @@ import "swiper/css"
 import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle } from "lucide-react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
+import { useCartSync } from "@/hooks/useCartSync"
 
 interface Product {
   product_id: number
@@ -213,11 +212,11 @@ export default function Cart() {
               if (product.stock > 0) {
                 // Reduce quantity to match available stock
                 while (item.quantity > product.stock) {
-                  dispatch(decreaseQuantity(item.id))
+                  dispatch(decreaseQuantityAction(item.id))
                 }
               } else {
                 // If product is out of stock, remove it from cart
-                dispatch(removeItem(item.id))
+                dispatch(removeItemAction(item.id))
               }
             }
           }
@@ -231,6 +230,8 @@ export default function Cart() {
 
     fetchProductStocks()
   }, [cartItems.length, dispatch])
+
+  const { increaseQuantity, decreaseQuantity, removeItem, clearCart } = useCartSync()
 
   const handleIncrement = (id: string) => {
     const item = cartItems.find((item) => item.id === id)
@@ -258,7 +259,7 @@ export default function Cart() {
         })
       }
 
-      dispatch(increaseQuantity(id))
+      increaseQuantity(id)
     }
   }
 
@@ -266,10 +267,10 @@ export default function Cart() {
     const item = cartItems.find((item) => item.id === id)
     if (item && item.quantity <= 1) {
       // If quantity is 1 or less, remove the item completely
-      dispatch(removeItem(id))
+      removeItem(id)
     } else {
       // Otherwise just decrease the quantity
-      dispatch(decreaseQuantity(id))
+      decreaseQuantity(id)
 
       // Clear warning if it was previously shown
       if (stockWarnings[id]) {
@@ -280,6 +281,24 @@ export default function Cart() {
         })
       }
     }
+  }
+
+  const handleRemoveItem = (id: string) => {
+    removeItem(id)
+
+    // Clear warning if it was previously shown
+    if (stockWarnings[id]) {
+      setStockWarnings((prev) => {
+        const newWarnings = { ...prev }
+        delete newWarnings[id]
+        return newWarnings
+      })
+    }
+  }
+
+  const handleClearCart = () => {
+    clearCart()
+    setStockWarnings({})
   }
 
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
@@ -312,24 +331,6 @@ export default function Cart() {
     if (historyRef.current) {
       historyRef.current.scrollBy({ left: 300, behavior: "smooth" })
     }
-  }
-
-  const handleRemoveItem = (id: string) => {
-    dispatch(removeItem(id))
-
-    // Clear warning if it was previously shown
-    if (stockWarnings[id]) {
-      setStockWarnings((prev) => {
-        const newWarnings = { ...prev }
-        delete newWarnings[id]
-        return newWarnings
-      })
-    }
-  }
-
-  const handleClearCart = () => {
-    dispatch(clearCart())
-    setStockWarnings({})
   }
 
   const calculateSubTotal = (price: number, quantity: number) => {
