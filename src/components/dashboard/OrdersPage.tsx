@@ -32,6 +32,8 @@ import { format, parseISO } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { InvoiceModal } from "./InvoiceModal"
+// Import the SendEmailButton component
+import { SendEmailButton } from "./SendEmailButton"
 
 // Export these interfaces so they can be imported in InvoiceModal
 export interface OrderItem {
@@ -627,7 +629,7 @@ export default function OrdersPage() {
                                         {orderNumber}
                                       </span>
                                       <h3 className="font-medium">
-                                        <span className="text-emerald-800">OrderId  </span>
+                                        <span className="text-emerald-800">OrderId </span>
                                         <span className="font-bold">{order.id}</span>
                                       </h3>
                                       {getStatusBadge(order.status)}
@@ -766,6 +768,7 @@ export default function OrdersPage() {
                                       <FileText className="h-4 w-4" />
                                       View Invoice
                                     </Button>
+                                    <SendEmailButton orderId={order.id} />
                                   </div>
 
                                   {/* Rating Banner */}
