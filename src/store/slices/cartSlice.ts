@@ -3,19 +3,17 @@ import axios from "axios"
 
 interface CartItem {
   id: string
-  productId: string
   title: string
   image_link: string
   price: number
   quantity: number
   discount: number
-  // Removed seller_id
   stock: number
   units?: string
 }
 
 interface CartState {
-  items: any[]
+  items: CartItem[]
   loading: boolean
   error: string | null
   syncing: boolean
@@ -186,7 +184,11 @@ const cartSlice = createSlice({
         }
       } else {
         // Add new item with quantity 1
-        state.items.push({ ...item, quantity: 1, stock })
+        state.items.push({
+          ...item,
+          quantity: 1,
+          stock,
+        })
       }
     },
     removeItem: (state, action) => {
@@ -222,13 +224,11 @@ const cartSlice = createSlice({
         // Convert database items to Redux format
         state.items = dbCart.map((item: any) => ({
           id: item.id,
-          productId: item.id,
           title: item.title,
           image_link: item.image_link,
           price: Number(item.price),
           quantity: Number(item.quantity),
           discount: Number(item.discount || 0),
-          // Removed seller_id
           stock: Number(item.stock || 0),
           units: item.units,
         }))
@@ -236,6 +236,12 @@ const cartSlice = createSlice({
         state.lastSyncedItems = JSON.parse(JSON.stringify(state.items))
       }
       state.initialized = true
+    },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload
     },
   },
   extraReducers: (builder) => {
@@ -342,7 +348,16 @@ const cartSlice = createSlice({
   },
 })
 
-export const { addItem, removeItem, increaseQuantity, decreaseQuantity, updateItemStock, clearCart, setCartFromDb } =
-  cartSlice.actions
+export const {
+  addItem,
+  removeItem,
+  increaseQuantity,
+  decreaseQuantity,
+  updateItemStock,
+  clearCart,
+  setCartFromDb,
+  setLoading,
+  setError,
+} = cartSlice.actions
 
 export default cartSlice.reducer

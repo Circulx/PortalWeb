@@ -1,15 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Heart, ShoppingCart, Zap } from "lucide-react"
-import { useDispatch, useSelector } from "react-redux"
-import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice"
+import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { toast } from "react-hot-toast"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
+import { useWishlistSync } from "@/hooks/useWishlistSync"
 
 interface ProductActionsProps {
   productId: string
@@ -34,11 +34,11 @@ export default function ProductActions({
   units = "units",
   productImages,
 }: ProductActionsProps) {
-  const dispatch = useDispatch()
   const [isWishlisted, setIsWishlisted] = useState(false)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [buyNowClicked, setBuyNowClicked] = useState(false)
   const [isCheckingUser, setIsCheckingUser] = useState(false)
+  const [isProcessingWishlist, setIsProcessingWishlist] = useState(false)
   const router = useRouter()
 
   // Get wishlist items from Redux store
@@ -50,11 +50,12 @@ export default function ProductActions({
     setIsWishlisted(itemInWishlist)
   }, [wishlistItems, productId])
 
-  const { addItem } = useCartSync()
+  const { addItem: addToCart } = useCartSync()
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isLoading: wishlistLoading } = useWishlistSync()
 
   // Handle adding to cart
-  const handleAddToCart = () => {
-    addItem({
+  const handleAddToCart = useCallback(() => {
+    addToCart({
       item: {
         id: productId,
         title,
@@ -73,10 +74,10 @@ export default function ProductActions({
       duration: 3000,
       position: "bottom-center",
     })
-  }
+  }, [addToCart, productId, title, imageUrl, price, discount, sellerId, units, stock])
 
   // Handle Buy Now functionality
-  const handleBuyNow = async () => {
+  const handleBuyNow = useCallback(async () => {
     if (stock <= 0) {
       toast.error("Product is out of stock", {
         duration: 3000,
@@ -90,7 +91,7 @@ export default function ProductActions({
       const user = await getCurrentUser()
       if (user) {
         // User is logged in, add to cart and proceed to checkout
-        addItem({
+        addToCart({
           item: {
             id: productId,
             title,
@@ -117,15 +118,15 @@ export default function ProductActions({
     } finally {
       setIsCheckingUser(false)
     }
-  }
+  }, [addToCart, productId, title, imageUrl, price, discount, sellerId, units, stock, router])
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = useCallback(() => {
     // Close the auth modal
     setIsAuthModalOpen(false)
 
     if (buyNowClicked) {
       // If buy now was clicked, add to cart and proceed to checkout
-      addItem({
+      addToCart({
         item: {
           id: productId,
           title,
@@ -141,22 +142,26 @@ export default function ProductActions({
       router.push("/checkout")
       setBuyNowClicked(false)
     }
-  }
+  }, [addToCart, buyNowClicked, productId, title, imageUrl, price, discount, sellerId, units, stock, router])
 
   // Handle toggling wishlist
-  const handleToggleWishlist = () => {
-    if (isWishlisted) {
-      // If already in wishlist, remove it
-      dispatch(removeFromWishlist(productId))
-      toast.success("Removed from wishlist", {
-        duration: 3000,
-        position: "bottom-center",
-      })
-      setIsWishlisted(false) // Update local state
-    } else {
-      // If not in wishlist, add it
-      dispatch(
-        addToWishlist({
+  const handleToggleWishlist = useCallback(async () => {
+    // Prevent multiple clicks while processing
+    if (isProcessingWishlist || wishlistLoading) return
+
+    setIsProcessingWishlist(true)
+
+    try {
+      if (isWishlisted) {
+        // If already in wishlist, remove it
+        await removeFromWishlist(productId)
+        toast.success("Removed from wishlist", {
+          duration: 3000,
+          position: "bottom-center",
+        })
+      } else {
+        // If not in wishlist, add it
+        await addToWishlist({
           id: productId,
           title,
           image_link: imageUrl,
@@ -165,15 +170,37 @@ export default function ProductActions({
           seller_id: sellerId,
           units: undefined,
           stock: 0,
-        }),
-      )
-      toast.success("Added to wishlist successfully!", {
+        })
+        toast.success("Added to wishlist successfully!", {
+          duration: 3000,
+          position: "bottom-center",
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error)
+      toast.error("Error updating wishlist. Please try again.", {
         duration: 3000,
         position: "bottom-center",
       })
-      setIsWishlisted(true) // Update local state
+    } finally {
+      // Add a small delay before allowing another action
+      setTimeout(() => {
+        setIsProcessingWishlist(false)
+      }, 300)
     }
-  }
+  }, [
+    isProcessingWishlist,
+    wishlistLoading,
+    isWishlisted,
+    removeFromWishlist,
+    productId,
+    addToWishlist,
+    title,
+    imageUrl,
+    price,
+    discount,
+    sellerId,
+  ])
 
   return (
     <>
@@ -183,7 +210,11 @@ export default function ProductActions({
           {/* Wishlist heart button */}
           <button
             onClick={handleToggleWishlist}
-            className="absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-md hover:bg-gray-100"
+            disabled={isProcessingWishlist || wishlistLoading}
+            className={`absolute top-4 right-4 z-10 bg-white rounded-full p-2 shadow-md hover:bg-gray-100 ${
+              isProcessingWishlist || wishlistLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
           >
             <Heart
               className={`w-6 h-6 ${isWishlisted ? "text-red-500 fill-red-500" : "text-gray-400 hover:text-red-500"}`}

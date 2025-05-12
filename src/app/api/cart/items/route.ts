@@ -10,7 +10,6 @@ interface CartItem {
   image_link?: string
   price: number
   discount: number
-  // Removed seller_id field
   units?: string
   quantity: number
   stock: number
@@ -32,7 +31,6 @@ const CartSchema = new mongoose.Schema<Cart>(
         image_link: { type: String },
         price: { type: Number, required: true },
         discount: { type: Number, default: 0 },
-        // Removed seller_id field
         units: { type: String },
         quantity: { type: Number, required: true, default: 1 },
         stock: { type: Number, default: 0 },
@@ -58,14 +56,14 @@ export async function GET(request: Request) {
   try {
     const user = await getCurrentUser()
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized", item: null }, { status: 401 })
     }
 
     const url = new URL(request.url)
     const productId = url.searchParams.get("productId")
 
     if (!productId) {
-      return NextResponse.json({ message: "Product ID is required" }, { status: 400 })
+      return NextResponse.json({ message: "Product ID is required", item: null }, { status: 400 })
     }
 
     const CartModel = await getCartModel()
@@ -74,18 +72,18 @@ export async function GET(request: Request) {
     const cart = await CartModel.findOne({ userId: user.id }).lean()
 
     if (!cart) {
-      return NextResponse.json({ message: "Cart not found" }, { status: 404 })
+      return NextResponse.json({ message: "Cart not found", item: null }, { status: 404 })
     }
 
     const item = cart.items.find((item) => item.id === productId)
     if (!item) {
-      return NextResponse.json({ message: "Item not found in cart" }, { status: 404 })
+      return NextResponse.json({ message: "Item not found in cart", item: null }, { status: 404 })
     }
 
     return NextResponse.json({ item })
   } catch (error) {
     console.error("Error fetching cart item:", error)
-    return NextResponse.json({ message: "Failed to fetch cart item" }, { status: 500 })
+    return NextResponse.json({ message: "Failed to fetch cart item", item: null }, { status: 500 })
   }
 }
 
@@ -94,22 +92,21 @@ export async function POST(request: Request) {
   try {
     const user = await getCurrentUser()
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized", items: [] }, { status: 401 })
     }
 
     const item = await request.json()
     if (!item || !item.id || !item.title || !item.price) {
-      return NextResponse.json({ message: "Invalid item data" }, { status: 400 })
+      return NextResponse.json({ message: "Invalid item data", items: [] }, { status: 400 })
     }
 
-    // Process the item and remove seller_id
+    // Process the item
     const processedItem = {
       id: item.id,
       title: item.title,
       image_link: item.image_link,
       price: Number(item.price),
       discount: Number(item.discount || 0),
-      // Removed seller_id
       units: item.units,
       quantity: Number(item.quantity || 1),
       stock: Number(item.stock || 0),
@@ -144,10 +141,13 @@ export async function POST(request: Request) {
         }
 
         // Update the cart
-        await CartModel.updateOne({ userId: user.id }, { $set: { items: existingCart.items } })
+        await CartModel.updateOne({ userId: user.id }, { $set: { items: existingCart.items, updatedAt: new Date() } })
       } else {
         // Add new item
-        await CartModel.updateOne({ userId: user.id }, { $push: { items: processedItem } })
+        await CartModel.updateOne(
+          { userId: user.id },
+          { $push: { items: processedItem }, $set: { updatedAt: new Date() } },
+        )
       }
     }
 
@@ -156,7 +156,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ items: updatedCart?.items || [] })
   } catch (error) {
     console.error("Error adding item to cart:", error)
-    return NextResponse.json({ message: "Failed to add item to cart", error: String(error) }, { status: 500 })
+    return NextResponse.json(
+      { message: "Failed to add item to cart", error: String(error), items: [] },
+      { status: 500 },
+    )
   }
 }
 
@@ -165,12 +168,12 @@ export async function PUT(request: Request) {
   try {
     const user = await getCurrentUser()
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized", items: [] }, { status: 401 })
     }
 
     const { id, quantity } = await request.json()
     if (!id || typeof quantity !== "number") {
-      return NextResponse.json({ message: "Invalid update data" }, { status: 400 })
+      return NextResponse.json({ message: "Invalid update data", items: [] }, { status: 400 })
     }
 
     const CartModel = await getCartModel()
@@ -179,28 +182,31 @@ export async function PUT(request: Request) {
     const cart = await CartModel.findOne({ userId: user.id }).lean()
 
     if (!cart) {
-      return NextResponse.json({ message: "Cart not found" }, { status: 404 })
+      return NextResponse.json({ message: "Cart not found", items: [] }, { status: 404 })
     }
 
     // Find the item
     const itemIndex = cart.items.findIndex((item) => item.id === id)
 
     if (itemIndex === -1) {
-      return NextResponse.json({ message: "Item not found in cart" }, { status: 404 })
+      return NextResponse.json({ message: "Item not found in cart", items: [] }, { status: 404 })
     }
 
     // Update the quantity
     cart.items[itemIndex].quantity = quantity
 
     // Update the cart
-    await CartModel.updateOne({ userId: user.id }, { $set: { items: cart.items } })
+    await CartModel.updateOne({ userId: user.id }, { $set: { items: cart.items, updatedAt: new Date() } })
 
     // Get the updated cart
     const updatedCart = await CartModel.findOne({ userId: user.id }).lean()
     return NextResponse.json({ items: updatedCart?.items || [] })
   } catch (error) {
     console.error("Error updating cart item:", error)
-    return NextResponse.json({ message: "Failed to update cart item", error: String(error) }, { status: 500 })
+    return NextResponse.json(
+      { message: "Failed to update cart item", error: String(error), items: [] },
+      { status: 500 },
+    )
   }
 }
 
@@ -209,14 +215,14 @@ export async function DELETE(request: Request) {
   try {
     const user = await getCurrentUser()
     if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ message: "Unauthorized", items: [] }, { status: 401 })
     }
 
     const { searchParams } = new URL(request.url)
     const id = searchParams.get("id")
 
     if (!id) {
-      return NextResponse.json({ message: "Item ID is required" }, { status: 400 })
+      return NextResponse.json({ message: "Item ID is required", items: [] }, { status: 400 })
     }
 
     const CartModel = await getCartModel()
@@ -225,20 +231,23 @@ export async function DELETE(request: Request) {
     const cart = await CartModel.findOne({ userId: user.id }).lean()
 
     if (!cart) {
-      return NextResponse.json({ message: "Cart not found" }, { status: 404 })
+      return NextResponse.json({ message: "Cart not found", items: [] }, { status: 404 })
     }
 
     // Remove the item
     const updatedItems = cart.items.filter((item) => item.id !== id)
 
     // Update the cart
-    await CartModel.updateOne({ userId: user.id }, { $set: { items: updatedItems } })
+    await CartModel.updateOne({ userId: user.id }, { $set: { items: updatedItems, updatedAt: new Date() } })
 
     // Get the updated cart
     const updatedCart = await CartModel.findOne({ userId: user.id }).lean()
     return NextResponse.json({ items: updatedCart?.items || [] })
   } catch (error) {
     console.error("Error removing item from cart:", error)
-    return NextResponse.json({ message: "Failed to remove item from cart", error: String(error) }, { status: 500 })
+    return NextResponse.json(
+      { message: "Failed to remove item from cart", error: String(error), items: [] },
+      { status: 500 },
+    )
   }
 }

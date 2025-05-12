@@ -1,50 +1,45 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useRef } from "react"
-import { useDispatch, useSelector } from "react-redux"
-import { fetchCart, syncCart } from "@/store/slices/cartSlice"
-import type { AppDispatch, RootState } from "@/store"
+import { useEffect, useState, useRef } from "react"
+import { useDispatch } from "react-redux"
+import { setCartFromDb } from "@/store/slices/cartSlice"
+import axios from "axios"
+import { getCurrentUser } from "@/actions/auth"
+import type { AppDispatch } from "@/store"
 
-export function CartProvider({ children }: { children: React.ReactNode }) {
+export default function CartProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>()
-  const { items, initialized, syncing } = useSelector((state: RootState) => state.cart)
-  const previousItemsRef = useRef<any[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const initialized = useRef(false)
 
-  // Initialize cart from database
   useEffect(() => {
-    if (!initialized) {
-      dispatch(fetchCart())
-    }
-  }, [dispatch, initialized])
+    const initializeCart = async () => {
+      // Only initialize once
+      if (initialized.current || isLoading) return
 
-  // Sync cart to database when items change
-  useEffect(() => {
-    // Skip if not initialized or already syncing
-    if (!initialized || syncing) {
-      return
-    }
+      try {
+        setIsLoading(true)
+        initialized.current = true
 
-    // Check if items have actually changed to avoid infinite loops
-    const itemsJSON = JSON.stringify(items)
-    const previousItemsJSON = JSON.stringify(previousItemsRef.current)
+        const user = await getCurrentUser()
+        if (!user) return
 
-    if (itemsJSON !== previousItemsJSON) {
-      // Update the ref with current items
-      previousItemsRef.current = JSON.parse(itemsJSON)
+        console.log("CartProvider: Initializing cart from database...")
+        const response = await axios.get("/api/cart")
+        const dbItems = response.data.items || []
 
-      // Only sync if there are items
-      if (items.length > 0) {
-        const timeoutId = setTimeout(() => {
-          dispatch(syncCart(items))
-        }, 1000) // Debounce for 1 second
-
-        return () => clearTimeout(timeoutId)
+        // Update Redux state with items from database
+        dispatch(setCartFromDb(dbItems))
+      } catch (error) {
+        console.error("CartProvider: Error initializing cart:", error)
+      } finally {
+        setIsLoading(false)
       }
     }
-  }, [dispatch, items, initialized, syncing])
+
+    initializeCart()
+  }, [dispatch])
 
   return <>{children}</>
 }
-
-export default CartProvider

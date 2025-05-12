@@ -1,13 +1,14 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Building2, Heart, MapPin, ShoppingCart, Star } from "lucide-react"
-import { useDispatch, useSelector } from "react-redux"
-import { addToWishlist, removeFromWishlist } from "@/store/slices/wishlistSlice"
+import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { useCartSync } from "@/hooks/useCartSync"
+import { useWishlistSync } from "@/hooks/useWishlistSync"
+import { toast } from "react-hot-toast"
 
 interface ProductCardProps {
   title: string
@@ -24,9 +25,6 @@ interface ProductCardProps {
   units?: string
   stock: number
 }
-
-// Create a module-level variable to track if a notification is currently showing
-let isNotificationShowing = false
 
 export default function ProductCard({
   title,
@@ -45,8 +43,7 @@ export default function ProductCard({
 }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false)
   const [isWishlisted, setIsWishlisted] = useState(false)
-  const [notification, setNotification] = useState<string | null>(null)
-  const dispatch = useDispatch()
+  const [isProcessingWishlist, setIsProcessingWishlist] = useState(false)
 
   // Get wishlist items from Redux store
   const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
@@ -59,17 +56,6 @@ export default function ProductCard({
     const itemInWishlist = wishlistItems.some((item) => item.id === href)
     setIsWishlisted(itemInWishlist)
   }, [wishlistItems, href])
-
-  // Handle notification display and auto-hide
-  useEffect(() => {
-    if (notification) {
-      const timer = setTimeout(() => {
-        setNotification(null)
-        isNotificationShowing = false
-      }, 2000) // Show for 2 seconds
-      return () => clearTimeout(timer)
-    }
-  }, [notification])
 
   // Calculate the discounted price
   const calculateDiscountedPrice = (originalPrice: number, discountPercentage: number): number => {
@@ -88,19 +74,11 @@ export default function ProductCard({
     ))
   }
 
-  // Custom notification function
-  const showNotification = (message: string) => {
-    // Only show notification if one isn't already showing
-    if (!isNotificationShowing) {
-      isNotificationShowing = true
-      setNotification(message)
-    }
-  }
+  const { addItem: addToCart } = useCartSync()
+  const { addItem: addToWishlist, removeItem: removeFromWishlist, isLoading: wishlistLoading } = useWishlistSync()
 
-  const { addItem } = useCartSync()
-
-  const handleAddToCart = () => {
-    addItem({
+  const handleAddToCart = useCallback(() => {
+    addToCart({
       item: {
         id: href,
         title,
@@ -114,37 +92,70 @@ export default function ProductCard({
       stock: stock,
     })
 
-    // Show custom notification
-    showNotification("Added to cart successfully!")
-  }
+    // Show toast notification
+    toast.success("Added to cart successfully!", {
+      duration: 2000,
+      position: "bottom-center",
+    })
+  }, [addToCart, href, title, image_link, calculatedPrice, discount, seller_id, units, stock])
 
   // Handle toggling the wishlist status
-  const handleToggleWishlist = () => {
-    if (isWishlisted) {
-      // If already in wishlist, remove it
-      dispatch(removeFromWishlist(href))
+  const handleToggleWishlist = useCallback(async () => {
+    // Prevent multiple clicks while processing
+    if (isProcessingWishlist || wishlistLoading) return
 
-      // Show notification for removal
-      showNotification("Removed from wishlist")
-    } else {
-      // If not in wishlist, add it
-      dispatch(
-        addToWishlist({
+    setIsProcessingWishlist(true)
+
+    try {
+      if (isWishlisted) {
+        // If already in wishlist, remove it
+        await removeFromWishlist(href)
+        toast.success("Removed from wishlist", {
+          duration: 2000,
+          position: "bottom-center",
+        })
+      } else {
+        // If not in wishlist, add it
+        await addToWishlist({
           id: href,
           title,
           image_link,
-          price: calculatedPrice, // Use the calculated price
+          price: calculatedPrice,
           discount,
           seller_id,
           units: undefined,
           stock: 0,
-        }),
-      )
-
-      // Show notification for addition
-      showNotification("Added to wishlist successfully!")
+        })
+        toast.success("Added to wishlist successfully!", {
+          duration: 2000,
+          position: "bottom-center",
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error)
+      toast.error("Error updating wishlist. Please try again.", {
+        duration: 2000,
+        position: "bottom-center",
+      })
+    } finally {
+      // Add a small delay before allowing another action
+      setTimeout(() => {
+        setIsProcessingWishlist(false)
+      }, 300)
     }
-  }
+  }, [
+    isProcessingWishlist,
+    wishlistLoading,
+    isWishlisted,
+    removeFromWishlist,
+    href,
+    addToWishlist,
+    title,
+    image_link,
+    calculatedPrice,
+    discount,
+    seller_id,
+  ])
 
   return (
     <div
@@ -218,10 +229,13 @@ export default function ProductCard({
               </button>
               <button
                 onClick={handleToggleWishlist}
+                disabled={isProcessingWishlist || wishlistLoading}
                 className={`p-0.5 rounded-full border ${
                   isWishlisted ? "bg-red-50 border-red-200" : "bg-gray-50 border-gray-200"
-                } hover:bg-gray-100 transition-colors duration-300`}
-                aria-label="Add to wishlist"
+                } hover:bg-gray-100 transition-colors duration-300 ${
+                  isProcessingWishlist || wishlistLoading ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+                aria-label={isWishlisted ? "Remove from wishlist" : "Add to wishlist"}
               >
                 <Heart className={`w-4 h-4 ${isWishlisted ? "text-red-500 fill-red-500" : "text-gray-500"}`} />
               </button>
@@ -231,18 +245,6 @@ export default function ProductCard({
           <p className="text-xs text-gray-500 mt-0.5">Available: {stock} units</p>
         </div>
       </div>
-
-      {/* Custom Notification - Styled to match the image exactly */}
-      {notification && (
-        <div className="fixed bottom-20 left-1/2 transform -translate-x-1/2 z-50 bg-white px-5 py-3 rounded-lg shadow-md flex items-center gap-3 min-w-[280px] max-w-[320px]">
-          <div className="bg-green-500 rounded-full p-0.5 flex items-center justify-center">
-            <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <span className="text-gray-800 text-sm font-medium">{notification}</span>
-        </div>
-      )}
     </div>
   )
 }

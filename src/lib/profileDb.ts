@@ -268,9 +268,29 @@ const CartSchema = new mongoose.Schema(
         price: { type: Number, required: true },
         quantity: { type: Number, required: true, default: 1 },
         discount: { type: Number, default: 0 },
-        seller_id: { type: Number, required: true },
         stock: { type: Number, required: true },
         units: { type: String },
+      },
+    ],
+    updatedAt: { type: Date, default: Date.now },
+  },
+  { timestamps: true },
+)
+
+// Define Wishlist schema
+const WishlistSchema = new mongoose.Schema(
+  {
+    userId: { type: String, required: true, index: true, unique: true },
+    items: [
+      {
+        productId: { type: String, required: true },
+        title: { type: String, required: true },
+        image_link: { type: String, required: true },
+        price: { type: Number, required: true },
+        discount: { type: Number, default: 0 },
+        stock: { type: Number, default: 0 },
+        units: { type: String },
+        addedAt: { type: Date, default: Date.now },
       },
     ],
     updatedAt: { type: Date, default: Date.now },
@@ -311,6 +331,9 @@ function registerModels(connection: Connection) {
   if (!connection.models.Cart) {
     connection.model("Cart", CartSchema)
   }
+  if (!connection.models.Wishlist) {
+    connection.model("Wishlist", WishlistSchema)
+  }
 }
 
 // Export schemas for use in other files
@@ -325,4 +348,5 @@ export {
   ProductSchema,
   OrderSchema,
   CartSchema,
+  WishlistSchema,
 }

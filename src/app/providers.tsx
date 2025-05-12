@@ -7,14 +7,17 @@ import { Provider } from "react-redux"
 import { store } from "@/store"
 import { Toaster } from "@/components/ui/toaster"
 import CartProvider from "@/components/providers/CartProvider"
+import WishlistProvider from "@/components/providers/WishlistProvider"
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <CartProvider>
-          {children}
-          <Toaster />
+          <WishlistProvider>
+            {children}
+            <Toaster />
+          </WishlistProvider>
         </CartProvider>
       </ThemeProvider>
     </Provider>
