@@ -5,14 +5,12 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Search, Heart, ShoppingBag, Menu, LogOut } from "lucide-react"
-import { Input } from "@/components/ui/input"
+import { Heart, ShoppingBag, LogOut, Search } from "lucide-react"
 import { AuthModal } from "../auth/auth-modal"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { signOut } from "@/actions/auth"
-import Searchbar from "@/components/layout/searchbar"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { useRouter } from "next/navigation"
@@ -28,7 +26,6 @@ interface HeaderProps {
 
 export default function Header({ user }: HeaderProps) {
   const [searchQuery, setSearchQuery] = useState("")
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
   // Get cart and wishlist counts from Redux store
@@ -96,48 +93,72 @@ export default function Header({ user }: HeaderProps) {
     }
   }
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
+    }
+  }
+
   return (
     <header className="w-full bg-white shadow-sm">
       {/* Top Navigation - Fixed */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
-        <div className="container mx-auto px-2 sm:px-4 lg:px-6 py-2">
+        <div className="container mx-auto px-2 py-2">
+          {/* Main Navigation Row - Single row with all elements */}
           <div className="flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 mr-auto">
+            {/* Logo - Always visible */}
+            <Link href="/" className="flex items-center gap-2 min-w-[80px] shrink-0">
               <div className="w-8 h-8 bg-emerald-400 rounded-lg flex items-center justify-center">
                 <ShoppingBag className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-semibold">IND2B</span>
+              <span className="text-xl font-semibold hidden sm:inline">IND2B</span>
             </Link>
 
-            {/* Search Bar */}
-            <Searchbar />
+            {/* Search Bar - Always visible in the middle */}
+            <div className="flex-1 mx-2 max-w-[500px]">
+              <form onSubmit={handleSearch} className="relative">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full py-2 pl-8 pr-4 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
+                <button type="submit" className="absolute inset-y-0 left-0 pl-2.5 flex items-center">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </button>
+              </form>
+            </div>
 
-            {/* Right Navigation */}
-            <div className="flex items-center gap-4 sm:gap-6 ml-auto">
-              <Link href="/dashboard/wishlist" className="relative hidden sm:block">
+            {/* Right Navigation - Always visible */}
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Wishlist - Always visible */}
+              <Link href="/dashboard/wishlist" className="relative flex items-center justify-center">
                 <Heart className="w-6 h-6 text-gray-600" />
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
                   {wishlistItemsCount}
                 </span>
               </Link>
-              <Link href="/cart">
-                <button className="relative">
-                  <Image src="/cart.png" alt="Shopping Cart" width={24} height={24} />
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {cartItemsCount}
-                  </span>
-                </button>
+
+              {/* Cart - Always visible */}
+              <Link href="/cart" className="relative flex items-center justify-center">
+                <Image src="/cart.png" alt="Shopping Cart" width={24} height={24} />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {cartItemsCount}
+                </span>
               </Link>
+
+              {/* User Menu - Always visible */}
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="rounded-full h-10 px-4 flex items-center gap-2">
+                    <Button variant="outline" className="rounded-full h-8 px-2 flex items-center gap-1 ml-1">
                       <Avatar className="h-6 w-6">
                         <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
                         <AvatarFallback>{user.name[0]}</AvatarFallback>
                       </Avatar>
-                      <span className="hidden sm:inline">{user.name.split(" ")[0]}</span>
+                      <span className="hidden sm:inline text-xs">{user.name.split(" ")[0]}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
@@ -149,54 +170,28 @@ export default function Header({ user }: HeaderProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={() => setIsAuthModalOpen(true)} className="hidden sm:block px-6 py-2 rounded-full">
+                <Button onClick={() => setIsAuthModalOpen(true)} className="px-2 py-1 text-xs rounded-full ml-1">
                   Sign In
                 </Button>
               )}
-              <button className="sm:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                <Menu className="w-6 h-6 text-gray-600" />
-              </button>
             </div>
           </div>
-
-          {/* Mobile menu */}
-          {isMenuOpen && (
-            <div className="mt-4 sm:hidden">
-              <div className="flex flex-col space-y-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-                  <Input
-                    type="text"
-                    placeholder="Search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-full focus:outline-none focus:border-gray-300"
-                  />
-                </div>
-                {!user && (
-                  <Button onClick={() => setIsAuthModalOpen(true)} className="px-6 py-2 rounded-full w-full">
-                    Sign In
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       {/* Empty space to compensate for the fixed header */}
-      <div className="h-[50px]"></div>
+      <div className="h-[60px]"></div>
 
-      {/* Categories Navigation */}
+      {/* Categories Navigation - Scrollable on mobile */}
       <div className="bg-[#004D40] text-white overflow-x-auto">
-        <div className="container mx-auto px-3 sm:px-5 lg:px-7">
-          <div className="flex items-center py-3 space-x-4 sm:space-x-8">
-            <span className="text-sm whitespace-nowrap">Explore:</span>
+        <div className="container mx-auto px-3">
+          <div className="flex items-center py-3 space-x-4 whitespace-nowrap">
+            <span className="text-xs font-medium">Explore:</span>
             {categories.map((category, index) => (
               <Link
                 key={index}
                 href={`/category/${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                className="text-sm whitespace-nowrap hover:text-gray-200 transition-colors"
+                className="text-xs hover:text-gray-200 transition-colors"
                 onClick={(e) => handleCategoryClick(e, category)}
               >
                 {category}
