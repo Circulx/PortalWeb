@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 
 interface WarehouseOption {
@@ -16,6 +15,7 @@ interface WarehouseOption {
 interface WarehouseSelectionProps {
   onWarehouseSelect: (warehouseId: string | null) => void
   disabled?: boolean
+  initialWarehouse?: string | null
 }
 
 const warehouseOptions: WarehouseOption[] = [
@@ -84,13 +84,26 @@ const warehouseOptions: WarehouseOption[] = [
   },
 ]
 
-const WarehouseSelection: React.FC<WarehouseSelectionProps> = ({ onWarehouseSelect, disabled = false }) => {
-  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(null)
+const WarehouseSelection: React.FC<WarehouseSelectionProps> = ({
+  onWarehouseSelect,
+  disabled = false,
+  initialWarehouse = null,
+}) => {
+  const [selectedWarehouse, setSelectedWarehouse] = useState<string | null>(initialWarehouse)
+
+  // Update selected warehouse when initialWarehouse changes
+  useEffect(() => {
+    if (initialWarehouse) {
+      setSelectedWarehouse(initialWarehouse)
+    }
+  }, [initialWarehouse])
 
   const handleWarehouseSelect = (warehouseId: string) => {
     setSelectedWarehouse(warehouseId)
-    onWarehouseSelect(warehouseId)
   }
+
+  // Find the selected warehouse option
+  const selectedOption = warehouseOptions.find((option) => option.id === selectedWarehouse)
 
   return (
     <div
@@ -100,6 +113,30 @@ const WarehouseSelection: React.FC<WarehouseSelectionProps> = ({ onWarehouseSele
         <h2 className="text-xl font-semibold mb-2">Choose a Warehouse</h2>
         <div className="border-b-2 border-blue-500 w-64 mx-auto mb-4"></div>
       </div>
+
+      {selectedWarehouse && (
+        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <h3 className="font-medium text-orange-800 mb-2">Selected Warehouse</h3>
+          <div className="flex items-center">
+            {selectedOption && (
+              <>
+                <div className="w-12 h-12 mr-4 flex items-center justify-center">
+                  <Image
+                    src={selectedOption.logo || "/placeholder.svg"}
+                    alt={selectedOption.name}
+                    width={48}
+                    height={48}
+                  />
+                </div>
+                <div>
+                  <p className="font-medium">{selectedOption.provider}</p>
+                  <p className="text-sm text-orange-600">₹{selectedOption.charge.toFixed(2)}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {warehouseOptions.map((warehouse) => (
@@ -129,6 +166,16 @@ const WarehouseSelection: React.FC<WarehouseSelectionProps> = ({ onWarehouseSele
             </button>
           </div>
         ))}
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button
+          onClick={() => onWarehouseSelect(selectedWarehouse)}
+          disabled={!selectedWarehouse}
+          className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Continue
+        </button>
       </div>
     </div>
   )

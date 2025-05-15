@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Image from "next/image"
 
 interface LogisticsOption {
@@ -15,6 +15,7 @@ interface LogisticsOption {
 interface LogisticsSelectionProps {
   onLogisticsSelect: (logisticsId: string | null) => void
   disabled?: boolean
+  initialLogistics?: string | null
 }
 
 const logisticsOptions: LogisticsOption[] = [
@@ -104,12 +105,26 @@ const logisticsOptions: LogisticsOption[] = [
   },
 ]
 
-const LogisticsSelection: React.FC<LogisticsSelectionProps> = ({ onLogisticsSelect, disabled = false }) => {
-  const [selectedLogistics, setSelectedLogistics] = useState<string | null>(null)
+const LogisticsSelection: React.FC<LogisticsSelectionProps> = ({
+  onLogisticsSelect,
+  disabled = false,
+  initialLogistics = null,
+}) => {
+  const [selectedLogistics, setSelectedLogistics] = useState<string | null>(initialLogistics)
+
+  // Update selected logistics when initialLogistics changes
+  useEffect(() => {
+    if (initialLogistics) {
+      setSelectedLogistics(initialLogistics)
+    }
+  }, [initialLogistics])
 
   const handleLogisticsSelect = (logisticsId: string) => {
     setSelectedLogistics(logisticsId)
   }
+
+  // Find the selected logistics option
+  const selectedOption = logisticsOptions.find((option) => option.id === selectedLogistics)
 
   return (
     <div
@@ -119,6 +134,30 @@ const LogisticsSelection: React.FC<LogisticsSelectionProps> = ({ onLogisticsSele
         <h2 className="text-xl font-semibold mb-2">Choose a Logistic Partner</h2>
         <div className="border-b-2 border-blue-500 w-64 mx-auto mb-4"></div>
       </div>
+
+      {selectedLogistics && (
+        <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+          <h3 className="font-medium text-orange-800 mb-2">Selected Logistics Partner</h3>
+          <div className="flex items-center">
+            {selectedOption && (
+              <>
+                <div className="w-12 h-12 mr-4 flex items-center justify-center">
+                  <Image
+                    src={selectedOption.logo || "/placeholder.svg"}
+                    alt={selectedOption.name}
+                    width={48}
+                    height={48}
+                  />
+                </div>
+                <div>
+                  <p className="font-medium">{selectedOption.provider}</p>
+                  <p className="text-sm text-orange-600">₹{selectedOption.charge.toFixed(2)}</p>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Demo Banner */}
       <div className="bg-yellow-400 rounded-lg p-4 mb-6 flex items-center justify-between">

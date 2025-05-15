@@ -7,6 +7,7 @@ import { Country, State, City } from "country-state-city"
 
 interface BillingFormProps {
   onBillingDetailsSubmit: (billingDetails: BillingDetails) => void
+  initialValues?: BillingDetails
 }
 
 export interface BillingDetails {
@@ -19,21 +20,21 @@ export interface BillingDetails {
   city: string
   zipCode: string
   email: string
-  phoneNumber: string
+  phoneNumber: string // Changed from 'phone' to 'phoneNumber' to match actual usage
 }
 
-const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit }) => {
+const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initialValues }) => {
   const [billingDetails, setBillingDetails] = useState<BillingDetails>({
-    firstName: "",
-    lastName: "",
-    companyName: "",
-    address: "",
-    country: "IN", // Default to India
-    state: "",
-    city: "",
-    zipCode: "",
-    email: "",
-    phoneNumber: "",
+    firstName: initialValues?.firstName || "",
+    lastName: initialValues?.lastName || "",
+    companyName: initialValues?.companyName || "",
+    address: initialValues?.address || "",
+    country: initialValues?.country || "IN", // Default to India
+    state: initialValues?.state || "",
+    city: initialValues?.city || "",
+    zipCode: initialValues?.zipCode || "",
+    email: initialValues?.email || "",
+    phoneNumber: initialValues?.phoneNumber || "",
   })
   const [countries, setCountries] = useState<any[]>([])
   const [states, setStates] = useState<any[]>([])

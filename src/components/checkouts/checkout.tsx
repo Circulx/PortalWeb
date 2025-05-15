@@ -25,6 +25,7 @@ enum CheckoutStep {
   LOGISTICS = 4,
   PAYMENT = 5,
   ADDITIONAL_INFO = 6,
+  REVIEW = 7, // Added a review step
 }
 
 export default function CheckoutPage() {
@@ -46,6 +47,7 @@ export default function CheckoutPage() {
     orderId: string
     signature: string
   } | null>(null)
+  const [allStepsCompleted, setAllStepsCompleted] = useState(false)
 
   // Track expanded/collapsed state of each section
   const [expandedSections, setExpandedSections] = useState<Record<CheckoutStep, boolean>>({
@@ -55,6 +57,7 @@ export default function CheckoutPage() {
     [CheckoutStep.LOGISTICS]: false,
     [CheckoutStep.PAYMENT]: false,
     [CheckoutStep.ADDITIONAL_INFO]: false,
+    [CheckoutStep.REVIEW]: false,
   })
 
   // Refs for scrolling to sections
@@ -65,7 +68,50 @@ export default function CheckoutPage() {
     [CheckoutStep.LOGISTICS]: useRef<HTMLDivElement>(null),
     [CheckoutStep.PAYMENT]: useRef<HTMLDivElement>(null),
     [CheckoutStep.ADDITIONAL_INFO]: useRef<HTMLDivElement>(null),
+    [CheckoutStep.REVIEW]: useRef<HTMLDivElement>(null),
   }
+
+  // Load saved checkout data from sessionStorage on initial render
+  useEffect(() => {
+    const savedCheckoutData = sessionStorage.getItem("checkoutData")
+    if (savedCheckoutData) {
+      try {
+        const parsedData = JSON.parse(savedCheckoutData)
+        if (parsedData.billingDetails) setBillingDetails(parsedData.billingDetails)
+        if (parsedData.warehouseNeeded !== undefined) setWarehouseNeeded(parsedData.warehouseNeeded)
+        if (parsedData.logisticsNeeded !== undefined) setLogisticsNeeded(parsedData.logisticsNeeded)
+        if (parsedData.selectedWarehouse) setSelectedWarehouse(parsedData.selectedWarehouse)
+        if (parsedData.selectedLogistics) setSelectedLogistics(parsedData.selectedLogistics)
+        if (parsedData.additionalNotes) setAdditionalNotes(parsedData.additionalNotes)
+      } catch (error) {
+        console.error("Error parsing saved checkout data:", error)
+      }
+    }
+  }, [])
+
+  // Save checkout data to sessionStorage whenever relevant state changes
+  useEffect(() => {
+    const checkoutData = {
+      billingDetails,
+      warehouseNeeded,
+      logisticsNeeded,
+      selectedWarehouse,
+      selectedLogistics,
+      additionalNotes,
+    }
+    sessionStorage.setItem("checkoutData", JSON.stringify(checkoutData))
+  }, [billingDetails, warehouseNeeded, logisticsNeeded, selectedWarehouse, selectedLogistics, additionalNotes])
+
+  // Check if all required steps are completed
+  useEffect(() => {
+    const requiredStepsCompleted =
+      !!billingDetails &&
+      (!warehouseNeeded || !!selectedWarehouse) &&
+      (!logisticsNeeded || !!selectedLogistics) &&
+      !!paymentMethod
+
+    setAllStepsCompleted(requiredStepsCompleted)
+  }, [billingDetails, warehouseNeeded, selectedWarehouse, logisticsNeeded, selectedLogistics, paymentMethod])
 
   // Redirect to cart if cart is empty
   useEffect(() => {
@@ -206,7 +252,15 @@ export default function CheckoutPage() {
   // Handle additional info submission
   const handleAdditionalInfoSubmit = (notes: string) => {
     setAdditionalNotes(notes)
-    handlePlaceOrder()
+
+    // Collapse additional info section and expand review
+    setExpandedSections((prev) => ({
+      ...prev,
+      [CheckoutStep.ADDITIONAL_INFO]: false,
+      [CheckoutStep.REVIEW]: true,
+    }))
+
+    setCurrentStep(CheckoutStep.REVIEW)
   }
 
   // Calculate subtotal
@@ -308,6 +362,9 @@ export default function CheckoutPage() {
         }),
       )
 
+      // Clear checkout data from sessionStorage after successful order
+      sessionStorage.removeItem("checkoutData")
+
       console.log("Redirecting to success page with orderId:", result.orderId)
       router.push(`/checkout/success?orderId=${result.orderId}`)
     } catch (error) {
@@ -348,6 +405,70 @@ export default function CheckoutPage() {
     )
   }
 
+  // Render the final review section
+  const renderReviewSection = () => {
+    return (
+      <div className="p-6">
+        <h2 className="text-lg font-medium mb-4">Order Review</h2>
+        <p className="text-sm text-gray-600 mb-6">Please review your order details before placing your order.</p>
+
+        {/* Order summary for review */}
+        <div className="space-y-4 mb-6">
+          <div className="border-b pb-4">
+            <h3 className="font-medium mb-2">Shipping Address</h3>
+            {billingDetails && (
+              <div className="text-sm text-gray-600">
+                <p>
+                  {billingDetails.firstName} {billingDetails.lastName}
+                </p>
+                <p>{billingDetails.address}</p>
+                <p>
+                  {billingDetails.city}, {billingDetails.state} {billingDetails.zipCode}
+                </p>
+                <p>{billingDetails.country}</p>
+                <p>Phone: {billingDetails.phoneNumber}</p>
+                <p>Email: {billingDetails.email}</p>
+              </div>
+            )}
+          </div>
+
+          {warehouseNeeded && selectedWarehouse && (
+            <div className="border-b pb-4">
+              <h3 className="font-medium mb-2">Warehouse</h3>
+              <p className="text-sm text-gray-600">Selected Warehouse ID: {selectedWarehouse}</p>
+            </div>
+          )}
+
+          {logisticsNeeded && selectedLogistics && (
+            <div className="border-b pb-4">
+              <h3 className="font-medium mb-2">Logistics</h3>
+              <p className="text-sm text-gray-600">Selected Logistics ID: {selectedLogistics}</p>
+            </div>
+          )}
+
+          <div className="border-b pb-4">
+            <h3 className="font-medium mb-2">Payment Method</h3>
+            <p className="text-sm text-gray-600">{paymentMethod === "COD" ? "Cash on Delivery" : "Online Payment"}</p>
+          </div>
+
+          {additionalNotes && (
+            <div className="border-b pb-4">
+              <h3 className="font-medium mb-2">Additional Notes</h3>
+              <p className="text-sm text-gray-600">{additionalNotes}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6">
+          <p className="text-sm text-gray-600 text-center">
+            Please review your order details above and click the "Place Order" button in the Order Summary to complete
+            your purchase.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-7xl mx-auto pb-20">
       <h1 className="text-2xl font-bold text-center mb-8">Shopping Checkout</h1>
@@ -367,7 +488,10 @@ export default function CheckoutPage() {
             )}
             {expandedSections[CheckoutStep.BILLING] && (
               <div className="transition-all duration-300">
-                <BillingForm onBillingDetailsSubmit={handleBillingDetailsSubmit} />
+                <BillingForm
+                  onBillingDetailsSubmit={handleBillingDetailsSubmit}
+                  initialValues={billingDetails || undefined}
+                />
               </div>
             )}
           </div>
@@ -406,6 +530,7 @@ export default function CheckoutPage() {
                   <WarehouseSelection
                     onWarehouseSelect={handleWarehouseSelect}
                     disabled={currentStep !== CheckoutStep.WAREHOUSE}
+                    initialWarehouse={selectedWarehouse}
                   />
                 </div>
               )}
@@ -424,6 +549,7 @@ export default function CheckoutPage() {
                   <LogisticsSelection
                     onLogisticsSelect={handleLogisticsSelect}
                     disabled={currentStep !== CheckoutStep.LOGISTICS}
+                    initialLogistics={selectedLogistics}
                   />
                 </div>
               )}
@@ -455,14 +581,32 @@ export default function CheckoutPage() {
               ref={sectionRefs[CheckoutStep.ADDITIONAL_INFO]}
               className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
             >
-              {renderSectionHeader(CheckoutStep.ADDITIONAL_INFO, "Additional Information", false)}
+              {renderSectionHeader(
+                CheckoutStep.ADDITIONAL_INFO,
+                "Additional Information",
+                currentStep > CheckoutStep.ADDITIONAL_INFO,
+              )}
               {expandedSections[CheckoutStep.ADDITIONAL_INFO] && (
                 <div className="transition-all duration-300">
                   <AdditionalInfo
                     onSubmit={handleAdditionalInfoSubmit}
                     disabled={currentStep !== CheckoutStep.ADDITIONAL_INFO}
+                    initialNotes={additionalNotes}
                   />
                 </div>
+              )}
+            </div>
+          )}
+
+          {/* Review Section */}
+          {currentStep >= CheckoutStep.REVIEW && (
+            <div
+              ref={sectionRefs[CheckoutStep.REVIEW]}
+              className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden"
+            >
+              {renderSectionHeader(CheckoutStep.REVIEW, "Review Order", false)}
+              {expandedSections[CheckoutStep.REVIEW] && (
+                <div className="transition-all duration-300">{renderReviewSection()}</div>
               )}
             </div>
           )}
@@ -476,6 +620,7 @@ export default function CheckoutPage() {
               onTotalAmountChange={handleTotalAmountChange}
               isProcessing={isProcessing}
               paymentMethod={paymentMethod}
+              allStepsCompleted={allStepsCompleted && currentStep === CheckoutStep.REVIEW}
             />
           </div>
         </div>

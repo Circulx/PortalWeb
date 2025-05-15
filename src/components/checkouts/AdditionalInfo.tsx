@@ -6,10 +6,11 @@ import { useState } from "react"
 interface AdditionalInfoProps {
   onSubmit: (notes: string) => void
   disabled?: boolean
+  initialNotes?: string
 }
 
-const AdditionalInfo: React.FC<AdditionalInfoProps> = ({ onSubmit, disabled = false }) => {
-  const [notes, setNotes] = useState("")
+const AdditionalInfo: React.FC<AdditionalInfoProps> = ({ onSubmit, disabled = false, initialNotes = "" }) => {
+  const [notes, setNotes] = useState(initialNotes)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
