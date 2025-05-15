@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: any }) {
   try {
     const id = params.id
 
