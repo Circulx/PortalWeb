@@ -358,7 +358,13 @@ export default function CheckoutPage() {
         JSON.stringify({
           orderId: result.orderId,
           totalAmount,
-          products: cartItems.length,
+          products: productsWithIds.map((product) => ({
+            id: product.productId,
+            title: product.title,
+            price: product.price,
+            quantity: product.quantity,
+            image_link: product.image_link,
+          })),
         }),
       )
 
@@ -430,6 +436,14 @@ export default function CheckoutPage() {
                 <p>Email: {billingDetails.email}</p>
               </div>
             )}
+          </div>
+
+          <div className="border-b pb-4">
+            <h3 className="font-medium mb-2">Additional Services</h3>
+            <div className="text-sm text-gray-600">
+              <p>Warehouse Service: {warehouseNeeded ? "Yes" : "No"}</p>
+              <p>Logistics Service: {logisticsNeeded ? "Yes" : "No"}</p>
+            </div>
           </div>
 
           {warehouseNeeded && selectedWarehouse && (
@@ -512,6 +526,7 @@ export default function CheckoutPage() {
                   <AdditionalServicesCard
                     onSubmit={handleAdditionalServicesSubmit}
                     disabled={currentStep !== CheckoutStep.ADDITIONAL_SERVICES}
+                    initialValues={{ warehouseNeeded, logisticsNeeded }}
                   />
                 </div>
               )}

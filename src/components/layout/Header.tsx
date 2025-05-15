@@ -132,7 +132,7 @@ export default function Header({ user }: HeaderProps) {
             </div>
 
             {/* Right Navigation - Always visible */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-4 md:gap-5 shrink-0">
               {/* Wishlist - Always visible */}
               <Link href="/dashboard/wishlist" className="relative flex items-center justify-center">
                 <Heart className="w-6 h-6 text-gray-600" />
@@ -153,8 +153,8 @@ export default function Header({ user }: HeaderProps) {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="rounded-full h-8 px-2 flex items-center gap-1 ml-1">
-                      <Avatar className="h-6 w-6">
+                    <Button variant="outline" className="rounded-lg h-7 px-2 flex items-center gap-1">
+                      <Avatar className="h-5 w-5">
                         <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
                         <AvatarFallback>{user.name[0]}</AvatarFallback>
                       </Avatar>
@@ -170,8 +170,11 @@ export default function Header({ user }: HeaderProps) {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={() => setIsAuthModalOpen(true)} className="px-2 py-1 text-xs rounded-full ml-1">
-                  Sign In
+                <Button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="bg-emerald-500 hover:bg-orange-900 text-white rounded-md px-4 py-2 text-lg font-medium ml-2 transition-colors h-9 min-h-0"
+                >
+                 Login
                 </Button>
               )}
             </div>
