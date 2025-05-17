@@ -1,461 +1,344 @@
 "use client"
 
-import * as React from "react"
-import { CaretSortIcon } from "@radix-ui/react-icons"
-import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type SortingState,
-  type VisibilityState,
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table"
+import { useState, useEffect } from "react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Search, ChevronLeft, ChevronRight } from "lucide-react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Loader2, Search, Package, TrendingUp, DollarSign, AlertCircle } from "lucide-react"
+import { format } from "date-fns"
+import Link from "next/link"
+import { toast } from "sonner"
 
-type Order = {
-  id: string
-  orderDate: string
-  buyerName: string
-  status: "Delivered" | "Pending"
-  amount: number
-  payment: "Paid" | "Pending"
+// Define types for order data
+interface OrderProduct {
+  productId?: string
+  product_id?: string
+  title: string
+  quantity: number
+  price: number
+  image_link?: string
 }
 
-const initialData: Order[] = [
-  {
-    id: "1234",
-    orderDate: "10 Dec 2024",
-    buyerName: "ABC Industries",
-    status: "Delivered",
-    amount: 25000,
-    payment: "Paid",
-  },
-  {
-    id: "1235",
-    orderDate: "09 Dec 2024",
-    buyerName: "XYZ Pvt Ltd",
-    status: "Delivered",
-    amount: 45000,
-    payment: "Paid",
-  },
-  {
-    id: "1236",
-    orderDate: "04 Dec 2024",
-    buyerName: "DEF Enterprises",
-    status: "Pending",
-    amount: 30000,
-    payment: "Pending",
-  },
-  {
-    id: "1237",
-    orderDate: "03 Dec 2024",
-    buyerName: "A.D Industries",
-    status: "Delivered",
-    amount: 25000,
-    payment: "Paid",
-  },
-  {
-    id: "1238",
-    orderDate: "06 Dec 2024",
-    buyerName: "Aditya Industries",
-    status: "Pending",
-    amount: 30000,
-    payment: "Pending",
-  },
-  {
-    id: "1239",
-    orderDate: "18 Dec 2024",
-    buyerName: "E.S Enterprises",
-    status: "Delivered",
-    amount: 45000,
-    payment: "Paid",
-  },
-  {
-    id: "1240",
-    orderDate: "28 Dec 2024",
-    buyerName: "Dilip Enterprises",
-    status: "Delivered",
-    amount: 25000,
-    payment: "Paid",
-  },
-  { id: "1241", orderDate: "29 Dec 2024", buyerName: "GHI Corp", status: "Pending", amount: 35000, payment: "Pending" },
-  {
-    id: "1242",
-    orderDate: "30 Dec 2024",
-    buyerName: "JKL Limited",
-    status: "Delivered",
-    amount: 28000,
-    payment: "Paid",
-  },
-  {
-    id: "1243",
-    orderDate: "31 Dec 2024",
-    buyerName: "MNO Systems",
-    status: "Delivered",
-    amount: 42000,
-    payment: "Paid",
-  },
-  {
-    id: "1244",
-    orderDate: "01 Jan 2025",
-    buyerName: "PQR Solutions",
-    status: "Pending",
-    amount: 33000,
-    payment: "Pending",
-  },
-  {
-    id: "1245",
-    orderDate: "02 Jan 2025",
-    buyerName: "STU Technologies",
-    status: "Delivered",
-    amount: 38000,
-    payment: "Paid",
-  },
-  {
-    id: "1246",
-    orderDate: "03 Jan 2025",
-    buyerName: "VWX Industries",
-    status: "Pending",
-    amount: 27000,
-    payment: "Pending",
-  },
-  {
-    id: "1247",
-    orderDate: "04 Jan 2025",
-    buyerName: "YZA Corporation",
-    status: "Delivered",
-    amount: 51000,
-    payment: "Paid",
-  },
-  {
-    id: "1248",
-    orderDate: "05 Jan 2025",
-    buyerName: "BCD Enterprises",
-    status: "Delivered",
-    amount: 44000,
-    payment: "Paid",
-  },
-]
+interface BillingDetails {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  phoneNumber?: string
+  address?: string
+  city?: string
+  state?: string
+  zipCode?: string
+  country?: string
+}
+
+interface Order {
+  _id: string
+  userId?: string
+  products: OrderProduct[]
+  billingDetails: BillingDetails
+  totalAmount: number
+  sellerSubtotal: number
+  originalTotal: number
+  status: string
+  paymentMethod?: string
+  createdAt: string
+  updatedAt: string
+}
 
 export function OrderManagement() {
-  const [data, setData] = React.useState(initialData)
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
-  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
-  const [selectedStatus, setSelectedStatus] = React.useState<string | null>(null)
-  const [selectedPayment, setSelectedPayment] = React.useState<string | null>(null)
+  const [orders, setOrders] = useState<Order[]>([])
+  const [filteredOrders, setFilteredOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [currentTab, setCurrentTab] = useState("all")
 
-  const columns: ColumnDef<Order>[] = [
-    {
-      accessorKey: "id",
-      header: ({ column }) => {
-        return (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Order ID
-            <CaretSortIcon className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => <div className="font-medium">{row.getValue("id")}</div>,
-    },
-    {
-      accessorKey: "orderDate",
-      header: ({ column }) => {
-        return (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Order Date
-            <CaretSortIcon className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-    },
-    {
-      accessorKey: "buyerName",
-      header: ({ column }) => {
-        return (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Buyer Name
-            <CaretSortIcon className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-    },
-    {
-      accessorKey: "status",
-      header: "Status",
-      cell: ({ row }) => {
-        const status = row.getValue("status") as string
-        return (
-          <Select
-            value={status}
-            onValueChange={(value) => {
-              const newData = [...data]
-              const index = newData.findIndex((item) => item.id === row.getValue("id"))
-              newData[index] = { ...newData[index], status: value as "Delivered" | "Pending" }
-              setData(newData)
-              console.log(`Updating status for order ${row.getValue("id")} to ${value}`)
-            }}
-          >
-            <SelectTrigger
-              className={`w-[110px] h-8 ${
-                status === "Delivered"
-                  ? "bg-green-100 text-green-800 border-green-200"
-                  : "bg-yellow-100 text-yellow-800 border-yellow-200"
-              }`}
-            >
-              <SelectValue>{status}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Delivered">Delivered</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
-        )
-      },
-    },
-    {
-      accessorKey: "amount",
-      header: ({ column }) => {
-        return (
-          <Button variant="ghost" onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}>
-            Amount
-            <CaretSortIcon className="ml-2 h-4 w-4" />
-          </Button>
-        )
-      },
-      cell: ({ row }) => {
-        const amount = Number.parseFloat(row.getValue("amount"))
-        const formatted = new Intl.NumberFormat("en-IN", {
-          style: "currency",
-          currency: "INR",
-        }).format(amount)
-        return formatted
-      },
-    },
-    {
-      accessorKey: "payment",
-      header: "Payment",
-      cell: ({ row }) => {
-        const payment = row.getValue("payment") as string
-        return (
-          <Select
-            value={payment}
-            onValueChange={(value) => {
-              const newData = [...data]
-              const index = newData.findIndex((item) => item.id === row.getValue("id"))
-              newData[index] = { ...newData[index], payment: value as "Paid" | "Pending" }
-              setData(newData)
-              console.log(`Updating payment for order ${row.getValue("id")} to ${value}`)
-            }}
-          >
-            <SelectTrigger
-              className={`w-[110px] h-8 ${
-                payment === "Paid"
-                  ? "bg-green-100 text-green-800 border-green-200"
-                  : "bg-gray-100 text-gray-800 border-gray-200"
-              }`}
-            >
-              <SelectValue>{payment}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Paid">Paid</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
-        )
-      },
-    },
-    {
-      id: "actions",
-      cell: ({ row }) => {
-        return (
-          <Button variant="ghost" className="h-8 w-8 p-0">
-            View Details
-          </Button>
-        )
-      },
-    },
-  ]
+  // Stats
+  const [totalOrders, setTotalOrders] = useState(0)
+  const [totalRevenue, setTotalRevenue] = useState(0)
+  const [pendingOrders, setPendingOrders] = useState(0)
 
-  const table = useReactTable({
-    data,
-    columns,
-    onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    onColumnVisibilityChange: setColumnVisibility,
-    onRowSelectionChange: setRowSelection,
-    initialState: {
-      pagination: {
-        pageSize: 10,
-      },
-    },
-    state: {
-      sorting,
-      columnFilters,
-      columnVisibility,
-      rowSelection,
-    },
-  })
+  useEffect(() => {
+    async function fetchOrders() {
+      try {
+        setLoading(true)
+        const response = await fetch("/api/seller/orders")
 
-  React.useEffect(() => {
-    if (selectedStatus && selectedStatus !== "all") {
-      table.getColumn("status")?.setFilterValue(selectedStatus)
-    } else {
-      table.getColumn("status")?.setFilterValue(null)
+        if (!response.ok) {
+          throw new Error("Failed to fetch orders")
+        }
+
+        const data = await response.json()
+        console.log("Fetched orders:", data.orders)
+
+        if (!data.orders || !Array.isArray(data.orders)) {
+          console.error("Invalid orders data:", data)
+          setOrders([])
+          setFilteredOrders([])
+          setError("Invalid order data received")
+          return
+        }
+
+        setOrders(data.orders || [])
+        setFilteredOrders(data.orders || [])
+
+        // Calculate stats
+        const total = data.orders.length
+        const revenue = data.orders.reduce((sum: number, order: Order) => sum + (order.sellerSubtotal || 0), 0)
+        const pending = data.orders.filter(
+          (order: Order) =>
+            (order.status || "").toUpperCase() === "PENDING" || (order.status || "").toUpperCase() === "PROCESSING",
+        ).length
+
+        setTotalOrders(total)
+        setTotalRevenue(revenue)
+        setPendingOrders(pending)
+
+        if (data.orders.length === 0) {
+          toast.info("No orders found for your products")
+        }
+      } catch (err) {
+        console.error("Error fetching orders:", err)
+        setError("Failed to load orders. Please try again later.")
+      } finally {
+        setLoading(false)
+      }
     }
-    if (selectedPayment && selectedPayment !== "all") {
-      table.getColumn("payment")?.setFilterValue(selectedPayment)
-    } else {
-      table.getColumn("payment")?.setFilterValue(null)
-    }
-  }, [selectedStatus, selectedPayment, table])
 
-  const currentPage = table.getState().pagination.pageIndex + 1
-  const totalPages = table.getPageCount()
-  const startItem = (currentPage - 1) * table.getState().pagination.pageSize + 1
-  const endItem = Math.min(currentPage * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)
-  const totalItems = table.getFilteredRowModel().rows.length
+    fetchOrders()
+  }, [])
+
+  // Filter orders based on search term, status, and current tab
+  useEffect(() => {
+    let filtered = [...orders]
+
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (order) =>
+          order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          order.products.some((product) => (product.title || "").toLowerCase().includes(searchTerm.toLowerCase())) ||
+          ((order.billingDetails?.firstName || "") + " " + (order.billingDetails?.lastName || ""))
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()),
+      )
+    }
+
+    // Apply status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter((order) => (order.status || "").toUpperCase() === statusFilter.toUpperCase())
+    }
+
+    // Apply tab filter
+    if (currentTab !== "all") {
+      if (currentTab === "pending") {
+        filtered = filtered.filter(
+          (order) =>
+            (order.status || "").toUpperCase() === "PENDING" || (order.status || "").toUpperCase() === "PROCESSING",
+        )
+      } else if (currentTab === "shipped") {
+        filtered = filtered.filter((order) => (order.status || "").toUpperCase() === "SHIPPED")
+      } else if (currentTab === "delivered") {
+        filtered = filtered.filter((order) => (order.status || "").toUpperCase() === "DELIVERED")
+      } else if (currentTab === "cancelled") {
+        filtered = filtered.filter((order) => (order.status || "").toUpperCase() === "CANCELLED")
+      }
+    }
+
+    setFilteredOrders(filtered)
+  }, [orders, searchTerm, statusFilter, currentTab])
+
+  // Function to get status badge color
+  const getStatusColor = (status: string) => {
+    const statusUpper = (status || "").toUpperCase()
+    if (statusUpper === "PENDING") return "bg-yellow-500"
+    if (statusUpper === "PROCESSING") return "bg-blue-500"
+    if (statusUpper === "SHIPPED") return "bg-purple-500"
+    if (statusUpper === "DELIVERED") return "bg-green-500"
+    if (statusUpper === "CANCELLED") return "bg-red-500"
+    return "bg-gray-500"
+  }
+
+  // Function to format date
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), "MMM dd, yyyy")
+    } catch (e) {
+      return "Invalid date"
+    }
+  }
+
+  // Function to get customer name
+  const getCustomerName = (billingDetails: BillingDetails) => {
+    if (!billingDetails) return "Unknown Customer"
+
+    const firstName = billingDetails.firstName || ""
+    const lastName = billingDetails.lastName || ""
+
+    if (!firstName && !lastName) return "Unknown Customer"
+    return `${firstName} ${lastName}`.trim()
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Loading orders...</span>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <AlertCircle className="h-8 w-8 text-red-500" />
+        <p className="ml-2 text-red-500">{error}</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full px-2 py-4 sm:px-4 md:px-6 lg:px-8">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-        <div className="relative w-full sm:w-auto">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-5 w-5 text-gray-400" />
+    <div className="space-y-6">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <Package className="h-10 w-10 text-primary" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Orders</p>
+                <h3 className="text-2xl font-bold">{totalOrders}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <DollarSign className="h-10 w-10 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Total Revenue</p>
+                <h3 className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center space-x-4">
+              <TrendingUp className="h-10 w-10 text-yellow-500" />
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Pending Orders</p>
+                <h3 className="text-2xl font-bold">{pendingOrders}</h3>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Order Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 mb-6">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search orders..."
+                className="pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full md:w-[180px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="processing">Processing</SelectItem>
+                <SelectItem value="shipped">Shipped</SelectItem>
+                <SelectItem value="delivered">Delivered</SelectItem>
+                <SelectItem value="cancelled">Cancelled</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Input
-            placeholder="Search by Buyer Name/Company Name"
-            value={(table.getColumn("buyerName")?.getFilterValue() as string) ?? ""}
-            onChange={(event) => table.getColumn("buyerName")?.setFilterValue(event.target.value)}
-            className="pl-10 pr-4 w-full"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Select
-            value={selectedStatus || "all"}
-            onValueChange={(value) => setSelectedStatus(value === "all" ? null : value)}
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Filter Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="Delivered">Delivered</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
 
-          <Select
-            value={selectedPayment || "all"}
-            onValueChange={(value) => setSelectedPayment(value === "all" ? null : value)}
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Filter Payment" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Payments</SelectItem>
-              <SelectItem value="Paid">Paid</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-            </SelectContent>
-          </Select>
+          <Tabs defaultValue="all" onValueChange={setCurrentTab}>
+            <TabsList className="mb-4">
+              <TabsTrigger value="all">All Orders</TabsTrigger>
+              <TabsTrigger value="pending">Pending</TabsTrigger>
+              <TabsTrigger value="shipped">Shipped</TabsTrigger>
+              <TabsTrigger value="delivered">Delivered</TabsTrigger>
+              <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            </TabsList>
 
-          {(selectedStatus || selectedPayment) && (
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedStatus("all")
-                setSelectedPayment("all")
-                table.getColumn("status")?.setFilterValue(null)
-                table.getColumn("payment")?.setFilterValue(null)
-              }}
-              className="px-3 py-2 text-sm"
-            >
-              Clear Filters
-            </Button>
-          )}
-        </div>
-      </div>
-
-      <div className="rounded-md border overflow-x-auto">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead
-                    key={header.id}
-                    className="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="px-2 py-3 whitespace-nowrap">
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-        <div className="text-sm text-gray-700">
-          Showing {startItem}-{endItem} of {totalItems}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <div className="text-sm text-gray-700">
-            Page {currentPage} of {totalPages}
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="h-8 w-8 p-0"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      </div>
+            <TabsContent value={currentTab}>
+              {filteredOrders.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-muted-foreground">No orders found</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {orders.length > 0
+                      ? "Try adjusting your filters to see more orders"
+                      : "You don't have any orders for your products yet"}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Order ID</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Products</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredOrders.map((order) => (
+                        <TableRow key={order._id}>
+                          <TableCell className="font-medium">{order._id.substring(0, 8)}...</TableCell>
+                          <TableCell>{formatDate(order.createdAt)}</TableCell>
+                          <TableCell>{getCustomerName(order.billingDetails)}</TableCell>
+                          <TableCell>
+                            <div className="max-w-[200px] truncate">
+                              {order.products.map((product) => product.title || "Unnamed Product").join(", ")}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">{order.products.length} item(s)</div>
+                          </TableCell>
+                          <TableCell>₹{order.sellerSubtotal.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(order.status)}>
+                              {(order.status || "PENDING").toUpperCase()}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button variant="outline" size="sm" asChild>
+                              <Link href={`/seller/orders/${order._id}`}>View Details</Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   )
 }
-
