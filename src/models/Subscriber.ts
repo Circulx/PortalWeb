@@ -19,4 +19,3 @@ export { SubscriberModel as Subscriber }
 
 // Keep default export for backward compatibility
 export default SubscriberModel
-

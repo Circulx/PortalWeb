@@ -288,4 +288,3 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
     </Form>
   )
 }
-

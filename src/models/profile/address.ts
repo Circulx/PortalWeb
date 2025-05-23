@@ -41,4 +41,3 @@ const AddressSchema = new Schema<IAddress>(
 )
 
 export const Address = mongoose.models.Address || mongoose.model<IAddress>("Address", AddressSchema)
-

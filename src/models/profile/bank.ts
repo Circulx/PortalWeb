@@ -30,4 +30,3 @@ const BankSchema = new Schema<IBank>(
 )
 
 export const Bank = mongoose.models.Bank || mongoose.model<IBank>("Bank", BankSchema)
-

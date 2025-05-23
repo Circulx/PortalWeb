@@ -85,4 +85,3 @@ export async function connectDB2(): Promise<Connection> {
 if (process.env.NODE_ENV !== "production") {
   globalWithMongo.mongoConnections = cached
 }
-

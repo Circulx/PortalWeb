@@ -34,4 +34,3 @@ const DocumentSchema = new Schema<IDocument>(
 )
 
 export const Document = mongoose.models.Document || mongoose.model<IDocument>("Document", DocumentSchema)
-

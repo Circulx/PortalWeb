@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils"
 
 interface Seller {
-  _id: string 
+  _id: string
   id: string
   name: string
   tradeName: string
@@ -372,4 +372,3 @@ export function SellerList() {
     </div>
   )
 }
-

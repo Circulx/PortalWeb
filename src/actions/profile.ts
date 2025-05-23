@@ -624,4 +624,3 @@ export async function getProfileData() {
     return { error: "Failed to get profile data" }
   }
 }
-

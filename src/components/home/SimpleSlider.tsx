@@ -71,4 +71,3 @@ export default function SimpleSlider() {
     </div>
   )
 }
-

@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose"
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params:any }) {
   try {
     const orderId = params.id
     if (!orderId) {

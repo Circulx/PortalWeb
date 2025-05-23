@@ -47,4 +47,3 @@ export function StatsCard({ title, value, type }: StatsCardProps) {
     </div>
   )
 }
-

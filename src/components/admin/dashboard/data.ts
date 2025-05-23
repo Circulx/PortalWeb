@@ -29,4 +29,3 @@ export const weeklyData = [
   { period: "Sat", sales: 200 },
   { period: "Sun", sales: 140 },
 ]
-

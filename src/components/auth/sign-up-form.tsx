@@ -124,4 +124,3 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     </div>
   )
 }
-

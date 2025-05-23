@@ -28,4 +28,3 @@ export function PendingCard({ title, value, change, icon }: PendingCardProps) {
     </Card>
   )
 }
-

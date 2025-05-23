@@ -58,4 +58,3 @@ export function CheckboxList({ title, items, selectedItems, onItemToggle, classN
     </div>
   )
 }
-

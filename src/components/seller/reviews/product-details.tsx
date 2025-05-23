@@ -34,4 +34,3 @@ export function ProductDetails({ product }: ProductDetailsProps) {
     </div>
   )
 }
-

@@ -77,4 +77,3 @@ productSchema.pre("save", async function (next) {
 const ProductModel = mongoose.models.Product || mongoose.model<Product>("Product", productSchema)
 
 export { ProductModel }
-

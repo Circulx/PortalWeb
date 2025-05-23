@@ -53,4 +53,3 @@ function ActivityCard({ title, time }: { title: string; time: string }) {
     </div>
   )
 }
-

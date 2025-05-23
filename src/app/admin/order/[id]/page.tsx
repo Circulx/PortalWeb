@@ -12,4 +12,3 @@ export default function OrderDetailPage({ params }: OrderDetailPageProps) {
 
   return <OrderDetail orderId={id} />
 }
-

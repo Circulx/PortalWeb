@@ -59,4 +59,3 @@ export async function sendContactEmail(formData: FormData) {
     return { success: false, error: "An unexpected error occurred" }
   }
 }
-

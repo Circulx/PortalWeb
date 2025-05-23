@@ -9,6 +9,7 @@ import Providers from "./providers"
 export const metadata: Metadata = {
   title: "IND2B",
   description: "Your one-stop shop for all your needs",
+    generator: 'v0.dev'
 }
 
 export const viewport: Viewport = {

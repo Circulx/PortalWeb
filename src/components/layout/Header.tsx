@@ -174,7 +174,7 @@ export default function Header({ user }: HeaderProps) {
                   onClick={() => setIsAuthModalOpen(true)}
                   className="bg-emerald-500 hover:bg-orange-900 text-white rounded-md px-4 py-2 text-lg font-medium ml-2 transition-colors h-9 min-h-0"
                 >
-                 Login
+                  Login
                 </Button>
               )}
             </div>

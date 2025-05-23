@@ -151,4 +151,3 @@ export async function updateUserType(userId: string, newType: "admin" | "seller"
     return { error: "Something went wrong" }
   }
 }
-

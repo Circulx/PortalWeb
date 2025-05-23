@@ -109,4 +109,3 @@ export interface DocumentDetails {
   aadharCard?: string
   panCard?: string
 }
-

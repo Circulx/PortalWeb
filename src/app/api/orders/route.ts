@@ -22,22 +22,40 @@ export async function GET(req: NextRequest) {
     // Get the orders collection
     const ordersCollection = db.collection("orders")
 
-    // Find all orders for the current user
-    const orders = await ordersCollection.find({ userId: user.id }).toArray()
+    let orders = []
+
+    // If user is admin, fetch all orders
+    if (user.type === "admin") {
+      orders = await ordersCollection.find({}).sort({ createdAt: -1 }).toArray()
+    }
+    // If user is seller, fetch only their orders
+    else if (user.type === "seller") {
+      orders = await ordersCollection
+        .find({
+          "products.sellerId": user.id,
+        })
+        .sort({ createdAt: -1 })
+        .toArray()
+    }
+    // If user is customer, fetch only their orders
+    else {
+      orders = await ordersCollection
+        .find({
+          userId: user.id,
+        })
+        .sort({ createdAt: -1 })
+        .toArray()
+    }
 
     // Transform the orders to handle MongoDB ObjectId serialization
-    // and ensure product images are properly included
     const serializedOrders = orders.map((order) => {
       // Process products to ensure image URLs are properly formatted
       const products =
         order.products?.map((product: any) => {
-          // Log product data to help debug
-          console.log("Product data:", product)
-
           return {
             ...product,
             // Ensure image_link is properly formatted
-            image_link: product.image_link  || "/placeholder.svg",
+            image_link: product.image_link || "/placeholder.svg",
           }
         }) || []
 

@@ -78,7 +78,9 @@ export default function ProductsPage() {
         setFilteredProducts(typedProducts)
 
         // Extract unique categories with proper type handling
-        const categoryNames: string[] = typedProducts.map((product: { category_name: any }) => product.category_name || "")
+        const categoryNames: string[] = typedProducts.map(
+          (product: { category_name: any }) => product.category_name || "",
+        )
         const uniqueCategories: string[] = Array.from(new Set(categoryNames))
         setCategories(uniqueCategories)
       } catch (error) {
@@ -560,4 +562,3 @@ export default function ProductsPage() {
     </div>
   )
 }
-

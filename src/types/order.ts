@@ -1,6 +1,9 @@
 import type { ObjectId } from "mongoose"
 
 export interface OrderProduct {
+  image: any
+  variant: any
+  sku: any
   productId: string | ObjectId
   title: string
   quantity: number
@@ -23,6 +26,11 @@ export interface BillingDetails {
 }
 
 export interface OrderDocument {
+  tax: number
+  shippingCost: number
+  subTotal: number
+  paymentStatus: string
+  shippingDetails: any
   _id: string | ObjectId
   userId: string | ObjectId
   products: OrderProduct[]

@@ -21,4 +21,3 @@ export function PerformanceCard({ icon, label, value, prefix }: PerformanceCardP
     </div>
   )
 }
-

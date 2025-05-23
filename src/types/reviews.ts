@@ -19,4 +19,3 @@ export interface Review {
   sellerName: string
   status: "Pending" | "Approved" | "Flagged"
 }
-

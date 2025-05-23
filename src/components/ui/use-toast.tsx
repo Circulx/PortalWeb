@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect, useCallback } from "react"
 
 export interface Toast {
@@ -7,7 +9,7 @@ export interface Toast {
   duration?: number
 }
 
-export type ToastProps = Omit<Toast, 'id'>
+export type ToastProps = Omit<Toast, "id">
 
 export interface ToastContextType {
   toast: (props: ToastProps) => void
@@ -43,4 +45,3 @@ export function useToast(): ToastContextType {
 
   return { toast, dismiss, toasts }
 }
-

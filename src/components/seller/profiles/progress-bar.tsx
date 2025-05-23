@@ -41,4 +41,3 @@ export function ProgressBar({ completedSteps, currentStep, totalSteps }: Progres
 function formatStepName(step: string): string {
   return step.charAt(0).toUpperCase() + step.slice(1)
 }
-

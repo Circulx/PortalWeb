@@ -116,4 +116,3 @@ export function YearMonthPicker({ className, selected, onSelect, onClear }: Year
     </div>
   )
 }
-

@@ -42,4 +42,3 @@ export interface SellerFormData {
   bankCity: string
   accountType: string
 }
-

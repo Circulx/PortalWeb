@@ -1,5 +1,3 @@
-import { CheckCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
 import type { TabType } from "@/types/profile"
 
 export function ProfileSuccess() {
@@ -23,10 +21,8 @@ export function ProfileSuccess() {
         </p>
       </div>
 
-
-
- {/* Progress Percentage Bar - Responsive spacing */}
- <div className="w-full mb-6 sm:mb-8">
+      {/* Progress Percentage Bar - Responsive spacing */}
+      <div className="w-full mb-6 sm:mb-8">
         <div className="flex justify-between mb-2">
           <span className="text-xs sm:text-sm font-medium">Profile Completion</span>
           <span className="text-xs sm:text-sm font-medium">100%</span>
@@ -52,9 +48,7 @@ export function ProfileSuccess() {
         </div>
       </div>
 
-
-
-{/*
+      {/*
       <div className="mb-6 sm:mb-8">
         <nav className="flex space-x-1 sm:space-x-2 md:space-x-4 border-b overflow-x-auto pb-1">
           {tabs.map((tab) => (
@@ -75,10 +69,6 @@ export function ProfileSuccess() {
       </div>
 */}
 
-
-      
-
-     
       {/* Success message - Responsive padding and text size */}
       <div className="flex flex-col items-center justify-center py-8 sm:py-12 px-4 bg-gray-50 rounded-lg shadow-sm my-4 sm:my-8">
         <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-center text-orange-600 max-w-3xl">
@@ -88,4 +78,3 @@ export function ProfileSuccess() {
     </div>
   )
 }
-

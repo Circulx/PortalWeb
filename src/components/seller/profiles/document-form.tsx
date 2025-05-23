@@ -153,4 +153,3 @@ export function DocumentForm({ initialData, onSuccess }: DocumentFormProps) {
     </form>
   )
 }
-

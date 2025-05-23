@@ -150,4 +150,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Error adding product" }, { status: 500 })
   }
 }
-

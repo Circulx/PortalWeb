@@ -1,5 +1,8 @@
-import React, { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+"use client"
+
+import type React from "react"
+import { useEffect, useRef } from "react"
+import { X } from "lucide-react"
 
 interface ModalProps {
   isOpen: boolean
@@ -18,11 +21,11 @@ export function Modal({ isOpen, onClose, children }: ModalProps) {
     }
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleOutsideClick)
+      document.addEventListener("mousedown", handleOutsideClick)
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener("mousedown", handleOutsideClick)
     }
   }, [isOpen, onClose])
 

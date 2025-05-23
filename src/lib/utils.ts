@@ -80,4 +80,3 @@ export function debounce<T extends (...args: any[]) => any>(fn: T, ms = 300): (.
     timeoutId = setTimeout(() => fn(...args), ms)
   }
 }
-

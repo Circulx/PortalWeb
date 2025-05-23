@@ -1,8 +1,10 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, Upload, X, FileText } from 'lucide-react'
+import { Loader2, Upload, X, FileText } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface DocumentUploadProps {
@@ -67,7 +69,7 @@ export function DocumentUpload({
         <div
           className={cn(
             "border-2 border-dashed rounded-md p-4 text-center hover:border-gray-400 transition-colors",
-            error ? "border-red-500" : "border-gray-300"
+            error ? "border-red-500" : "border-gray-300",
           )}
         >
           <input
@@ -83,7 +85,7 @@ export function DocumentUpload({
             htmlFor={uniqueId}
             className={cn(
               "flex flex-col items-center justify-center cursor-pointer",
-              disabled && "opacity-50 cursor-not-allowed"
+              disabled && "opacity-50 cursor-not-allowed",
             )}
           >
             {isUploading ? (
@@ -91,12 +93,8 @@ export function DocumentUpload({
             ) : (
               <Upload className="h-10 w-10 text-gray-400" />
             )}
-            <span className="mt-2 text-sm font-medium text-gray-700">
-              {isUploading ? "Uploading..." : label}
-            </span>
-            <span className="mt-1 text-xs text-gray-500">
-              Max size: {maxSize}MB
-            </span>
+            <span className="mt-2 text-sm font-medium text-gray-700">{isUploading ? "Uploading..." : label}</span>
+            <span className="mt-1 text-xs text-gray-500">Max size: {maxSize}MB</span>
           </label>
           {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
         </div>
@@ -105,18 +103,10 @@ export function DocumentUpload({
           <div className="flex items-center space-x-2">
             <FileText className="h-5 w-5 text-blue-500" />
             <span className="text-sm font-medium truncate max-w-[200px]">
-              {typeof value === "string" && value.includes("/") 
-                ? value.split("/").pop() 
-                : "Document uploaded"}
+              {typeof value === "string" && value.includes("/") ? value.split("/").pop() : "Document uploaded"}
             </span>
           </div>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={handleRemove}
-            disabled={disabled}
-          >
+          <Button type="button" variant="ghost" size="sm" onClick={handleRemove} disabled={disabled}>
             <X className="h-4 w-4" />
           </Button>
         </div>
@@ -124,4 +114,3 @@ export function DocumentUpload({
     </div>
   )
 }
-

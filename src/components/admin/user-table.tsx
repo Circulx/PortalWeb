@@ -215,4 +215,3 @@ export function UserTable({ users }: UserTableProps) {
     </div>
   )
 }
-

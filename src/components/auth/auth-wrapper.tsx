@@ -116,4 +116,3 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
     </>
   )
 }
-

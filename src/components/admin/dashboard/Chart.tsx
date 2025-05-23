@@ -60,4 +60,3 @@ export function Chart({ timeFrame, setTimeFrame, data, totalSales }: ChartProps)
     </Card>
   )
 }
-

@@ -22,4 +22,3 @@ const ContactSchema = new Schema<IContactDetails>(
 )
 
 export const Contact = mongoose.models.Contact || mongoose.model<IContactDetails>("Contact", ContactSchema)
-

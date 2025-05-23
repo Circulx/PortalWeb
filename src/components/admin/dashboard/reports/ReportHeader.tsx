@@ -34,4 +34,3 @@ export function ReportHeader({ selectedDate, onDateChange }: ReportHeaderProps) 
     </div>
   )
 }
-

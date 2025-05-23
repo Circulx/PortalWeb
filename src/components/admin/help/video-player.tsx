@@ -50,4 +50,3 @@ export default function YouTubePlayer({ videoId, isPlaying, onPlayClick }: YouTu
 
   return <div ref={playerRef} className="absolute inset-0" />
 }
-

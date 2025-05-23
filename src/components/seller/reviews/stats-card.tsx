@@ -35,4 +35,3 @@ export function StatsCard({ title, value, subtitle, growth, showStars, children 
     </Card>
   )
 }
-

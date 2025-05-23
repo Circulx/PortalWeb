@@ -1,29 +1,25 @@
+import { BarChart } from "recharts"
+
 interface RatingDistributionProps {
-    distribution: number[] // Array of percentages for 5, 4, 3, 2, 1 stars
-  }
-  
-  export function RatingDistribution({ distribution }: RatingDistributionProps) {
-    // Ensure we have 5 values, fill with 0 if not provided
-    const ratings = [...(distribution || []), 0, 0, 0, 0, 0].slice(0, 5)
-  
-    return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium">Rating Distribution</h3>
-  
-        {[5, 4, 3, 2, 1].map((star, index) => (
-          <div key={star} className="flex items-center gap-2">
-            <div className="w-8 text-sm text-right">{star} ★</div>
-            <div className="relative w-full h-4 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className="absolute top-0 left-0 h-full bg-yellow-400 rounded-full"
-                style={{ width: `${ratings[index]}%` }}
-              />
-            </div>
-            <div className="w-10 text-sm">{ratings[index]}%</div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-  
-  
+  distribution: number[]
+}
+
+export function RatingDistribution({ distribution }: RatingDistributionProps) {
+  const data = [
+    { name: "1 Star", value: distribution[0] },
+    { name: "2 Star", value: distribution[1] },
+    { name: "3 Star", value: distribution[2] },
+    { name: "4 Star", value: distribution[3] },
+    { name: "5 Star", value: distribution[4] },
+  ]
+
+  const colors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#10b981"]
+
+  return (
+    <div className="h-[200px] w-full">
+      <BarChart width={300} height={200} data={data}>
+        <BarChart.Bar dataKey="value" fill="#f97316" barSize={20} />
+      </BarChart>
+    </div>
+  )
+}

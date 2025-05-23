@@ -12,18 +12,18 @@ import { Country, State } from "country-state-city"
 import { CountryStateSelect } from "./CountryStateSelect"
 
 interface Address {
-  id: string;
-  type: "Billing" | "Shipping";
-  firstName: string;
-  lastName: string;
-  companyName?: string;
-  address: string;
-  country: string;
-  state: string;
-  city: string;
-  zipCode: string;
-  email: string;
-  phone: string;
+  id: string
+  type: "Billing" | "Shipping"
+  firstName: string
+  lastName: string
+  companyName?: string
+  address: string
+  country: string
+  state: string
+  city: string
+  zipCode: string
+  email: string
+  phone: string
 }
 
 export default function AddressPage() {
@@ -54,45 +54,45 @@ export default function AddressPage() {
     shippingPhone: "",
   })
 
-    // Fetch saved addresses from the database
-    useEffect(() => {
-      const fetchAddresses = async () => {
-        try {
-          const response = await fetch("/api/addresses", {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-  
-          if (!response.ok) {
-            throw new Error("Failed to fetch addresses");
-          }
-  
-          const data = await response.json();
-  
-          if (data) {
-            const billingAddress: Address = {
-              id: `billing-${Date.now()}`,
-              type: "Billing",
-              ...data.billingAddress,
-            };
-  
-            const shippingAddress: Address = {
-              id: `shipping-${Date.now()}`,
-              type: "Shipping",
-              ...data.shippingAddress,
-            };
-  
-            setAddresses([billingAddress, shippingAddress]);
-          }
-        } catch (error) {
-          console.error("Error fetching addresses:", error);
+  // Fetch saved addresses from the database
+  useEffect(() => {
+    const fetchAddresses = async () => {
+      try {
+        const response = await fetch("/api/addresses", {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch addresses")
         }
-      };
-  
-      fetchAddresses();
-    }, []);
+
+        const data = await response.json()
+
+        if (data) {
+          const billingAddress: Address = {
+            id: `billing-${Date.now()}`,
+            type: "Billing",
+            ...data.billingAddress,
+          }
+
+          const shippingAddress: Address = {
+            id: `shipping-${Date.now()}`,
+            type: "Shipping",
+            ...data.shippingAddress,
+          }
+
+          setAddresses([billingAddress, shippingAddress])
+        }
+      } catch (error) {
+        console.error("Error fetching addresses:", error)
+      }
+    }
+
+    fetchAddresses()
+  }, [])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
@@ -117,36 +117,35 @@ export default function AddressPage() {
     setAddresses((prev) => prev.filter((address) => address.id !== id))
   }
 
-  const handleSubmit = async(e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // Create new addresses from form data
-    
+
     const billingAddress: Omit<Address, "id" | "type"> = {
-        firstName: formData.billingFirstName,
-        lastName: formData.billingLastName,
-        companyName: formData.billingCompany,
-        address: formData.billingAddress,
-        country: formData.billingCountry,
-        state: formData.billingState,
-        city: formData.billingCity,
-        zipCode: formData.billingZip,
-        email: formData.billingEmail,
-        phone: formData.billingPhone,
-      };
-      const shippingAddress: Omit<Address, "id" | "type"> = {
-        firstName: formData.shippingFirstName,
-        lastName: formData.shippingLastName,
-        companyName: formData.shippingCompany,
-        address: formData.shippingAddress,
-        country: formData.shippingCountry,
-        state: formData.shippingState,
-        city: formData.shippingCity,
-        zipCode: formData.shippingZip,
-        email: formData.shippingEmail,
-        phone: formData.shippingPhone,
-      };
-    
+      firstName: formData.billingFirstName,
+      lastName: formData.billingLastName,
+      companyName: formData.billingCompany,
+      address: formData.billingAddress,
+      country: formData.billingCountry,
+      state: formData.billingState,
+      city: formData.billingCity,
+      zipCode: formData.billingZip,
+      email: formData.billingEmail,
+      phone: formData.billingPhone,
+    }
+    const shippingAddress: Omit<Address, "id" | "type"> = {
+      firstName: formData.shippingFirstName,
+      lastName: formData.shippingLastName,
+      companyName: formData.shippingCompany,
+      address: formData.shippingAddress,
+      country: formData.shippingCountry,
+      state: formData.shippingState,
+      city: formData.shippingCity,
+      zipCode: formData.shippingZip,
+      email: formData.shippingEmail,
+      phone: formData.shippingPhone,
+    }
 
     try {
       // Send POST request to the API
@@ -157,27 +156,27 @@ export default function AddressPage() {
         },
         body: JSON.stringify({
           billingAddress,
-          shippingAddress
+          shippingAddress,
         }),
-      });
+      })
 
       if (!response.ok) {
-        throw new Error("Failed to save addresses");
+        throw new Error("Failed to save addresses")
       }
 
-      const result = await response.json();    
-      const savedId = result.data._id;
+      const result = await response.json()
+      const savedId = result.data._id
 
       setAddresses((prev) => [
         ...prev,
         { id: `billing-${Date.now()}`, type: "Billing", ...billingAddress },
         { id: `shipping-${Date.now()}`, type: "Shipping", ...shippingAddress },
-      ]);    
+      ])
     } catch (error) {
-      console.error("Error saving addresses:", error);
+      console.error("Error saving addresses:", error)
     }
 
-    setShowAddressForm(false);
+    setShowAddressForm(false)
     // Reset form data
     setFormData({
       billingFirstName: "",
@@ -480,4 +479,3 @@ export default function AddressPage() {
     </div>
   )
 }
-

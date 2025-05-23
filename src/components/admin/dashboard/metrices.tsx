@@ -88,4 +88,3 @@ export function Metrics({ timeFrame, getMetricValue }: MetricsProps) {
     </div>
   )
 }
-

@@ -198,9 +198,7 @@ export function CategoryBrandForm({ initialData, onSaved }: CategoryBrandFormPro
                 <FormLabel className="text-base font-semibold">
                   Categories<span className="text-red-500">*</span>
                 </FormLabel>
-                <p className="text-sm text-gray-500 -mt-2">
-                  
-                </p>
+                <p className="text-sm text-gray-500 -mt-2"></p>
                 <FormControl>
                   <CheckboxList
                     options={availableCategories}
@@ -223,7 +221,7 @@ export function CategoryBrandForm({ initialData, onSaved }: CategoryBrandFormPro
                 <FormLabel className="text-base font-semibold">
                   Authorized Brands<span className="text-red-500">*</span>
                 </FormLabel>
-                
+
                 <FormControl>
                   <Input
                     placeholder="Enter the brands you are authorized to sell (comma separated)."
@@ -274,4 +272,3 @@ export function CategoryBrandForm({ initialData, onSaved }: CategoryBrandFormPro
     </Form>
   )
 }
-

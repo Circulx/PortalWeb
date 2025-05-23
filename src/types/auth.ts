@@ -23,4 +23,3 @@ export interface VerifyOTPResponse {
   message: string
   user?: User
 }
-

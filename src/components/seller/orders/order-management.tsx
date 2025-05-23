@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, Search, Package, TrendingUp, DollarSign, AlertCircle } from "lucide-react"
+import { Loader2, Search, Package, TrendingUp, DollarSign, AlertCircle, Calendar, User, CreditCard } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -43,9 +43,9 @@ interface Order {
   billingDetails: BillingDetails
   totalAmount: number
   sellerSubtotal: number
-  originalTotal: number
   status: string
   paymentMethod?: string
+  paymentStatus?: string
   createdAt: string
   updatedAt: string
 }
@@ -101,7 +101,7 @@ export function OrderManagement() {
         setPendingOrders(pending)
 
         if (data.orders.length === 0) {
-          toast.info("No orders found for your products")
+          toast.info("No orders found")
         }
       } catch (err) {
         console.error("Error fetching orders:", err)
@@ -126,7 +126,8 @@ export function OrderManagement() {
           order.products.some((product) => (product.title || "").toLowerCase().includes(searchTerm.toLowerCase())) ||
           ((order.billingDetails?.firstName || "") + " " + (order.billingDetails?.lastName || ""))
             .toLowerCase()
-            .includes(searchTerm.toLowerCase()),
+            .includes(searchTerm.toLowerCase()) ||
+          (order.billingDetails?.email || "").toLowerCase().includes(searchTerm.toLowerCase()),
       )
     }
 
@@ -162,6 +163,15 @@ export function OrderManagement() {
     if (statusUpper === "SHIPPED") return "bg-purple-500"
     if (statusUpper === "DELIVERED") return "bg-green-500"
     if (statusUpper === "CANCELLED") return "bg-red-500"
+    return "bg-gray-500"
+  }
+
+  // Function to get payment status badge color
+  const getPaymentStatusColor = (status: string) => {
+    const statusUpper = (status || "").toUpperCase()
+    if (statusUpper === "PAID") return "bg-green-500"
+    if (statusUpper === "PENDING") return "bg-yellow-500"
+    if (statusUpper === "FAILED") return "bg-red-500"
     return "bg-gray-500"
   }
 
@@ -252,7 +262,7 @@ export function OrderManagement() {
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search orders..."
+                placeholder="Search by order ID, product, or customer..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -289,7 +299,7 @@ export function OrderManagement() {
                   <p className="text-sm text-muted-foreground mt-2">
                     {orders.length > 0
                       ? "Try adjusting your filters to see more orders"
-                      : "You don't have any orders for your products yet"}
+                      : "You don't have any orders yet"}
                   </p>
                 </div>
               ) : (
@@ -300,8 +310,10 @@ export function OrderManagement() {
                         <TableHead>Order ID</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Customer</TableHead>
+                        <TableHead>Email</TableHead>
                         <TableHead>Products</TableHead>
                         <TableHead>Amount</TableHead>
+                        <TableHead>Payment</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
@@ -310,8 +322,19 @@ export function OrderManagement() {
                       {filteredOrders.map((order) => (
                         <TableRow key={order._id}>
                           <TableCell className="font-medium">{order._id.substring(0, 8)}...</TableCell>
-                          <TableCell>{formatDate(order.createdAt)}</TableCell>
-                          <TableCell>{getCustomerName(order.billingDetails)}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
+                              {formatDate(order.createdAt)}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center">
+                              <User className="mr-2 h-4 w-4 text-muted-foreground" />
+                              {getCustomerName(order.billingDetails)}
+                            </div>
+                          </TableCell>
+                          <TableCell>{order.billingDetails?.email || "N/A"}</TableCell>
                           <TableCell>
                             <div className="max-w-[200px] truncate">
                               {order.products.map((product) => product.title || "Unnamed Product").join(", ")}
@@ -319,6 +342,17 @@ export function OrderManagement() {
                             <div className="text-xs text-muted-foreground mt-1">{order.products.length} item(s)</div>
                           </TableCell>
                           <TableCell>₹{order.sellerSubtotal.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center">
+                                <CreditCard className="mr-2 h-4 w-4 text-muted-foreground" />
+                                {order.paymentMethod || "N/A"}
+                              </div>
+                              <Badge className={getPaymentStatusColor(order.paymentStatus || "pending")}>
+                                {(order.paymentStatus || "PENDING").toUpperCase()}
+                              </Badge>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(order.status)}>
                               {(order.status || "PENDING").toUpperCase()}

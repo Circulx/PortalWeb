@@ -12,4 +12,3 @@ export default function SellerDashboard() {
   // Only show Dashboard if explicitly requested via ?view=dashboard
   return <div className="w-full max-w-7xl mx-auto">{showDashboard ? <DashboardContent /> : <ProfilePage />}</div>
 }
-

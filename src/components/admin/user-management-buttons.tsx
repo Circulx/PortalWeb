@@ -38,4 +38,3 @@ export function UserManagementButtons({ userId, currentType, onUpdateUserType }:
     </div>
   )
 }
-

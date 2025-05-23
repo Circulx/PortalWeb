@@ -45,4 +45,3 @@ export function ReviewItem({ review }: ReviewItemProps) {
     </div>
   )
 }
-

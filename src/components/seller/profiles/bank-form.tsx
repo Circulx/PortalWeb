@@ -377,4 +377,3 @@ export function BankForm({ initialData, onSaved }: BankFormProps) {
     </Form>
   )
 }
-

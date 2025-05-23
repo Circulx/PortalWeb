@@ -51,4 +51,3 @@ export function DatePickerWithRange({ date, onDateChange }: DatePickerWithRangeP
     </Popover>
   )
 }
-

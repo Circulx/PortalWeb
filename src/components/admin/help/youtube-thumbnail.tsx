@@ -23,4 +23,3 @@ export default function YouTubeThumbnail({ videoId, title }: YouTubeThumbnailPro
     </div>
   )
 }
-

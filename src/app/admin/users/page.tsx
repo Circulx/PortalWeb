@@ -1,7 +1,6 @@
 import { Suspense } from "react"
 import { UserTable } from "@/components/admin/user-table"
 import { getCurrentUser } from "@/actions/auth"
-import { redirect } from "next/navigation"
 import { connectDB1 } from "@/lib/db"
 import { getUserModel } from "@/models/user"
 
@@ -55,4 +54,3 @@ export default async function UsersPage() {
     </div>
   )
 }
-

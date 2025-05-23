@@ -6,4 +6,3 @@ export default function SellerHelpLayout({
 }) {
   return <main className="min-h-screen bg-background">{children}</main>
 }
-

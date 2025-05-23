@@ -27,4 +27,3 @@ export interface SalesDataPoint {
   date: string // Date for the data point
   value: number // Sales value for that date
 }
-

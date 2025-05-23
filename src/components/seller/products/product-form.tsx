@@ -950,4 +950,3 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
     </div>
   )
 }
-

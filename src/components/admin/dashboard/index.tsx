@@ -78,4 +78,3 @@ export function Dashboard() {
     </main>
   )
 }
-

@@ -37,4 +37,3 @@ export function StatCard({ title, value, change, icon }: StatCardProps) {
     </Card>
   )
 }
-

@@ -317,7 +317,6 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
         onLoad={handleRazorpayLoad}
         onError={handleScriptLoadError}
         strategy="afterInteractive"
-        
       />
 
       <div

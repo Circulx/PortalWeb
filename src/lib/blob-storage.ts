@@ -65,4 +65,3 @@ export async function uploadToBlob(fileData: File | Blob | string, prefix = "upl
     throw new Error("Failed to upload file")
   }
 }
-

@@ -38,4 +38,3 @@ function Toast({ toast, onDismiss }: { toast: ToastType; onDismiss: () => void }
     </div>
   )
 }
-

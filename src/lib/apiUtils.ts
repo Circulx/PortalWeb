@@ -36,4 +36,3 @@ export function createQueryTimeout<T>(promise: Promise<T>, timeoutMs = 5000): Pr
     clearTimeout(timeoutId)
   }) as Promise<T>
 }
-

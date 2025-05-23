@@ -30,4 +30,3 @@ const BusinessSchema = new Schema<IBusinessDetails>(
 )
 
 export const Business = mongoose.models.Business || mongoose.model<IBusinessDetails>("Business", BusinessSchema)
-

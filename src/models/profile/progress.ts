@@ -26,4 +26,3 @@ const ProfileProgressSchema = new Schema<IProfileProgress>(
 
 export const ProfileProgress =
   mongoose.models.ProfileProgress || mongoose.model<IProfileProgress>("ProfileProgress", ProfileProgressSchema)
-

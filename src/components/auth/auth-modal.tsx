@@ -90,4 +90,3 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     </Dialog>
   )
 }
-

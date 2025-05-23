@@ -115,4 +115,3 @@ export function SellerDetailsCard({ sellerId }: SellerDetailsCardProps) {
     </div>
   )
 }
-

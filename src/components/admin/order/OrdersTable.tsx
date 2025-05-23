@@ -1,158 +1,66 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-
-// Sample order data with dates for filtering
-const ordersData = [
-  {
-    id: "00001",
-    buyer: "Christine Brooks",
-    seller: "ABC Metals",
-    date: "2024-01-04",
-    displayDate: "04 Jan 2024",
-    total: "$12,000",
-    status: "Delivered",
-    payment: "Paid",
-  },
-  {
-    id: "00002",
-    buyer: "John Smith",
-    seller: "XYZ Corp",
-    date: "2024-02-05",
-    displayDate: "05 Feb 2024",
-    total: "$8,500",
-    status: "Pending",
-    payment: "Unpaid",
-  },
-  {
-    id: "00003",
-    buyer: "Sarah Johnson",
-    seller: "Metal Works",
-    date: "2024-03-06",
-    displayDate: "06 Mar 2024",
-    total: "$15,000",
-    status: "Shipped",
-    payment: "Paid",
-  },
-  {
-    id: "00004",
-    buyer: "Michael Brown",
-    seller: "Steel Inc",
-    date: "2024-04-07",
-    displayDate: "07 Apr 2024",
-    total: "$9,200",
-    status: "Delivered",
-    payment: "Paid",
-  },
-  {
-    id: "00005",
-    buyer: "Emily Davis",
-    seller: "Iron Co",
-    date: "2024-05-08",
-    displayDate: "08 May 2024",
-    total: "$11,500",
-    status: "Shipped",
-    payment: "Paid",
-  },
-  {
-    id: "00006",
-    buyer: "David Wilson",
-    seller: "Metal Corp",
-    date: "2024-06-09",
-    displayDate: "09 Jun 2024",
-    total: "$7,800",
-    status: "Pending",
-    payment: "Unpaid",
-  },
-  {
-    id: "00007",
-    buyer: "Lisa Anderson",
-    seller: "Steel Works",
-    date: "2024-07-10",
-    displayDate: "10 Jul 2024",
-    total: "$13,200",
-    status: "Delivered",
-    payment: "Paid",
-  },
-  {
-    id: "00008",
-    buyer: "Robert Taylor",
-    seller: "Iron Industries",
-    date: "2024-08-11",
-    displayDate: "11 Aug 2024",
-    total: "$10,500",
-    status: "Shipped",
-    payment: "Paid",
-  },
-]
-
-// Helper function to get month name
-const getMonthName = (month: number) => {
-  return new Date(2024, month - 1, 1).toLocaleString("default", { month: "short" })
-}
-
-// Generate date range options
-const generateDateRanges = () => {
-  const ranges = []
-  for (let i = 1; i <= 12; i++) {
-    const startMonth = getMonthName(i)
-    const endMonth = getMonthName(i + 1 > 12 ? 1 : i + 1)
-    ranges.push(`${startMonth}-${endMonth}`)
-  }
-  return ranges
-}
+import { ChevronLeft, ChevronRight, Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { getOrders, getOrderStatuses } from "@/actions/admin-orders"
 
 export default function OrdersTable() {
   const router = useRouter()
   const [currentPage, setCurrentPage] = useState(1)
   const [dateFilter, setDateFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const itemsPerPage = 5
+  const [searchQuery, setSearchQuery] = useState<string>("")
+  const [orders, setOrders] = useState<any[]>([])
+  const [totalPages, setTotalPages] = useState(1)
+  const [loading, setLoading] = useState(true)
+  const [statuses, setStatuses] = useState<string[]>([])
 
-  const dateRanges = useMemo(() => generateDateRanges(), [])
+  useEffect(() => {
+    const fetchOrderStatuses = async () => {
+      try {
+        const statusList = await getOrderStatuses()
+        setStatuses(statusList)
+      } catch (error) {
+        console.error("Error fetching order statuses:", error)
+      }
+    }
 
-  // Filter orders based on selected filters
-  const getFilteredOrders = () => {
-    return ordersData.filter((order) => {
-      const orderDate = new Date(order.date)
-      const orderMonth = orderDate.getMonth() + 1 // JavaScript months are 0-indexed
+    fetchOrderStatuses()
+  }, [])
 
-      const matchesDate =
-        dateFilter === "all" ||
-        (() => {
-          if (dateFilter !== "all") {
-            const [startMonth, endMonth] = dateFilter.split("-")
-            const startMonthIndex = dateRanges.findIndex((range) => range.startsWith(startMonth))
-            const endMonthIndex = (startMonthIndex + 1) % 12
+  useEffect(() => {
+    const fetchOrders = async () => {
+      try {
+        setLoading(true)
+        const result = await getOrders(currentPage, dateFilter, statusFilter)
 
-            if (startMonthIndex < endMonthIndex) {
-              return orderMonth > startMonthIndex && orderMonth <= endMonthIndex
-            } else {
-              return orderMonth > startMonthIndex || orderMonth <= endMonthIndex
-            }
-          }
-          return false
-        })()
+        setOrders(result.orders)
+        setTotalPages(result.totalPages)
 
-      const matchesStatus = statusFilter === "all" || order.status === statusFilter
-      return matchesDate && matchesStatus
-    })
-  }
+        // If current page is greater than total pages, reset to page 1
+        if (currentPage > result.totalPages && result.totalPages > 0) {
+          setCurrentPage(1)
+        }
+      } catch (error) {
+        console.error("Error fetching orders:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  const filteredOrders = getFilteredOrders()
-  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage)
+    fetchOrders()
 
-  const getCurrentPageData = () => {
-    const startIndex = (currentPage - 1) * itemsPerPage
-    const endIndex = startIndex + itemsPerPage
-    return filteredOrders.slice(startIndex, endIndex)
-  }
+    // Set up polling for real-time updates (every 15 seconds)
+    const interval = setInterval(fetchOrders, 15000)
+
+    return () => clearInterval(interval)
+  }, [currentPage, dateFilter, statusFilter])
 
   const handleRowClick = (orderId: string) => {
     router.push(`/admin/order/${orderId}`)
@@ -161,32 +69,60 @@ export default function OrdersTable() {
   const handleReset = () => {
     setDateFilter("all")
     setStatusFilter("all")
+    setSearchQuery("")
     setCurrentPage(1)
   }
 
-  // Get unique statuses for filter options
-  const statuses = [...new Set(ordersData.map((order) => order.status))]
+  // Filter orders based on search query
+  const filteredOrders = searchQuery
+    ? orders.filter(
+        (order) =>
+          order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.buyer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          order.seller.toLowerCase().includes(searchQuery.toLowerCase()),
+      )
+    : orders
+
+  // Generate date range options
+  const dateRanges = [
+    { value: "all", label: "All Dates" },
+    { value: "today", label: "Today" },
+    { value: "yesterday", label: "Yesterday" },
+    { value: "last7days", label: "Last 7 Days" },
+    { value: "last30days", label: "Last 30 Days" },
+    { value: "thisMonth", label: "This Month" },
+    { value: "lastMonth", label: "Last Month" },
+  ]
 
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row justify-between items-center gap-4">
         <h2 className="text-lg font-semibold">List of Orders</h2>
-        <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end">
+        <div className="flex flex-wrap sm:flex-nowrap gap-2 justify-end w-full sm:w-auto">
+          <div className="relative w-full sm:w-auto">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search orders..."
+              className="pl-8 w-full sm:w-[200px]"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
           <Select value={dateFilter} onValueChange={setDateFilter}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Filter by date range" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Dates</SelectItem>
               {dateRanges.map((range) => (
-                <SelectItem key={range} value={range}>
-                  {range}
+                <SelectItem key={range.value} value={range.value}>
+                  {range.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-[140px]">
+            <SelectTrigger className="w-full sm:w-[140px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
             <SelectContent>
@@ -218,41 +154,62 @@ export default function OrdersTable() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {getCurrentPageData().map((order) => (
-                <TableRow
-                  key={order.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => handleRowClick(order.id)}
-                >
-                  <TableCell>{order.id}</TableCell>
-                  <TableCell>{order.buyer}</TableCell>
-                  <TableCell>{order.seller}</TableCell>
-                  <TableCell>{order.displayDate}</TableCell>
-                  <TableCell>{order.total}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.status === "Delivered"
-                          ? "bg-green-100 text-green-800"
-                          : order.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-800"
-                            : "bg-blue-100 text-blue-800"
-                      }`}
-                    >
-                      {order.status}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        order.payment === "Paid" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {order.payment}
-                    </span>
+              {loading ? (
+                // Loading skeleton
+                Array.from({ length: 5 }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`}>
+                    {Array.from({ length: 7 }).map((_, cellIndex) => (
+                      <TableCell key={`cell-${cellIndex}`}>
+                        <div className="h-5 bg-gray-200 rounded animate-pulse"></div>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : filteredOrders.length > 0 ? (
+                filteredOrders.map((order) => (
+                  <TableRow
+                    key={order.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleRowClick(order.id)}
+                  >
+                    <TableCell className="font-medium">{order.id.slice(-5)}</TableCell>
+                    <TableCell>{order.buyer}</TableCell>
+                    <TableCell>{order.seller}</TableCell>
+                    <TableCell>{order.displayDate}</TableCell>
+                    <TableCell>{order.total}</TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          order.status === "Delivered"
+                            ? "bg-green-100 text-green-800"
+                            : order.status === "Pending"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : order.status === "Shipped"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-gray-100 text-gray-800"
+                        }`}
+                      >
+                        {order.status}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          order.payment === "Paid" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {order.payment}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No orders found
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </div>
@@ -263,9 +220,9 @@ export default function OrdersTable() {
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-            disabled={currentPage === 1}
+            disabled={currentPage === 1 || loading}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4 mr-1" />
             Previous
           </Button>
           <div className="text-sm text-muted-foreground">
@@ -275,14 +232,13 @@ export default function OrdersTable() {
             variant="outline"
             size="sm"
             onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={currentPage === totalPages}
+            disabled={currentPage === totalPages || totalPages === 0 || loading}
           >
             Next
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-4 w-4 ml-1" />
           </Button>
         </div>
       </CardContent>
     </Card>
   )
 }
-

@@ -3,4 +3,3 @@ import { ReportBuilder } from "@/components/admin/dashboard/reports/ReportBuilde
 export default function ReportsPage() {
   return <ReportBuilder />
 }
-

@@ -1,43 +1,71 @@
-"use client"
+"\"use client"
 
-import Link from "next/link"
-import { LayoutDashboard, Users, User, BarChart2, HelpCircle } from "lucide-react"
 import { usePathname } from "next/navigation"
+import Link from "next/link"
+import { cn } from "@/lib/utils"
+import { LayoutDashboard, Users, ShoppingBag, Star, Store, PackageOpen } from "lucide-react"
 
-const navigation = [
-  { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-  { name: "Seller Portal", href: "/admin/sellers", icon: Users },
-  { name: "User Management", href: "/admin/users", icon: User },
-  { name: "Product Reviews", href: "/admin/reviews", icon: BarChart2 },
-  { name: "Report & Analytics", href: "/admin/analytics", icon: BarChart2 },
-  { name: "Help/FAQs Management", href: "/admin/help", icon: HelpCircle },
+
+
+
+
+
+const sidebarLinks = [
+  {
+    href: "/admin",
+    title: "Dashboard",
+    icon: LayoutDashboard,
+  },
+  {
+    href: "/admin/users",
+    title: "Users",
+    icon: Users,
+  },
+  {
+    href: "/admin/order",
+    title: "Orders",
+    icon: ShoppingBag,
+  },
+  {
+    href: "/admin/order-manager",
+    title: "Order Manager",
+    icon: PackageOpen,
+  },
+  {
+    href: "/admin/reviews",
+    title: "Reviews",
+    icon: Star,
+  },
+  {
+    href: "/admin/sellers",
+    title: "Sellers",
+    icon: Store,
+  },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <div className="h-full py-4 overflow-y-auto">
-      <div className="px-3 mb-6">
-        <h2 className="text-lg font-semibold px-3">Admin Panel</h2>
-      </div>
-      <nav className="space-y-1 px-3">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href
-          return (
+    <div className="flex flex-col h-full">
+      <div className="py-4 px-2">
+        <h2 className="text-lg font-semibold tracking-tight mb-2 px-4">Admin Dashboard</h2>
+        <div className="space-y-1">
+          {sidebarLinks.map((link) => (
             <Link
-              key={item.name}
-              href={item.href}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                ${isActive ? "bg-emerald-600 text-white" : "hover:bg-emerald-600 hover:text-white"}`}
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-muted font-medium text-primary",
+                pathname === link.href ? "bg-muted font-medium text-primary" : "text-muted-foreground",
+              )}
             >
-              <item.icon className="mr-3 h-5 w-5 flex-shrink-0" />
-              <span className="truncate">{item.name}</span>
+              <link.icon className="h-4 w-4" />
+              {link.title}
             </Link>
-          )
-        })}
-      </nav>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
-
