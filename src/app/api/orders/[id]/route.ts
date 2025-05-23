@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose" // Use mongoose instead of mongodb
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params:any }) {
   try {
     // Get the current logged-in user
     const user = await getCurrentUser()
