@@ -1,9 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
-import mongoose from "mongoose" // Use mongoose instead of mongodb
+import mongoose from "mongoose"
 
-export async function GET(req: NextRequest, { params }: { params:any }) {
+// Define the correct parameter types for Next.js App Router
+type RouteParams = {
+  params: {
+    id: string
+  }
+}
+
+export async function GET(req: NextRequest, { params }: RouteParams) {
   try {
     // Get the current logged-in user
     const user = await getCurrentUser()
@@ -68,7 +75,7 @@ export async function GET(req: NextRequest, { params }: { params:any }) {
 }
 
 // Fix the PATCH method as well
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: RouteParams) {
   try {
     // Get the current logged-in user
     const user = await getCurrentUser()
