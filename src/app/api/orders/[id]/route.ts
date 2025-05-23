@@ -3,14 +3,7 @@ import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose"
 
-// Define the correct parameter types for Next.js App Router
-type RouteParams = {
-  params: {
-    id: string
-  }
-}
-
-export async function GET(req: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Get the current logged-in user
     const user = await getCurrentUser()
@@ -47,7 +40,6 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
     }
 
     // Check if the user is an admin or the order belongs to the user
-    // Use user.type instead of user.role
     if (user.type !== "admin" && order.userId.toString() !== user.id) {
       return NextResponse.json({ error: "Unauthorized access to this order" }, { status: 403 })
     }
@@ -74,8 +66,7 @@ export async function GET(req: NextRequest, { params }: RouteParams) {
   }
 }
 
-// Fix the PATCH method as well
-export async function PATCH(req: NextRequest, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Get the current logged-in user
     const user = await getCurrentUser()
@@ -84,13 +75,13 @@ export async function PATCH(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
 
-    // Check if user is an admin or seller - use type instead of role
+    // Check if user is an admin or seller
     if (user.type !== "admin" && user.type !== "seller") {
       return NextResponse.json({ error: "Unauthorized. Admin or seller access required" }, { status: 403 })
     }
 
     // Parse request body
-    const { status } = await req.json()
+    const { status } = await request.json()
 
     if (!status) {
       return NextResponse.json({ error: "Status is required" }, { status: 400 })
