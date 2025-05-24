@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose"
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Get the current logged-in user
     const user = await getCurrentUser()
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "User not authenticated" }, { status: 401 })
     }
 
-    const orderId = params.id
+    const { id: orderId } = await params
 
     // Connect to the database
     const connection = await connectProfileDB()
@@ -66,7 +66,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Get the current logged-in user
     const user = await getCurrentUser()
@@ -102,7 +102,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
     }
 
     // Get the order ID from the URL
-    const orderId = params.id
+    const { id: orderId } = await params
 
     if (!mongoose.Types.ObjectId.isValid(orderId)) {
       return NextResponse.json({ error: "Invalid order ID format" }, { status: 400 })

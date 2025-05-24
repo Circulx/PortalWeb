@@ -23,7 +23,11 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         initialized.current = true
 
         const user = await getCurrentUser()
-        if (!user) return
+        if (!user) {
+          // If no user, just mark as initialized with empty cart
+          dispatch(setCartFromDb([]))
+          return
+        }
 
         console.log("CartProvider: Initializing cart from database...")
         const response = await axios.get("/api/cart")
@@ -33,6 +37,8 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         dispatch(setCartFromDb(dbItems))
       } catch (error) {
         console.error("CartProvider: Error initializing cart:", error)
+        // Even if there's an error, mark as initialized to prevent blocking UI
+        dispatch(setCartFromDb([]))
       } finally {
         setIsLoading(false)
       }

@@ -5,7 +5,7 @@ import mongoose from "mongoose"
 
 // Define the Cart schema (same as in route.ts)
 interface CartItem {
-  id: string
+  productId: string
   title: string
   image_link?: string
   price: number
@@ -26,7 +26,7 @@ const CartSchema = new mongoose.Schema<Cart>(
     userId: { type: String, required: true, index: true },
     items: [
       {
-        id: { type: String, required: true },
+        productId: { type: String, required: true },
         title: { type: String, required: true },
         image_link: { type: String },
         price: { type: Number, required: true },
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ message: "Cart not found", item: null }, { status: 404 })
     }
 
-    const item = cart.items.find((item) => item.id === productId)
+    const item = cart.items.find((item) => item.productId === productId)
     if (!item) {
       return NextResponse.json({ message: "Item not found in cart", item: null }, { status: 404 })
     }
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
     // Process the item
     const processedItem = {
-      id: item.id,
+      productId: item.id, // Map 'id' to 'productId' for the database
       title: item.title,
       image_link: item.image_link,
       price: Number(item.price),
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
       await newCart.save()
     } else {
       // Check if the item already exists
-      const existingItemIndex = existingCart.items.findIndex((i) => i.id === processedItem.id)
+      const existingItemIndex = existingCart.items.findIndex((i) => i.productId === processedItem.productId)
 
       if (existingItemIndex !== -1) {
         // Update existing item
@@ -186,7 +186,7 @@ export async function PUT(request: Request) {
     }
 
     // Find the item
-    const itemIndex = cart.items.findIndex((item) => item.id === id)
+    const itemIndex = cart.items.findIndex((item) => item.productId === id)
 
     if (itemIndex === -1) {
       return NextResponse.json({ message: "Item not found in cart", items: [] }, { status: 404 })
@@ -235,7 +235,7 @@ export async function DELETE(request: Request) {
     }
 
     // Remove the item
-    const updatedItems = cart.items.filter((item) => item.id !== id)
+    const updatedItems = cart.items.filter((item) => item.productId !== id)
 
     // Update the cart
     await CartModel.updateOne({ userId: user.id }, { $set: { items: updatedItems, updatedAt: new Date() } })

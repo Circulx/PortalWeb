@@ -18,7 +18,8 @@ interface CartState {
   error: string | null
   syncing: boolean
   initialized: boolean
-  lastSyncedItems: any[] // Add this to track last synced state
+  lastSyncedItems: any[]
+  orderProcessing: boolean // Add this for order processing state
 }
 
 const initialState: CartState = {
@@ -28,6 +29,7 @@ const initialState: CartState = {
   syncing: false,
   initialized: false,
   lastSyncedItems: [],
+  orderProcessing: false,
 }
 
 // Async thunk to fetch product stock
@@ -73,12 +75,11 @@ export const syncCart = createAsyncThunk("cart/syncCart", async (items: CartItem
 
     // Convert Redux cart items to database format
     const dbItems = items.map((item) => ({
-      id: item.id,
+      productId: item.id, // Map 'id' to 'productId' for the database
       title: item.title,
       image_link: item.image_link,
       price: Number(item.price),
       discount: Number(item.discount || 0),
-      // Removed seller_id
       units: item.units,
       quantity: Number(item.quantity || 1),
       stock: Number(item.stock || 0),
@@ -94,6 +95,19 @@ export const syncCart = createAsyncThunk("cart/syncCart", async (items: CartItem
   }
 })
 
+// NEW: Async thunk to decrement cart quantities after order placement
+export const decrementCartQuantities = createAsyncThunk(
+  "cart/decrementCartQuantities",
+  async (orderedItems: Array<{ productId: string; quantity: number }>, { rejectWithValue }) => {
+    try {
+      const response = await axios.post("/api/cart/decrement-quantities", { orderedItems })
+      return response.data
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data?.message || "Failed to decrement cart quantities")
+    }
+  },
+)
+
 // Async thunk to add item to cart in database
 export const addItemToDb = createAsyncThunk(
   "cart/addItemToDb",
@@ -101,12 +115,11 @@ export const addItemToDb = createAsyncThunk(
     try {
       const { item, stock } = payload
       const dbItem = {
-        id: item.id,
+        productId: item.id, // Map 'id' to 'productId' for the database
         title: item.title,
         image_link: item.image_link,
         price: Number(item.price),
         discount: Number(item.discount || 0),
-        // Removed seller_id
         units: item.units,
         quantity: Number(item.quantity || 1),
         stock: Number(stock),
@@ -223,7 +236,7 @@ const cartSlice = createSlice({
       if (dbCart && Array.isArray(dbCart)) {
         // Convert database items to Redux format
         state.items = dbCart.map((item: any) => ({
-          id: item.id,
+          id: item.productId || item.id, // Map productId back to id for Redux
           title: item.title,
           image_link: item.image_link,
           price: Number(item.price),
@@ -242,6 +255,27 @@ const cartSlice = createSlice({
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload
+    },
+    // NEW: Local action to decrement quantities optimistically
+    decrementQuantitiesLocally: (state, action: PayloadAction<Array<{ productId: string; quantity: number }>>) => {
+      const orderedItems = action.payload
+
+      orderedItems.forEach(({ productId, quantity }) => {
+        const itemIndex = state.items.findIndex((item) => item.id === productId)
+
+        if (itemIndex !== -1) {
+          const item = state.items[itemIndex]
+          const newQuantity = item.quantity - quantity
+
+          if (newQuantity <= 0) {
+            // Remove item if quantity becomes 0 or negative
+            state.items.splice(itemIndex, 1)
+          } else {
+            // Update quantity
+            item.quantity = newQuantity
+          }
+        }
+      })
     },
   },
   extraReducers: (builder) => {
@@ -312,6 +346,23 @@ const cartSlice = createSlice({
         state.error = (action.payload as string) || "Failed to sync cart"
       })
 
+      // NEW: decrementCartQuantities
+      .addCase(decrementCartQuantities.pending, (state) => {
+        state.orderProcessing = true
+        state.error = null
+      })
+      .addCase(decrementCartQuantities.fulfilled, (state, action) => {
+        state.orderProcessing = false
+        if (action.payload.success) {
+          state.items = action.payload.updatedItems
+          state.lastSyncedItems = JSON.parse(JSON.stringify(action.payload.updatedItems))
+        }
+      })
+      .addCase(decrementCartQuantities.rejected, (state, action) => {
+        state.orderProcessing = false
+        state.error = (action.payload as string) || "Failed to update cart after order"
+      })
+
       // addItemToDb
       .addCase(addItemToDb.fulfilled, (state, action) => {
         if (action.payload) {
@@ -358,6 +409,7 @@ export const {
   setCartFromDb,
   setLoading,
   setError,
+  decrementQuantitiesLocally,
 } = cartSlice.actions
 
 export default cartSlice.reducer

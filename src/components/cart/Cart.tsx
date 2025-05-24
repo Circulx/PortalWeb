@@ -5,11 +5,7 @@ import { useRouter } from "next/navigation"
 
 import { useDispatch, useSelector } from "react-redux"
 import type { RootState } from "../../store"
-import {
-  decreaseQuantity as decreaseQuantityAction,
-  removeItem as removeItemAction,
-  updateItemStock,
-} from "../../store/slices/cartSlice"
+import { removeItem as removeItemAction, updateItemStock } from "../../store/slices/cartSlice"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useState, useEffect, useRef } from "react"
@@ -20,6 +16,7 @@ import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, Alert
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
+import { useToast } from "@/hooks/use-toast"
 
 interface Product {
   product_id: number
@@ -156,9 +153,11 @@ const features = [
 export default function Cart() {
   const router = useRouter()
   const dispatch = useDispatch()
+  const { toast } = useToast()
   const cartItems = useSelector((state: RootState) => state.cart.items)
+  const cartInitialized = useSelector((state: RootState) => state.cart.initialized)
   const [stockWarnings, setStockWarnings] = useState<Record<string, boolean>>({})
-  const [isLoadingStock, setIsLoadingStock] = useState(false)
+  const [isUpdatingStock, setIsUpdatingStock] = useState(false)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isCheckingUser, setIsCheckingUser] = useState(true)
@@ -179,16 +178,19 @@ export default function Cart() {
     checkUser()
   }, [])
 
-  // Fetch real-time stock information for all cart items
+  // Background stock validation (non-blocking)
   useEffect(() => {
-    const fetchProductStocks = async () => {
-      if (cartItems.length === 0) return
+    const validateStock = async () => {
+      if (cartItems.length === 0 || !cartInitialized) return
 
-      setIsLoadingStock(true)
+      setIsUpdatingStock(true)
       try {
         // Fetch all products to get their current stock
         const response = await axios.get("/api/products")
         const products = response.data
+
+        let hasStockIssues = false
+        const newWarnings: Record<string, boolean> = {}
 
         // Update stock information for each cart item
         cartItems.forEach((item) => {
@@ -206,30 +208,42 @@ export default function Cart() {
 
             // Check if we need to show a warning (quantity exceeds stock)
             if (item.quantity > product.stock) {
-              setStockWarnings((prev) => ({ ...prev, [item.id]: true }))
+              newWarnings[item.id] = true
+              hasStockIssues = true
 
-              // If quantity exceeds available stock, adjust it
-              if (product.stock > 0) {
-                // Reduce quantity to match available stock
-                while (item.quantity > product.stock) {
-                  dispatch(decreaseQuantityAction(item.id))
-                }
-              } else {
-                // If product is out of stock, remove it from cart
+              // If product is out of stock, remove it from cart
+              if (product.stock === 0) {
                 dispatch(removeItemAction(item.id))
+                toast({
+                  title: "Product Removed",
+                  description: `"${item.title}" is out of stock and has been removed from your cart.`,
+                  variant: "destructive",
+                })
               }
             }
           }
         })
+
+        setStockWarnings(newWarnings)
+
+        if (hasStockIssues) {
+          toast({
+            title: "Stock Updated",
+            description: "Some items in your cart have limited stock. Quantities have been adjusted.",
+            variant: "default",
+          })
+        }
       } catch (error) {
-        console.error("Error fetching product stocks:", error)
+        console.error("Error validating stock:", error)
       } finally {
-        setIsLoadingStock(false)
+        setIsUpdatingStock(false)
       }
     }
 
-    fetchProductStocks()
-  }, [cartItems.length, dispatch])
+    // Run stock validation in background after cart is loaded
+    const timeoutId = setTimeout(validateStock, 1000)
+    return () => clearTimeout(timeoutId)
+  }, [cartItems.length, cartInitialized, dispatch, toast])
 
   const { increaseQuantity, decreaseQuantity, removeItem, clearCart } = useCartSync()
 
@@ -240,11 +254,10 @@ export default function Cart() {
         // Show warning if trying to add more than available stock
         setStockWarnings((prev) => ({ ...prev, [id]: true }))
 
-        // Show toast notification with accurate message
         toast({
           title: "Stock limit reached",
           description: `Only ${item.stock} units of "${item.title}" are available.`,
-          duration: 3000,
+          variant: "destructive",
         })
 
         return
@@ -382,18 +395,24 @@ export default function Cart() {
     router.push("/checkout")
   }
 
-  // Calculate the cart container height based on number of items
-  const getCartContainerHeight = () => {
-    if (cartItems.length === 0) return "auto"
-
-    // We're not using dynamic height anymore, as it causes issues on mobile
-    return "auto" // Let the container expand naturally based on content
-  }
+  // Show cart immediately without waiting for initialization
+  const displayItems = cartItems || []
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">Your Cart</h2>
-      {cartItems.length === 0 ? (
+
+      {/* Show stock update indicator only when updating */}
+      {isUpdatingStock && (
+        <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+            <span className="text-sm text-blue-700">Updating stock information...</span>
+          </div>
+        </div>
+      )}
+
+      {displayItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[200px]">
           <p className="text-lg text-gray-500">Your cart is empty.</p>
           <Button variant="outline" onClick={handleReturnToShop} className="mt-4">
@@ -412,17 +431,12 @@ export default function Cart() {
                 <h2 className="font-semibold w-1/4 text-right">SUB-TOTAL</h2>
               </div>
 
-              <div className="py-2 relative">
-                {isLoadingStock && (
-                  <div className="absolute inset-0 bg-white bg-opacity-70 flex items-center justify-center z-10">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  </div>
-                )}
+              <div className="py-2">
                 <div
-                  className={`${cartItems.length > 5 ? "max-h-[600px] overflow-y-auto" : ""} pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`}
+                  className={`${displayItems.length > 5 ? "max-h-[600px] overflow-y-auto" : ""} pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`}
                 >
                   <ul>
-                    {cartItems.map((item) => (
+                    {displayItems.map((item) => (
                       <li
                         key={item.id}
                         className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4"
@@ -435,6 +449,7 @@ export default function Cart() {
                               alt={item.title}
                               fill
                               className="object-cover rounded"
+                              priority
                             />
                           </div>
                           <div className="ml-3 sm:ml-4 flex-1">
@@ -443,7 +458,7 @@ export default function Cart() {
                             <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
                             {/* Stock information */}
                             <p className="text-xs text-gray-500 mt-1">
-                              Available: {item.stock} {item.stock === 1 ? "unit" : "units"}
+                              Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
                             </p>
                           </div>
                         </div>
@@ -467,12 +482,12 @@ export default function Cart() {
                             <p className="w-8 text-center">{item.quantity}</p>
                             <button
                               className={`px-2 rounded ${
-                                item.quantity >= item.stock
+                                item.quantity >= (item.stock || 0)
                                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                                   : "hover:bg-gray-100"
                               }`}
                               onClick={() => handleIncrement(item.id)}
-                              disabled={item.quantity >= item.stock}
+                              disabled={item.quantity >= (item.stock || 0)}
                               aria-label="Increase quantity"
                             >
                               +
@@ -504,7 +519,7 @@ export default function Cart() {
                     ))}
                   </ul>
                 </div>
-                {cartItems.length > 5 && (
+                {displayItems.length > 5 && (
                   <div className="flex justify-center mt-2 space-x-2">
                     <button
                       className="p-1 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none"
@@ -724,7 +739,4 @@ export default function Cart() {
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </div>
   )
-}
-function toast(arg0: { title: string; description: string; duration: number }) {
-  throw new Error("Function not implemented.")
 }

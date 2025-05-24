@@ -84,6 +84,37 @@ export async function POST(request: NextRequest) {
 
     console.log("Order created successfully with ID:", newOrder._id)
 
+    // Decrement cart quantities after successful order creation
+    try {
+      const orderedItems = transformedProducts.map((product: { productId: any; quantity: any }) => ({
+        productId: product.productId,
+        quantity: product.quantity,
+      }))
+
+      const cartResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/cart/decrement-quantities`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Cookie: request.headers.get("Cookie") || "", // Forward cookies for authentication
+          },
+          body: JSON.stringify({ orderedItems }),
+        },
+      )
+
+      if (!cartResponse.ok) {
+        console.warn("Failed to update cart quantities after order placement:", await cartResponse.text())
+        // Don't fail the order creation if cart update fails
+      } else {
+        const cartResult = await cartResponse.json()
+        console.log("Cart quantities updated successfully:", cartResult.message)
+      }
+    } catch (cartError) {
+      console.warn("Error updating cart quantities:", cartError)
+      // Don't fail the order creation if cart update fails
+    }
+
     // Send confirmation email if email is available
     if (orderData.billingDetails?.email) {
       try {

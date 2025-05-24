@@ -126,10 +126,10 @@ async function getProductById(id: string): Promise<Product | null> {
 }
 
 // Product detail page component - Using a simpler approach to avoid type conflicts
-export default async function ProductPage({ params }: any) {
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   try {
     // Extract the ID parameter
-    const id = params?.id
+    const { id } = await params
 
     if (!id) {
       console.error("No ID parameter provided")
