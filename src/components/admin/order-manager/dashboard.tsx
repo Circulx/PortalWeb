@@ -9,7 +9,45 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import type { OrderDocument } from "@/types/order"
+
+// Define the OrderDocument interface locally to avoid import issues
+interface OrderDocument {
+  _id: string
+  userId: string
+  products: Array<{
+    productId: string
+    product_id?: string
+    seller_id?: string
+    title: string
+    quantity: number
+    price: number
+    image_link?: string
+  }>
+  billingDetails: {
+    firstName?: string
+    lastName?: string
+    email?: string
+    phone?: string
+    phoneNumber?: string
+    address?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    country?: string
+    companyName?: string
+  }
+  totalAmount: number
+  status: string
+  paymentMethod: string
+  createdAt: Date | string
+  updatedAt: Date | string
+  tax?: number
+  shippingCost?: number
+  subTotal?: number
+  paymentStatus?: string
+  shippingDetails?: any
+  __v?: number
+}
 
 export function OrderManagerDashboard() {
   const [orders, setOrders] = useState<OrderDocument[]>([])
