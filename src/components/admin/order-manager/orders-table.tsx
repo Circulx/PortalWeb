@@ -9,7 +9,58 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Eye, ChevronLeft, ChevronRight } from "lucide-react"
 import { format } from "date-fns"
-import type { OrderDocument } from "@/types/order"
+
+// Local OrderDocument interface to avoid import issues
+interface OrderDocument {
+  _id: string | { toString(): string }
+  userId?: string
+  products?: Array<{
+    productId?: string
+    product_id?: string
+    seller_id?: string
+    title?: string
+    quantity?: number
+    price?: number
+    image?: string
+    image_link?: string
+    variant?: string
+  }>
+  billingDetails?: {
+    firstName?: string
+    lastName?: string
+    email?: string
+    phone?: string
+    phoneNumber?: string
+    address?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    postalCode?: string
+    country?: string
+  }
+  shippingDetails?: {
+    address?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    postalCode?: string
+    country?: string
+  }
+  totalAmount?: number
+  subtotal?: number
+  shippingCost?: number
+  taxAmount?: number
+  status?: string
+  paymentMethod?: string
+  paymentStatus?: string
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  [key: string]: any
+}
 
 interface OrdersTableProps {
   orders: OrderDocument[]
@@ -37,8 +88,9 @@ export function OrdersTable({ orders, loading, onViewOrder }: OrdersTableProps) 
   const currentOrders = orders.slice(startIndex, startIndex + rowsPerPage)
 
   // Format date
-  const formatDate = (dateString: string | Date) => {
+  const formatDate = (dateString: string | Date | undefined) => {
     try {
+      if (!dateString) return "N/A"
       return format(new Date(dateString), "MMM dd, yyyy")
     } catch (error) {
       return "Invalid date"
@@ -161,7 +213,7 @@ export function OrdersTable({ orders, loading, onViewOrder }: OrdersTableProps) 
               <TableCell className="font-medium">
                 {typeof order._id === "string" ? order._id.substring(0, 8) : order._id?.toString().substring(0, 8)}...
               </TableCell>
-              <TableCell>{formatDate(order.createdAt)}</TableCell>
+              <TableCell>{formatDate(order.createdAt || new Date())}</TableCell>
               <TableCell>
                 {order.billingDetails?.firstName || ""} {order.billingDetails?.lastName || ""}
               </TableCell>

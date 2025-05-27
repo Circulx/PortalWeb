@@ -9,7 +9,58 @@ import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import type { OrderDocument } from "@/types/order"
+
+// Local OrderDocument interface to avoid import issues
+interface OrderDocument {
+  _id: string | { toString(): string }
+  userId?: string
+  products?: Array<{
+    productId?: string
+    product_id?: string
+    seller_id?: string
+    title?: string
+    quantity?: number
+    price?: number
+    image?: string
+    image_link?: string
+    variant?: string
+  }>
+  billingDetails?: {
+    firstName?: string
+    lastName?: string
+    email?: string
+    phone?: string
+    phoneNumber?: string
+    address?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    postalCode?: string
+    country?: string
+  }
+  shippingDetails?: {
+    address?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    postalCode?: string
+    country?: string
+  }
+  totalAmount?: number
+  subtotal?: number
+  shippingCost?: number
+  taxAmount?: number
+  status?: string
+  paymentMethod?: string
+  paymentStatus?: string
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  [key: string]: any
+}
 
 interface OrderDetailModalProps {
   order: OrderDocument
@@ -262,9 +313,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onStatusUpdate }: Ord
                 {order.products.map((product, index) => (
                   <div key={index} className="flex items-start space-x-4 p-4 border rounded-md">
                     <div className="h-16 w-16 rounded-md overflow-hidden bg-gray-100 flex-shrink-0">
-                      {product.image ? (
+                      {product.image || product.image_link ? (
                         <img
-                          src={product.image || "/placeholder.svg"}
+                          src={product.image || product.image_link || "/placeholder.svg"}
                           alt={product.title || "Product"}
                           className="h-full w-full object-cover"
                         />
@@ -276,6 +327,14 @@ export function OrderDetailModal({ order, isOpen, onClose, onStatusUpdate }: Ord
                       <h4 className="font-medium truncate">{product.title || "Unnamed Product"}</h4>
                       <p className="text-sm text-muted-foreground">Quantity: {product.quantity || 1}</p>
                       {product.variant && <p className="text-sm text-muted-foreground">Variant: {product.variant}</p>}
+                      {product.seller_id && (
+                        <p className="text-sm text-muted-foreground">Seller ID: {product.seller_id}</p>
+                      )}
+                      {(product.product_id || product.productId) && (
+                        <p className="text-sm text-muted-foreground">
+                          Product ID: {product.product_id || product.productId}
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <p className="font-medium">{formatCurrency(product.price)}</p>

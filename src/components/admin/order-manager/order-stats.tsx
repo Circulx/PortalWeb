@@ -3,7 +3,58 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ShoppingBag, DollarSign, Clock, Package, CheckCircle, XCircle } from "lucide-react"
-import type { OrderDocument } from "@/types/order"
+
+// Local OrderDocument interface to avoid import issues
+interface OrderDocument {
+  _id: string | { toString(): string }
+  userId?: string
+  products?: Array<{
+    productId?: string
+    product_id?: string
+    seller_id?: string
+    title?: string
+    quantity?: number
+    price?: number
+    image?: string
+    image_link?: string
+    variant?: string
+  }>
+  billingDetails?: {
+    firstName?: string
+    lastName?: string
+    email?: string
+    phone?: string
+    phoneNumber?: string
+    address?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    postalCode?: string
+    country?: string
+  }
+  shippingDetails?: {
+    address?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    postalCode?: string
+    country?: string
+  }
+  totalAmount?: number
+  subtotal?: number
+  shippingCost?: number
+  taxAmount?: number
+  status?: string
+  paymentMethod?: string
+  paymentStatus?: string
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  [key: string]: any
+}
 
 interface OrderStatsProps {
   orders: OrderDocument[]

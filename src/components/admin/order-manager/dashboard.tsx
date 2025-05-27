@@ -12,41 +12,54 @@ import { toast } from "sonner"
 
 // Define the OrderDocument interface locally to avoid import issues
 interface OrderDocument {
-  _id: string
-  userId: string
-  products: Array<{
-    productId: string
+  _id: string | { toString(): string }
+  userId?: string
+  products?: Array<{
+    productId?: string
     product_id?: string
     seller_id?: string
-    title: string
-    quantity: number
-    price: number
+    title?: string
+    quantity?: number
+    price?: number
+    image?: string
     image_link?: string
+    variant?: string
   }>
-  billingDetails: {
+  billingDetails?: {
     firstName?: string
     lastName?: string
     email?: string
     phone?: string
     phoneNumber?: string
     address?: string
+    address1?: string
+    address2?: string
     city?: string
     state?: string
     zipCode?: string
+    postalCode?: string
     country?: string
-    companyName?: string
   }
-  totalAmount: number
-  status: string
-  paymentMethod: string
-  createdAt: Date | string
-  updatedAt: Date | string
-  tax?: number
+  shippingDetails?: {
+    address?: string
+    address1?: string
+    address2?: string
+    city?: string
+    state?: string
+    zipCode?: string
+    postalCode?: string
+    country?: string
+  }
+  totalAmount?: number
+  subtotal?: number
   shippingCost?: number
-  subTotal?: number
+  taxAmount?: number
+  status?: string
+  paymentMethod?: string
   paymentStatus?: string
-  shippingDetails?: any
-  __v?: number
+  createdAt?: string | Date
+  updatedAt?: string | Date
+  [key: string]: any
 }
 
 export function OrderManagerDashboard() {
@@ -118,13 +131,13 @@ export function OrderManagerDashboard() {
 
       // Apply date range filter
       if (dates.from) {
-        result = result.filter((order) => new Date(order.createdAt) >= dates.from!)
+        result = result.filter((order) => new Date(order.createdAt || new Date()) >= dates.from!)
       }
 
       if (dates.to) {
         const endDate = new Date(dates.to)
         endDate.setDate(endDate.getDate() + 1)
-        result = result.filter((order) => new Date(order.createdAt) < endDate)
+        result = result.filter((order) => new Date(order.createdAt || new Date()) < endDate)
       }
 
       // Log the filtered results
