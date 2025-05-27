@@ -18,7 +18,7 @@ export function RatingDistribution({ distribution }: RatingDistributionProps) {
   return (
     <div className="h-[200px] w-full">
       <BarChart width={300} height={200} data={data}>
-        <BarChart.Bar dataKey="value" fill="#f97316" barSize={20} />
+        
       </BarChart>
     </div>
   )
