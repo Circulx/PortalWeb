@@ -1,10 +1,79 @@
-import type { ObjectId } from "mongoose"
+import mongoose from "mongoose"
 
+// Define the order schema
+const orderSchema = new mongoose.Schema(
+  {
+    userId: { type: String, required: true, index: true },
+    products: [
+      {
+        product_id: { type: String, required: true }, // Changed to product_id
+        seller_id: { type: String, required: true, index: true },
+        title: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        price: { type: Number, required: true },
+        image_link: String,
+      },
+    ],
+    billingDetails: {
+      firstName: String,
+      lastName: String,
+      email: String,
+      phone: String,
+      address: String,
+      city: String,
+      state: String,
+      zipCode: String,
+      country: String,
+    },
+    totalAmount: { type: Number, required: true },
+    subTotal: { type: Number, required: true },
+    discount: { type: Number, default: 0 },
+    tax: { type: Number, default: 0 },
+    warehouseSelected: { type: Boolean, default: false },
+    warehouseId: String,
+    logisticsSelected: { type: Boolean, default: false },
+    logisticsId: String,
+    paymentMethod: {
+      type: String,
+      enum: ["COD", "ONLINE"],
+      required: true,
+    },
+    paymentDetails: {
+      paymentId: String,
+      orderId: String,
+      signature: String,
+    },
+    status: {
+      type: String,
+      enum: [
+        "PENDING",
+        "pending",
+        "PROCESSING",
+        "processing",
+        "SHIPPED",
+        "shipped",
+        "DELIVERED",
+        "delivered",
+        "CANCELLED",
+        "cancelled",
+      ],
+      default: "PENDING",
+    },
+    additionalNotes: String,
+  },
+  { timestamps: true },
+)
+
+// Add compound index for efficient seller-based queries
+orderSchema.index({ "products.seller_id": 1, createdAt: -1 })
+orderSchema.index({ userId: 1, "products.seller_id": 1 })
+
+export default orderSchema
+
+// Define TypeScript interfaces for the order
 export interface OrderProduct {
-  image: any
-  variant: any
-  sku: any
-  productId: string | ObjectId
+  product_id: string // Changed to product_id
+  seller_id: string
   title: string
   quantity: number
   price: number
@@ -16,63 +85,46 @@ export interface BillingDetails {
   lastName?: string
   email?: string
   phone?: string
-  phoneNumber?: string
   address?: string
   city?: string
   state?: string
   zipCode?: string
   country?: string
-  companyName?: string
 }
 
-export interface OrderDocument {
-  tax: number
-  shippingCost: number
-  subTotal: number
-  paymentStatus: string
-  shippingDetails: any
-  _id: string | ObjectId
-  userId: string | ObjectId
+export interface PaymentDetails {
+  paymentId?: string
+  orderId?: string
+  signature?: string
+}
+
+export interface Order {
+  _id?: string
+  userId: string
   products: OrderProduct[]
-  billingDetails: BillingDetails
+  billingDetails?: BillingDetails
   totalAmount: number
-  status: string
-  paymentMethod: string
-  createdAt: Date | string
-  updatedAt: Date | string
-  __v?: number
+  subTotal: number
+  discount?: number
+  tax?: number
+  warehouseSelected?: boolean
+  warehouseId?: string
+  logisticsSelected?: boolean
+  logisticsId?: string
+  paymentMethod: "COD" | "ONLINE"
+  paymentDetails?: PaymentDetails
+  status?:
+    | "PENDING"
+    | "pending"
+    | "PROCESSING"
+    | "processing"
+    | "SHIPPED"
+    | "shipped"
+    | "DELIVERED"
+    | "delivered"
+    | "CANCELLED"
+    | "cancelled"
+  additionalNotes?: string
+  createdAt?: Date
+  updatedAt?: Date
 }
-
-export interface SellerOrderDocument extends OrderDocument {
-  sellerSubtotal: number
-  originalTotal: number
-}
-
-export interface ProductDocument {
-  _id: string | ObjectId
-  title: string
-  description: string
-  price: number
-  discountPercentage?: number
-  rating?: number
-  stock: number
-  brand: string
-  category: string
-  thumbnail?: string
-  images?: string[]
-  seller_id: string | ObjectId
-  status?: string
-  __v?: number
-  [key: string]: any
-}
-
-// Type for Mongoose lean() results
-export type LeanDocument<T> = {
-  [P in keyof T]?: T[P] extends ObjectId
-    ? string
-    : T[P] extends Date
-      ? string
-      : T[P] extends object
-        ? LeanDocument<T[P]>
-        : T[P]
-} & { _id?: string | ObjectId; __v?: number }

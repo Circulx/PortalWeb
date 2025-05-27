@@ -1,12 +1,14 @@
 import mongoose from "mongoose"
 
-// Define the order schema
+// Define the order schema with both fields for compatibility
 const orderSchema = new mongoose.Schema(
   {
     userId: { type: String, required: true, index: true },
     products: [
       {
-        productId: { type: String, required: true },
+        productId: { type: String, required: true }, // Keep existing field for compatibility
+        product_id: { type: String, required: true }, // Make this required too
+        seller_id: { type: String, required: true, index: true }, // Ensure this is required
         title: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
@@ -63,11 +65,17 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
+// Add compound index for efficient seller-based queries
+orderSchema.index({ "products.seller_id": 1, createdAt: -1 })
+orderSchema.index({ userId: 1, "products.seller_id": 1 })
+
 export default orderSchema
 
 // Define TypeScript interfaces for the order
 export interface OrderProduct {
-  productId: string
+  //productId: string // Keep existing field
+  product_id: string // Add new field as optional
+  seller_id: string
   title: string
   quantity: number
   price: number

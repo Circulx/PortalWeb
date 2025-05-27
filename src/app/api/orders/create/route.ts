@@ -5,6 +5,32 @@ import { sendEmail } from "@/lib/email"
 import { generateOrderConfirmationEmail } from "@/lib/email-templates"
 import type { Order } from "@/models/profile/order"
 
+// Define interface for product data from database
+interface ProductData {
+  _id: any
+  product_id: string
+  seller_id: string
+  title?: string
+  price?: number
+  [key: string]: any
+}
+
+// Define interface for saved order data
+interface SavedOrderData {
+  _id: any
+  userId: string
+  products: Array<{
+    productId: string
+    product_id: string
+    seller_id: string
+    title: string
+    quantity: number
+    price: number
+    image_link?: string
+  }>
+  [key: string]: any
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get the current user
@@ -16,77 +42,111 @@ export async function POST(request: NextRequest) {
     // Parse the request body
     const orderData = await request.json()
 
-    // Debug: Log the incoming products structure
     console.log("Incoming products:", JSON.stringify(orderData.products, null, 2))
 
-    // Ensure products have the correct field names with more robust transformation
-    const transformedProducts = orderData.products.map((product: any) => {
-      // Debug: Log each product before transformation
-      console.log("Processing product:", JSON.stringify(product, null, 2))
+    // Connect to the profile database
+    const profileConnection = await connectProfileDB()
+    const ProductModel = profileConnection.models.Product
 
-      // Generate a fallback ID if none exists
-      const fallbackId = `generated-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+    if (!ProductModel) {
+      console.error("Product model not found in PROFILE_DB")
+      return NextResponse.json({ success: false, error: "Product model not available" }, { status: 500 })
+    }
 
-      // Extract the product ID from various possible sources with fallback
-      const productId = product.productId || product.id || (product._id ? product._id.toString() : fallbackId)
+    // Enhance products with seller information
+    const enhancedProducts = await Promise.all(
+      orderData.products.map(async (product: any) => {
+        try {
+          // Extract product_id from URL path or use direct ID
+          let product_id = product.productId || product.id || product._id
 
-      // Debug: Log the extracted productId
-      console.log("Extracted productId:", productId)
+          // If productId is a URL path like "/product/14", extract the ID
+          if (typeof product_id === "string" && product_id.includes("/product/")) {
+            product_id = product_id.split("/product/")[1]
+          }
 
-      return {
-        productId: productId,
-        title: product.title || "Unknown Product",
-        quantity: Number(product.quantity) || 1,
-        price: Number(product.price) || 0,
-        image_link: product.image_link || product.image || null,
-      }
-    })
+          console.log(`Looking up product with product_id: ${product_id}`)
 
-    // Debug: Log the transformed products
-    console.log("Transformed products:", JSON.stringify(transformedProducts, null, 2))
+          // Fetch seller_id using product_id
+          let seller_id = "unknown-seller"
 
-    // Ensure status is uppercase to match enum
+          try {
+            const productDetails = (await ProductModel.findOne({ product_id: product_id }).lean()) as ProductData | null
+
+            if (productDetails) {
+              console.log(`Found product:`, productDetails)
+              seller_id = productDetails.seller_id || "unknown-seller"
+              console.log(`Retrieved seller_id: ${seller_id} for product_id: ${product_id}`)
+            } else {
+              console.warn(`Product not found with product_id: ${product_id}`)
+            }
+          } catch (dbError) {
+            console.error(`Database error for product_id ${product_id}:`, dbError)
+          }
+
+          // Ensure all required fields are included
+          const enhancedProduct = {
+            productId: product_id, // For backward compatibility
+            product_id: product_id, // New field
+            seller_id: seller_id, // Seller ID from database
+            title: product.title || "Unknown Product",
+            quantity: Number(product.quantity) || 1,
+            price: Number(product.price) || 0,
+            image_link: product.image_link || product.image || null,
+          }
+
+          console.log(`Enhanced product:`, enhancedProduct)
+          return enhancedProduct
+        } catch (error) {
+          console.error("Error processing product:", error)
+          return {
+            productId: product.productId || product.id || `fallback-${Date.now()}`,
+            product_id: product.productId || product.id || `fallback-${Date.now()}`,
+            seller_id: "unknown-seller",
+            title: product.title || "Unknown Product",
+            quantity: Number(product.quantity) || 1,
+            price: Number(product.price) || 0,
+            image_link: product.image_link || product.image || null,
+          }
+        }
+      }),
+    )
+
+    console.log("All enhanced products:", JSON.stringify(enhancedProducts, null, 2))
+
+    // Prepare order data
     const orderToSave = {
       ...orderData,
       userId: user.id,
-      products: transformedProducts, // Use the transformed products
+      products: enhancedProducts,
       status: orderData.status ? orderData.status.toUpperCase() : "PENDING",
       createdAt: new Date(),
     }
 
-    // Debug: Log the final order data being saved
-    console.log(
-      "Order data to save:",
-      JSON.stringify(
-        {
-          ...orderToSave,
-          products: orderToSave.products.map((p: { productId: any; title: any; quantity: any; price: any }) => ({
-            productId: p.productId,
-            title: p.title,
-            quantity: p.quantity,
-            price: p.price,
-          })),
-        },
-        null,
-        2,
-      ),
-    )
+    console.log("Order data to save:", JSON.stringify(orderToSave, null, 2))
 
-    // Connect to the database
-    const conn = await connectProfileDB()
-    const OrderModel = conn.models.Order
-
-    // Create the order using the Order model
+    // Create and save order
+    const OrderModel = profileConnection.models.Order
     const newOrder = new OrderModel(orderToSave)
-
-    // Save the order
     await newOrder.save()
 
     console.log("Order created successfully with ID:", newOrder._id)
 
-    // Decrement cart quantities after successful order creation
+    // Log the saved order to verify fields
     try {
-      const orderedItems = transformedProducts.map((product: { productId: any; quantity: any }) => ({
+      const savedOrder = (await OrderModel.findById(newOrder._id).lean()) as SavedOrderData | null
+      if (savedOrder && savedOrder.products) {
+        console.log("Saved order products:", JSON.stringify(savedOrder.products, null, 2))
+      } else {
+        console.log("No products found in saved order")
+      }
+    } catch (verifyError) {
+      console.error("Error verifying saved order:", verifyError)
+    }
+
+    // Decrement cart quantities
+    try {
+      const orderedItems = enhancedProducts.map((product) => ({
         productId: product.productId,
         quantity: product.quantity,
       }))
@@ -97,25 +157,20 @@ export async function POST(request: NextRequest) {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Cookie: request.headers.get("Cookie") || "", // Forward cookies for authentication
+            Cookie: request.headers.get("Cookie") || "",
           },
           body: JSON.stringify({ orderedItems }),
         },
       )
 
-      if (!cartResponse.ok) {
-        console.warn("Failed to update cart quantities after order placement:", await cartResponse.text())
-        // Don't fail the order creation if cart update fails
-      } else {
-        const cartResult = await cartResponse.json()
-        console.log("Cart quantities updated successfully:", cartResult.message)
+      if (cartResponse.ok) {
+        console.log("Cart quantities updated successfully")
       }
     } catch (cartError) {
       console.warn("Error updating cart quantities:", cartError)
-      // Don't fail the order creation if cart update fails
     }
 
-    // Send confirmation email if email is available
+    // Send confirmation email
     if (orderData.billingDetails?.email) {
       try {
         const orderObj = newOrder.toObject() as Order
@@ -130,7 +185,6 @@ export async function POST(request: NextRequest) {
         console.log("Order confirmation email sent successfully")
       } catch (emailError) {
         console.error("Error sending order confirmation email:", emailError)
-        // Don't fail the order creation if email sending fails
       }
     }
 
