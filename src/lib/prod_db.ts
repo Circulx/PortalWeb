@@ -1,3 +1,5 @@
+import mongoose from "mongoose"
+
 const MONGODB_URI = process.env.PROD_DB || process.env.MONGODB_URI
 
 if (!MONGODB_URI) {
