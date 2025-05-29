@@ -23,6 +23,7 @@ import {
 import { format } from "date-fns"
 import Link from "next/link"
 import { toast } from "sonner"
+import { OrderStatusUpdater } from "./order-status-updater"
 
 // Define types for order data
 interface OrderProduct {
@@ -158,6 +159,45 @@ export function OrderManagement() {
     } finally {
       setLoading(false)
       setRefreshing(false)
+    }
+  }
+
+  // Handle status update
+  const handleStatusUpdate = async (orderId: string, newStatus: string) => {
+    try {
+      // Optimistically update the UI
+      setOrders((prevOrders) =>
+        prevOrders.map((order) => (order._id === orderId ? { ...order, status: newStatus } : order)),
+      )
+
+      // Update the database
+      const response = await fetch("/api/seller/orders/update-status", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          orderId,
+          status: newStatus,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Failed to update order status")
+      }
+
+      toast.success(`Order status updated to ${newStatus}`)
+
+      // Refresh orders to get latest data
+      fetchOrders(true)
+    } catch (error) {
+      console.error("Error updating order status:", error)
+      toast.error("Failed to update order status. Please try again.")
+
+      // Revert the optimistic update
+      fetchOrders(true)
     }
   }
 
@@ -467,9 +507,11 @@ export function OrderManagement() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge className={getStatusColor(order.status)}>
-                              {(order.status || "PENDING").toUpperCase()}
-                            </Badge>
+                            <OrderStatusUpdater
+                              currentStatus={order.status}
+                              orderId={order._id}
+                              onStatusUpdate={handleStatusUpdate}
+                            />
                           </TableCell>
                           <TableCell>
                             <Button variant="outline" size="sm" asChild>

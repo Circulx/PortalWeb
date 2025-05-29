@@ -6,9 +6,9 @@ import ProfilePage from "./profile/page"
 // Main dashboard page component
 export default function SellerDashboard() {
   const searchParams = useSearchParams()
-  const showDashboard = searchParams.get("view") === "dashboard"
+  const showDashboard = searchParams.get("view") === "dashboard" || !searchParams.get("view")
 
-  // By default, show the Profile page content
-  // Only show Dashboard if explicitly requested via ?view=dashboard
+  // By default, show the Dashboard content
+  // Only show Profile if explicitly requested via ?view=profile
   return <div className="w-full max-w-7xl mx-auto">{showDashboard ? <DashboardContent /> : <ProfilePage />}</div>
 }
