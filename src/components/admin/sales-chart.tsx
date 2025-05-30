@@ -1,49 +1,36 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Area } from "recharts"
+import { formatCurrency } from "@/lib/utils"
 
-// Define the structure for our data points
+// Define the structure for our chart data points
 interface SalesDataPoint {
-  value: number
+  day: string
+  revenue: number
   percentage: number
-  k: string
+  label: string
 }
 
-// Define monthly data structure
-interface MonthlyData {
-  [key: string]: SalesDataPoint[]
-}
-
-// Generate sample data for each month
-const generateMonthlyData = (): MonthlyData => {
-  const months = ["october", "november", "december"]
-  const monthlyData: MonthlyData = {}
-
-  months.forEach((month) => {
-    monthlyData[month] = Array.from({ length: 12 }, (_, i) => {
-      const k = `${(i + 1) * 5}k`
-      // Generate different patterns for different months
-      const basePercentage = month === "october" ? 40 : month === "november" ? 50 : 45
-      return {
-        k,
-        value: (i + 1) * 5000,
-        percentage: Math.floor(Math.random() * 40) + basePercentage,
-      }
-    })
-  })
-
-  return monthlyData
+// Define sales data structure
+interface SalesData {
+  month: string
+  totalRevenue: number
+  chartData: SalesDataPoint[]
+  ordersCount: number
 }
 
 // Custom tooltip component
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const data = payload[0].payload
     return (
-      <div className="bg-white border rounded-lg shadow-lg p-2 text-xs">
-        <p className="font-medium text-orange-500">{payload[0].value.toFixed(4)}%</p>
+      <div className="bg-white border rounded-lg shadow-lg p-3 text-xs">
+        <p className="font-medium text-gray-700">Day {label}</p>
+        <p className="font-medium text-orange-500">Revenue: {formatCurrency(data.revenue)}</p>
+        <p className="text-gray-600">Percentage: {data.percentage.toFixed(1)}%</p>
       </div>
     )
   }
@@ -51,22 +38,108 @@ const CustomTooltip = ({ active, payload }: any) => {
 }
 
 export function SalesChart() {
-  const [selectedMonth, setSelectedMonth] = useState("october")
-  const monthlyData = generateMonthlyData()
+  const [selectedMonth, setSelectedMonth] = useState("current")
+  const [salesData, setSalesData] = useState<SalesData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchSalesData = async (month: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/admin/sales-data?month=${month}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      })
+
+      const result = await response.json()
+
+      if (result.success) {
+        setSalesData(result.data)
+      } else {
+        setError(result.error || "Failed to fetch sales data")
+        console.error("Failed to fetch sales data:", result.error)
+      }
+    } catch (error) {
+      setError("Error fetching sales data")
+      console.error("Error fetching sales data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Initial data fetch
+  useEffect(() => {
+    fetchSalesData(selectedMonth)
+  }, [selectedMonth])
 
   const handleMonthChange = (value: string) => {
     setSelectedMonth(value)
   }
 
+  // Get current month name for display
+  const getCurrentMonthName = () => {
+    return new Date().toLocaleString("default", { month: "long" })
+  }
+
+  if (loading) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h3 className="text-lg font-semibold">Sales Details</h3>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error || !salesData) {
+    return (
+      <Card>
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <h3 className="text-lg font-semibold">Sales Details</h3>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] sm:h-[400px] w-full flex items-center justify-center">
+            <p className="text-gray-500">{error || "No sales data available"}</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <h3 className="text-lg font-semibold">Sales Details</h3>
+        <div>
+          <h3 className="text-lg font-semibold">Sales Details</h3>
+          <p className="text-sm text-gray-600">
+            Total Revenue: {formatCurrency(salesData.totalRevenue)} | Orders: {salesData.ordersCount}
+          </p>
+        </div>
         <Select value={selectedMonth} onValueChange={handleMonthChange}>
-          <SelectTrigger className="w-[120px]">
+          <SelectTrigger className="w-[140px]">
             <SelectValue placeholder="Select month" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="current">{getCurrentMonthName()}</SelectItem>
+            <SelectItem value="january">January</SelectItem>
+            <SelectItem value="february">February</SelectItem>
+            <SelectItem value="march">March</SelectItem>
+            <SelectItem value="april">April</SelectItem>
+            <SelectItem value="may">May</SelectItem>
+            <SelectItem value="june">June</SelectItem>
+            <SelectItem value="july">July</SelectItem>
+            <SelectItem value="august">August</SelectItem>
+            <SelectItem value="september">September</SelectItem>
             <SelectItem value="october">October</SelectItem>
             <SelectItem value="november">November</SelectItem>
             <SelectItem value="december">December</SelectItem>
@@ -76,10 +149,10 @@ export function SalesChart() {
       <CardContent>
         <div className="h-[300px] sm:h-[400px] w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={monthlyData[selectedMonth]} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+            <LineChart data={salesData.chartData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
               <CartesianGrid horizontal={true} vertical={false} strokeDasharray="3 3" stroke="#E5E7EB" />
               <XAxis
-                dataKey="k"
+                dataKey="label"
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: "#6B7280", fontSize: 12 }}
@@ -90,7 +163,7 @@ export function SalesChart() {
                 tickLine={false}
                 tick={{ fill: "#6B7280", fontSize: 12 }}
                 tickFormatter={(value) => `${value}%`}
-                domain={[0, 100]}
+                domain={[0, "dataMax + 10"]}
                 padding={{ top: 20, bottom: 20 }}
               />
               <Tooltip content={<CustomTooltip />} cursor={false} />

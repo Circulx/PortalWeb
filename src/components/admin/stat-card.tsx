@@ -3,6 +3,14 @@ import type { StatCardProps } from "@/types/dashboard"
 import { ArrowDown, ArrowUp } from "lucide-react"
 
 export function StatCard({ title, value, change, icon }: StatCardProps) {
+  // Format value with rupee symbol for revenue-related cards
+  const formatValue = (val: string | number, cardTitle: string) => {
+    if (cardTitle.toLowerCase().includes("revenue")) {
+      return `${val}`
+    }
+    return val
+  }
+
   return (
     <Card>
       <CardContent className="p-6">
@@ -13,7 +21,7 @@ export function StatCard({ title, value, change, icon }: StatCardProps) {
             {/* Card title */}
             <p className="text-sm text-muted-foreground">{title}</p>
             {/* Main value display */}
-            <h3 className="text-2xl font-bold mt-1">{value}</h3>
+            <h3 className="text-2xl font-bold mt-1">{formatValue(value, title)}</h3>
             {/* Change indicator section */}
             <div className="flex items-center mt-1">
               {/* Conditional rendering of increase/decrease arrow */}

@@ -30,7 +30,9 @@ export function MetricCard({
         <div className="flex justify-between">
           <div>
             <p className="text-sm text-muted-foreground">{title}</p>
-            <h2 className="text-2xl font-bold md:text-3xl">{typeof value === "number" ? `$${value}` : value}</h2>
+            <h2 className="text-2xl font-bold md:text-3xl">
+              {title.toLowerCase().includes("revenue") ? `₹${value}` : value}
+            </h2>
             <p
               className={`flex items-center text-sm mt-1 ${
                 trendType === "positive" ? "text-green-500" : "text-red-500"
