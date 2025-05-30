@@ -7,7 +7,7 @@ import { SalesChart } from "@/components/admin/sales-chart"
 import { RecentSellersTable } from "@/components/admin/recent-sellers-table"
 import { RecentIssuesTable } from "@/components/admin/recent-issues-table"
 import { RecentProductsTable } from "@/components/admin/recent-products-table"
-import { Users, Package, DollarSign, UserCheck, PackageCheck, RefreshCw } from "lucide-react"
+import { Users, Package, DollarSign, ShoppingCart, PackageCheck, RefreshCw } from "lucide-react"
 import { formatNumber, formatCurrency } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { toast } from "sonner"
@@ -15,12 +15,14 @@ import { toast } from "sonner"
 interface DashboardData {
   totalSellers: number
   activeSellers: number
+  totalOrders: number
+  completedOrders: number
   totalProductsListed: number
   totalRevenue: number
-  sellersPendingApproval: number
   productsPendingApproval: number
   monthlyRevenue: number
   sellersGrowth: number
+  ordersGrowth: number
   productsGrowth: number
   revenueGrowth: number
   recentOrders: Array<{
@@ -58,12 +60,14 @@ export default function AdminDashboard() {
           ...result.data,
           totalSellers: Number(result.data.totalSellers) || 0,
           activeSellers: Number(result.data.activeSellers) || 0,
+          totalOrders: Number(result.data.totalOrders) || 0,
+          completedOrders: Number(result.data.completedOrders) || 0,
           totalProductsListed: Number(result.data.totalProductsListed) || 0,
           totalRevenue: Number(result.data.totalRevenue) || 0,
-          sellersPendingApproval: Number(result.data.sellersPendingApproval) || 0,
           productsPendingApproval: Number(result.data.productsPendingApproval) || 0,
           monthlyRevenue: Number(result.data.monthlyRevenue) || 0,
           sellersGrowth: Number(result.data.sellersGrowth) || 0,
+          ordersGrowth: Number(result.data.ordersGrowth) || 0,
           productsGrowth: Number(result.data.productsGrowth) || 0,
           revenueGrowth: Number(result.data.revenueGrowth) || 0,
         }
@@ -193,13 +197,13 @@ export default function AdminDashboard() {
       {/* Pending Items Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <PendingCard
-          title="Sellers Pending Approval"
-          value={dashboardData.sellersPendingApproval}
+          title="Total Orders"
+          value={dashboardData.totalOrders}
           change={{
-            value: "Needs Review",
-            period: "Awaiting admin action",
+            value: `${dashboardData.completedOrders} Completed`,
+            period: `${formatGrowth(dashboardData.ordersGrowth)} completion rate`,
           }}
-          icon={<UserCheck className="w-6 h-6" />}
+          icon={<ShoppingCart className="w-6 h-6" />}
         />
         <PendingCard
           title="Products Pending Approval"

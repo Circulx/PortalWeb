@@ -22,13 +22,14 @@ export async function GET(request: NextRequest) {
     console.log("Database connected successfully")
 
     // Get models from the connection
-    let User, Product, Order
+    let User, Product, Order, ProfileProgress
 
     try {
       // Try to get existing models
       User = mongoose.models.User || mongoose.model("User")
       Product = mongoose.models.Product || mongoose.model("Product")
       Order = mongoose.models.Order || mongoose.model("Order")
+      ProfileProgress = mongoose.models.ProfileProgress || mongoose.model("ProfileProgress")
 
       console.log("Models retrieved successfully")
     } catch (modelError) {
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
 
         // Get collection references
         const db = connection.db
-        const usersCollection = db.collection("users")
+        const profileProgressesCollection = db.collection("profileprogresses")
         const productsCollection = db.collection("products")
         const ordersCollection = db.collection("orders")
 
@@ -53,26 +54,28 @@ export async function GET(request: NextRequest) {
         const [
           totalSellers,
           activeSellers,
-          pendingSellers,
+          totalOrders,
+          completedOrders,
           totalProducts,
           activeProducts,
           pendingProducts,
           allOrders,
           recentOrders,
         ] = await Promise.all([
-          // Total sellers count
-          usersCollection.countDocuments({ type: "seller" }),
+          // Total sellers count from profileprogresses collection
+          profileProgressesCollection.countDocuments({}),
 
-          // Active sellers count
-          usersCollection.countDocuments({
-            type: "seller",
-            $or: [{ status: "approved" }, { isActive: true }],
+          // Active sellers count (status: "Approved")
+          profileProgressesCollection.countDocuments({
+            status: "Approved",
           }),
 
-          // Pending sellers count
-          usersCollection.countDocuments({
-            type: "seller",
-            $or: [{ status: "pending" }, { status: { $exists: false } }, { isActive: false }],
+          // Total orders count from orders collection
+          ordersCollection.countDocuments({}),
+
+          // Completed orders count
+          ordersCollection.countDocuments({
+            $or: [{ status: "completed" }, { status: "Completed" }, { status: "delivered" }, { status: "Delivered" }],
           }),
 
           // Total products count
@@ -104,7 +107,8 @@ export async function GET(request: NextRequest) {
         console.log("Raw data fetched using direct collections:", {
           totalSellers,
           activeSellers,
-          pendingSellers,
+          totalOrders,
+          completedOrders,
           totalProducts,
           activeProducts,
           pendingProducts,
@@ -130,8 +134,9 @@ export async function GET(request: NextRequest) {
           })
         }
 
-        // Calculate growth percentages (mock data for now, can be enhanced with historical data)
+        // Calculate growth percentages
         const sellersGrowth = activeSellers > 0 ? ((activeSellers / Math.max(totalSellers, 1)) * 100).toFixed(1) : "0"
+        const ordersGrowth = completedOrders > 0 ? ((completedOrders / Math.max(totalOrders, 1)) * 100).toFixed(1) : "0"
         const productsGrowth = activeProducts > 0 ? "12.5" : "0" // Mock growth
         const revenueGrowth = totalRevenue > 0 ? "8.3" : "0" // Mock growth
 
@@ -140,9 +145,10 @@ export async function GET(request: NextRequest) {
           // Main KPIs
           totalSellers: totalSellers || 0,
           activeSellers: activeSellers || 0,
+          totalOrders: totalOrders || 0,
+          completedOrders: completedOrders || 0,
           totalProductsListed: totalProducts || 0,
           totalRevenue: totalRevenue || 0,
-          sellersPendingApproval: pendingSellers || 0,
           productsPendingApproval: pendingProducts || 0,
 
           // Additional metrics
@@ -150,9 +156,10 @@ export async function GET(request: NextRequest) {
           recentOrdersCount: recentOrders?.length || 0,
 
           // Growth indicators
-          sellersGrowth: `${sellersGrowth}%`,
-          productsGrowth: `${productsGrowth}%`,
-          revenueGrowth: `${revenueGrowth}%`,
+          sellersGrowth: Number.parseFloat(sellersGrowth),
+          ordersGrowth: Number.parseFloat(ordersGrowth),
+          productsGrowth: Number.parseFloat(productsGrowth),
+          revenueGrowth: Number.parseFloat(revenueGrowth),
 
           // Recent activity
           recentOrders: (recentOrders || []).slice(0, 5).map((order: any) => ({
@@ -191,26 +198,28 @@ export async function GET(request: NextRequest) {
     const [
       totalSellers,
       activeSellers,
-      pendingSellers,
+      totalOrders,
+      completedOrders,
       totalProducts,
       activeProducts,
       pendingProducts,
       allOrders,
       recentOrders,
     ] = await Promise.all([
-      // Total sellers count
-      User.countDocuments({ type: "seller" }),
+      // Total sellers count from ProfileProgress model
+      ProfileProgress.countDocuments({}),
 
-      // Active sellers count
-      User.countDocuments({
-        type: "seller",
-        $or: [{ status: "approved" }, { isActive: true }],
+      // Active sellers count (status: "Approved")
+      ProfileProgress.countDocuments({
+        status: "Approved",
       }),
 
-      // Pending sellers count
-      User.countDocuments({
-        type: "seller",
-        $or: [{ status: "pending" }, { status: { $exists: false } }, { isActive: false }],
+      // Total orders count from Order model
+      Order.countDocuments({}),
+
+      // Completed orders count
+      Order.countDocuments({
+        $or: [{ status: "completed" }, { status: "Completed" }, { status: "delivered" }, { status: "Delivered" }],
       }),
 
       // Total products count
@@ -239,7 +248,8 @@ export async function GET(request: NextRequest) {
     console.log("Raw data fetched using models:", {
       totalSellers,
       activeSellers,
-      pendingSellers,
+      totalOrders,
+      completedOrders,
       totalProducts,
       activeProducts,
       pendingProducts,
@@ -265,8 +275,9 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    // Calculate growth percentages (mock data for now, can be enhanced with historical data)
+    // Calculate growth percentages
     const sellersGrowth = activeSellers > 0 ? ((activeSellers / Math.max(totalSellers, 1)) * 100).toFixed(1) : "0"
+    const ordersGrowth = completedOrders > 0 ? ((completedOrders / Math.max(totalOrders, 1)) * 100).toFixed(1) : "0"
     const productsGrowth = activeProducts > 0 ? "12.5" : "0" // Mock growth
     const revenueGrowth = totalRevenue > 0 ? "8.3" : "0" // Mock growth
 
@@ -275,9 +286,10 @@ export async function GET(request: NextRequest) {
       // Main KPIs
       totalSellers: totalSellers || 0,
       activeSellers: activeSellers || 0,
+      totalOrders: totalOrders || 0,
+      completedOrders: completedOrders || 0,
       totalProductsListed: totalProducts || 0,
       totalRevenue: totalRevenue || 0,
-      sellersPendingApproval: pendingSellers || 0,
       productsPendingApproval: pendingProducts || 0,
 
       // Additional metrics
@@ -285,9 +297,10 @@ export async function GET(request: NextRequest) {
       recentOrdersCount: recentOrders?.length || 0,
 
       // Growth indicators
-      sellersGrowth: `${sellersGrowth}%`,
-      productsGrowth: `${productsGrowth}%`,
-      revenueGrowth: `${revenueGrowth}%`,
+      sellersGrowth: Number.parseFloat(sellersGrowth),
+      ordersGrowth: Number.parseFloat(ordersGrowth),
+      productsGrowth: Number.parseFloat(productsGrowth),
+      revenueGrowth: Number.parseFloat(revenueGrowth),
 
       // Recent activity
       recentOrders: (recentOrders || []).slice(0, 5).map((order: any) => ({
