@@ -4,6 +4,7 @@ import { useState } from "react"
 import { signUp } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ContactModal } from "./contact-modal"
 
 interface SignUpFormProps {
   onSuccess: (message: string) => void
@@ -13,6 +14,8 @@ interface SignUpFormProps {
 export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [showContactModal, setShowContactModal] = useState(false)
+  const [contactType, setContactType] = useState<"support" | "customer-care">("support")
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
@@ -27,6 +30,11 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     }
 
     onSuccess("User registered successfully. Please sign in.")
+  }
+
+  const handleContactClick = (type: "support" | "customer-care") => {
+    setContactType(type)
+    setShowContactModal(true)
   }
 
   return (
@@ -70,39 +78,6 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
         >
           {isLoading ? "Creating account..." : "Sign up"}
         </Button>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-gray-200"></span>
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg- px-2 text-gray-100">OR</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-[#1a0b2e]/50 border-[#1a0b2e] hover:bg-[#1a0b2e] p-0 h-8"
-          >
-            <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="w-6 h-6" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-[#1a0b2e]/50 border-[#1a0b2e] hover:bg-[#1a0b2e] p-0 h-8"
-          >
-            <img src="https://authjs.dev/img/providers/facebook.svg" alt="Facebook" className="w-6 h-6" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-[#1a0b2e]/50 border-[#1a0b2e] hover:bg-[#1a0b2e] p-0 h-8"
-          >
-            <img src="https://authjs.dev/img/providers/github.svg" alt="GitHub" className="w-6 h-6" />
-          </Button>
-        </div>
       </form>
       <div className="text-center text-sm text-gray-100">
         Already have an account?{" "}
@@ -110,17 +85,15 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
           Sign in
         </button>
       </div>
-      <div className="flex justify-between text-xs text-gray-100">
-        <a href="#" className="hover:text-gray-400">
-          Terms & Conditions
-        </a>
-        <a href="#" className="hover:text-gray-400">
+      <div className="flex justify-center gap-8 text-xs text-gray-100">
+        <button onClick={() => handleContactClick("support")} className="hover:text-gray-400 transition-colors">
           Support
-        </a>
-        <a href="#" className="hover:text-gray-400">
+        </button>
+        <button onClick={() => handleContactClick("customer-care")} className="hover:text-gray-400 transition-colors">
           Customer Care
-        </a>
+        </button>
       </div>
+      <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} type={contactType} />
     </div>
   )
 }

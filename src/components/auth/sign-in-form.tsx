@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+import { useState, useEffect } from "react"
 import { signIn } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
+import { PasswordResetModal } from "./password-reset-modal"
+import { ContactModal } from "./contact-modal"
 
 interface SignInFormProps {
   onSuccess: () => void
@@ -15,11 +18,35 @@ interface SignInFormProps {
 export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProps) {
   const [error, setError] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showPasswordReset, setShowPasswordReset] = useState(false)
+  const [resetSuccessMessage, setResetSuccessMessage] = useState("")
+  const [email, setEmail] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
+  const [showContactModal, setShowContactModal] = useState(false)
+  const [contactType, setContactType] = useState<"support" | "customer-care">("support")
+
+  // Load saved email from localStorage on component mount
+  useEffect(() => {
+    const savedEmail = localStorage.getItem("rememberedEmail")
+    if (savedEmail) {
+      setEmail(savedEmail)
+      setRememberMe(true)
+    }
+  }, [])
 
   async function handleSubmit(formData: FormData) {
     setIsSubmitting(true)
     setIsLoading(true)
     setError("")
+
+    const emailValue = formData.get("email") as string
+
+    // Save or remove email based on remember me checkbox
+    if (rememberMe) {
+      localStorage.setItem("rememberedEmail", emailValue)
+    } else {
+      localStorage.removeItem("rememberedEmail")
+    }
 
     const result = await signIn(formData)
 
@@ -32,6 +59,30 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
 
     // Call onSuccess to handle redirection
     onSuccess()
+  }
+
+  const handlePasswordResetSuccess = () => {
+    setShowPasswordReset(false)
+    setResetSuccessMessage("Password reset successfully! You can now login with your new password.")
+    setTimeout(() => setResetSuccessMessage(""), 5000)
+  }
+
+  const handleForgotPasswordClick = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setShowPasswordReset(true)
+  }
+
+  const handleRememberMeChange = (checked: boolean) => {
+    setRememberMe(checked)
+  }
+
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value)
+  }
+
+  const handleContactClick = (type: "support" | "customer-care") => {
+    setContactType(type)
+    setShowContactModal(true)
   }
 
   return (
@@ -48,6 +99,8 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
             name="email"
             type="email"
             required
+            value={email}
+            onChange={handleEmailChange}
             placeholder=""
             className="h-9 px-8 bg-white text-white-100 placeholder:text-gray-500 rounded-lg"
             disabled={isSubmitting}
@@ -69,6 +122,8 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
           <Checkbox
             id="remember"
             name="remember"
+            checked={rememberMe}
+            onCheckedChange={handleRememberMeChange}
             className="border-gray-100 data-[state=checked]:bg-purple-600"
             disabled={isSubmitting}
           />
@@ -77,6 +132,7 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
           </label>
         </div>
         {error && <p className="text-sm text-red-500">{error}</p>}
+        {resetSuccessMessage && <p className="text-sm text-green-400">{resetSuccessMessage}</p>}
         <Button
           type="submit"
           className="w-full h-9 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-lg"
@@ -85,45 +141,13 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
           {isSubmitting ? "Signing in..." : "Login"}
         </Button>
         <div className="text-center ">
-          <a href="#" className="text-sm text-gray-50 hover:text-white">
+          <button
+            onClick={handleForgotPasswordClick}
+            className="text-sm text-gray-50 hover:text-white"
+            disabled={isSubmitting}
+          >
             Forgot password?
-          </a>
-        </div>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t border-gray-800"></span>
-          </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="bg-[#1a0b2e] px-2 text-gray-500">Or</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-[#1a0b2e]/50 border-[#1a0b2e] hover:bg-[#1a0b2e] p-0 h-12"
-            disabled={isSubmitting}
-          >
-            <img src="https://authjs.dev/img/providers/google.svg" alt="Google" className="w-6 h-6" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-[#1a0b2e]/50 border-[#1a0b2e] hover:bg-[#1a0b2e] p-0 h-12"
-            disabled={isSubmitting}
-          >
-            <img src="https://authjs.dev/img/providers/facebook.svg" alt="Facebook" className="w-6 h-6" />
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="bg-[#1a0b2e]/50 border-[#1a0b2e] hover:bg-[#1a0b2e] p-0 h-12"
-            disabled={isSubmitting}
-          >
-            <img src="https://authjs.dev/img/providers/github.svg" alt="GitHub" className="w-6 h-6" />
-          </Button>
+          </button>
         </div>
       </form>
       <div className="text-center text-sm text-gray-200">
@@ -132,17 +156,20 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
           Signup
         </button>
       </div>
-      <div className="flex justify-between text-xs text-gray-200 py-2">
-        <a href="#" className="hover:text-gray-400">
-          Terms & Conditions
-        </a>
-        <a href="#" className="hover:text-gray-400">
+      <div className="flex justify-center gap-8 text-xs text-gray-200 py-2">
+        <button onClick={() => handleContactClick("support")} className="hover:text-gray-400 transition-colors">
           Support
-        </a>
-        <a href="#" className="hover:text-gray-400">
+        </button>
+        <button onClick={() => handleContactClick("customer-care")} className="hover:text-gray-400 transition-colors">
           Customer Care
-        </a>
+        </button>
       </div>
+      <PasswordResetModal
+        isOpen={showPasswordReset}
+        onClose={() => setShowPasswordReset(false)}
+        onSuccess={handlePasswordResetSuccess}
+      />
+      <ContactModal isOpen={showContactModal} onClose={() => setShowContactModal(false)} type={contactType} />
     </div>
   )
 }

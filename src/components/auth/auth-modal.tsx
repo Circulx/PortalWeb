@@ -17,6 +17,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [isSignIn, setIsSignIn] = useState(true)
   const [successMessage, setSuccessMessage] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState(false)
 
   // Close modal if user is already logged in
   useEffect(() => {
@@ -31,6 +32,12 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
     checkUser()
   }, [isOpen, onSuccess])
+
+  useEffect(() => {
+    if (isOpen) {
+      setPasswordResetSuccess(false)
+    }
+  }, [isOpen])
 
   const handleBack = () => {
     if (!isSignIn) {
@@ -48,6 +55,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
   const handleSignInSuccess = async () => {
     setIsLoading(true)
+    setPasswordResetSuccess(false)
     // Let the parent component handle the redirect
     onSuccess()
   }

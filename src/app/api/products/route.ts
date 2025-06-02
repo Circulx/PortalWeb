@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
 import mongoose from "mongoose"
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     console.log("Fetching products from PROFILE_DB")
     // Connect to the PROFILE_DB database
@@ -29,21 +29,33 @@ export async function GET() {
       }
     }
 
-    // Only fetch products that are active and not drafts
-    const products = await ProductModel.find({
-      isActive: true, // Only return active products
-      is_draft: false, // Don't return draft products
-    }).lean()
+    // Parse query parameters for filtering and limiting results
+    const { searchParams } = new URL(request.url)
+    const query = searchParams.get("q") || ""
+    const limit = parseInt(searchParams.get("limit") || "0", 10)
+
+    // Build filter: only fetch products that are active and not drafts
+    let filter: any = { isActive: true, is_draft: false }
+    if (query) {
+      filter.$or = [
+        { title: { $regex: query, $options: "i" } },
+        { description: { $regex: query, $options: "i" } },
+        { brand: { $regex: query, $options: "i" } },
+        { category_name: { $regex: query, $options: "i" } },
+        { sub_category_name: { $regex: query, $options: "i" } },
+      ]
+    }
+
+    // Query the database
+    let productsQuery = ProductModel.find(filter).lean()
+    if (limit > 0) productsQuery = productsQuery.limit(limit)
+
+    const products = await productsQuery
 
     console.log(`Found ${products.length} active products in PROFILE_DB`)
 
-    if (products.length > 0) {
-      return NextResponse.json(products, { status: 200 })
-    }
-
-    // If no products found, return empty array
-    console.log("No active products found in PROFILE_DB, returning empty array")
-    return NextResponse.json([], { status: 200 })
+    // Return products (or empty array if none found)
+    return NextResponse.json(products, { status: 200 })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     console.error("Error fetching products from PROFILE_DB:", errorMessage)

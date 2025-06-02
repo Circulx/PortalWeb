@@ -41,7 +41,9 @@ export function formatNumber(num: number): string {
 export function formatCurrency(amount: number, currency = "USD"): string {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency,
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(amount)
 }
 
@@ -80,3 +82,7 @@ export function debounce<T extends (...args: any[]) => any>(fn: T, ms = 300): (.
     timeoutId = setTimeout(() => fn(...args), ms)
   }
 }
+
+
+
+
