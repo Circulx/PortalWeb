@@ -1,10 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
-import { Menu, X } from "lucide-react"
 import { Sidebar } from "@/components/admin/sidebar"
-import { Button } from "@/components/ui/button"
 import AuthWrapper from "@/components/auth/auth-wrapper"
 
 export default function AdminLayout({
@@ -12,37 +9,19 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-
   return (
     <AuthWrapper requiredRole="admin">
       <div className="min-h-screen bg-background">
-        {/* Mobile Header */}
-        <div className="lg:hidden flex items-center justify-between p-4 border-b bg-white">
-          <Button variant="ghost" size="icon" onClick={() => setSidebarOpen(!sidebarOpen)}>
-            {sidebarOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </Button>
-        </div>
-
         <div className="flex">
-          {/* Sidebar */}
-          <aside
-            className={`
-            fixed inset-y-0 left-0 z-50 w-64 bg-white border-r transform transition-transform duration-200 ease-in-out
-            lg:translate-x-0 lg:static lg:h-[100vh]
-            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}
-          `}
-          >
-            <Sidebar />
+          {/* Static Sidebar - only for admin content area */}
+          <aside className="w-64 bg-white border-r flex-shrink-0">
+            <div className="sticky top-0 h-screen">
+              <Sidebar />
+            </div>
           </aside>
 
-          {/* Backdrop */}
-          {sidebarOpen && (
-            <div className="fixed inset-0 bg-black/50 lg:hidden z-40" onClick={() => setSidebarOpen(false)} />
-          )}
-
           {/* Main content */}
-          <main className="flex-1 min-h-screen w-full lg:w-auto">{children}</main>
+          <main className="flex-1 min-h-screen">{children}</main>
         </div>
       </div>
     </AuthWrapper>
