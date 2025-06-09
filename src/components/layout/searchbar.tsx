@@ -7,19 +7,27 @@ import { useRouter } from "next/navigation"
 type ProductSuggestion = {
   product_id: string
   title: string
-  image_link?: string
   brand?: string
   category_name?: string
   price?: number | string
+  image_link?: string
 }
 
+// Dummy best sellers (replace with real API in production)
+const DUMMY_BEST_SELLERS: ProductSuggestion[] = [
+  { product_id: "b1", title: "Bosch Cordless Drill", brand: "Bosch", category_name: "Tools", price: 2999, image_link: "/dummy/bosch.jpg" },
+  { product_id: "b2", title: "Philips LED Bulb", brand: "Philips", category_name: "Electronics", price: 199, image_link: "/dummy/philips.jpg" },
+  { product_id: "b3", title: "Asian Paints Emulsion", brand: "Asian Paints", category_name: "Paints", price: 1200, image_link: "/dummy/asianpaints.jpg" },
+  { product_id: "b4", title: "Stanley Hammer", brand: "Stanley", category_name: "Tools", price: 499, image_link: "/dummy/stanley.jpg" },
+  { product_id: "b5", title: "Havells Wire", brand: "Havells", category_name: "Electronics", price: 899, image_link: "/dummy/havells.jpg" },
+]
+
 const SearchBar: React.FC = () => {
-  // State for the search input, suggestions, highlighted suggestion, and dropdown visibility
   const [searchQuery, setSearchQuery] = useState<string>("")
   const [filteredSuggestions, setFilteredSuggestions] = useState<ProductSuggestion[]>([])
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
   const [showSuggestions, setShowSuggestions] = useState<boolean>(false)
-  const [justSelected, setJustSelected] = useState<boolean>(false) // Prevents dropdown from popping up after selection
+  const [justSelected, setJustSelected] = useState<boolean>(false)
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
   const suggestionsRef = useRef<HTMLUListElement>(null)
@@ -33,11 +41,10 @@ const SearchBar: React.FC = () => {
       return
     }
     const fetchSuggestions = async () => {
-      const res = await fetch(`/api/products?q=${encodeURIComponent(searchQuery)}&limit=10`)
+      const res = await fetch(`/api/products?q=${encodeURIComponent(searchQuery)}&limit=5`)
       const data: ProductSuggestion[] = await res.json()
       setFilteredSuggestions(data)
       setHighlightedIndex(-1)
-      // Only show suggestions if not just after a selection
       if (!justSelected) setShowSuggestions(true)
     }
     fetchSuggestions()
@@ -94,7 +101,6 @@ const SearchBar: React.FC = () => {
           inputRef.current?.blur()
           router.push(`/products/${product.product_id}`)
         } else if (searchQuery.trim()) {
-          // Search for the entered query
           setFilteredSuggestions([])
           setHighlightedIndex(-1)
           setShowSuggestions(false)
@@ -123,10 +129,28 @@ const SearchBar: React.FC = () => {
     setSearchQuery(product.title)
     setFilteredSuggestions([])
     setHighlightedIndex(-1)
-    setShowSuggestions(false) // Ensure dropdown closes after selection
+    setShowSuggestions(false)
     setJustSelected(true)
     inputRef.current?.blur()
     router.push(`/products/${product.product_id}`)
+  }
+
+  // Suggest a search item based on what the user is typing
+  const suggestSearchItem = searchQuery.trim()
+    ? `Search for "${searchQuery.trim()}"`
+    : ""
+
+  // Carousel state for best sellers
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const carouselSize = 5
+
+  const handleCarouselPrev = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCarouselIndex((prev) => (prev === 0 ? DUMMY_BEST_SELLERS.length - carouselSize : prev - 1))
+  }
+  const handleCarouselNext = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCarouselIndex((prev) => (prev === DUMMY_BEST_SELLERS.length - carouselSize ? 0 : prev + 1))
   }
 
   return (
@@ -154,10 +178,10 @@ const SearchBar: React.FC = () => {
             }
           />
         </div>
-        {/* Suggestions dropdown - only show when there are suggestions and input is focused */}
-        {showSuggestions && searchQuery && filteredSuggestions.length > 0 && (
+        {/* Suggestions dropdown */}
+        {showSuggestions && (
           <div
-            className="absolute left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-72"
+            className="absolute left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96"
             style={{ overflowY: "auto", overflowX: "hidden" }}
           >
             <ul
@@ -166,38 +190,49 @@ const SearchBar: React.FC = () => {
               id="search-suggestions"
               role="listbox"
             >
+              {/* Suggest a search item */}
+              {suggestSearchItem && (
+                <li
+                  key="search-suggestion"
+                  className="flex items-center gap-3 px-4 py-2 cursor-pointer text-blue-700 font-medium hover:bg-blue-50"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => {
+                    setShowSuggestions(false)
+                    setJustSelected(false)
+                    inputRef.current?.blur()
+                    router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+                  }}
+                >
+                  {suggestSearchItem}
+                </li>
+              )}
+              {/* Product suggestions (with small images) */}
               {filteredSuggestions.map((product, idx) => (
                 <li
                   key={product.product_id}
                   id={`suggestion-${idx}`}
                   role="option"
                   aria-selected={idx === highlightedIndex}
-                  className={`flex items-center gap-3 px-4 py-2 cursor-pointer text-black transition ${
+                  className={`flex items-center gap-2 px-4 py-2 cursor-pointer text-black transition ${
                     idx === highlightedIndex ? "bg-blue-100" : "hover:bg-gray-100"
                   }`}
                   onMouseEnter={() => setHighlightedIndex(idx)}
                   onMouseLeave={() => setHighlightedIndex(-1)}
-                  onMouseDown={(e) => e.preventDefault()} // Prevent input blur before click
+                  onMouseDown={(e) => e.preventDefault()}
                   onClick={() => handleSuggestionClick(product)}
                 >
                   {product.image_link && (
                     <img
                       src={product.image_link}
                       alt={product.title}
-                      className="w-8 h-8 object-cover rounded"
+                      className="w-8 h-8 object-contain rounded bg-white border"
                     />
                   )}
                   <div className="flex flex-col min-w-0">
-                    <span
-                      className="font-medium truncate max-w-xs"
-                      title={product.title}
-                    >
+                    <span className="font-medium truncate max-w-xs" title={product.title}>
                       {product.title}
                     </span>
-                    <span
-                      className="text-xs text-gray-500 truncate max-w-xs"
-                      title={product.brand || product.category_name}
-                    >
+                    <span className="text-xs text-gray-500 truncate max-w-xs" title={product.brand || product.category_name}>
                       {product.brand || product.category_name}
                     </span>
                     <span className="text-xs text-orange-600 font-semibold truncate max-w-xs">
@@ -207,17 +242,66 @@ const SearchBar: React.FC = () => {
                 </li>
               ))}
             </ul>
-          </div>
-        )}
-        {/* Show "No results found" only if there is a query and no suggestions */}
-        {showSuggestions && searchQuery && filteredSuggestions.length === 0 && (
-          <div
-            className="absolute w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
-            style={{ overflowX: "hidden" }}
-          >
-            <ul className="list-none p-0 m-0" ref={suggestionsRef}>
+            {/* Best Sellers Carousel after 5th suggestion */}
+            {filteredSuggestions.length === 5 && (
+              <div className="border-t border-gray-200 mt-2 pt-2">
+                <div className="flex items-center justify-between px-4 mb-2">
+                  <span className="text-xs text-gray-500 font-semibold">Best Sellers</span>
+                  <div className="flex gap-2">
+                    <button
+                      aria-label="Previous"
+                      className="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600"
+                      onClick={handleCarouselPrev}
+                      tabIndex={-1}
+                      type="button"
+                    >
+                      &#8592;
+                    </button>
+                    <button
+                      aria-label="Next"
+                      className="p-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-600"
+                      onClick={handleCarouselNext}
+                      tabIndex={-1}
+                      type="button"
+                    >
+                      &#8594;
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 px-4 pb-2">
+                  {DUMMY_BEST_SELLERS.slice(carouselIndex, carouselIndex + carouselSize).map((product) => (
+                    <div
+                      key={product.product_id}
+                      className="bg-gray-50 rounded-lg p-3 flex flex-col items-center justify-center cursor-pointer hover:bg-blue-50 transition"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => handleSuggestionClick(product)}
+                      style={{ aspectRatio: "1/1", minWidth: 0 }}
+                    >
+                      {product.image_link && (
+                        <img
+                          src={product.image_link}
+                          alt={product.title}
+                          className="w-10 h-10 object-contain rounded mb-1 bg-white border"
+                        />
+                      )}
+                      <span className="font-medium text-xs text-center truncate w-full" title={product.title}>
+                        {product.title}
+                      </span>
+                      <span className="text-[10px] text-gray-500 truncate w-full text-center" title={product.brand || product.category_name}>
+                        {product.brand || product.category_name}
+                      </span>
+                      <span className="text-xs text-orange-600 font-semibold truncate w-full text-center">
+                        ₹{product.price}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Show "No results found" only if there is a query and no suggestions */}
+            {searchQuery && filteredSuggestions.length === 0 && (
               <li className="px-4 py-3 text-gray-400 text-sm select-none">No results found</li>
-            </ul>
+            )}
           </div>
         )}
       </div>

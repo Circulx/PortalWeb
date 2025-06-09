@@ -10,6 +10,7 @@ export interface ReviewStats {
 }
 
 export interface Review {
+  _id: string
   id: string
   productName: string
   sku: string

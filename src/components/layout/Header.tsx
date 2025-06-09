@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
@@ -14,7 +13,7 @@ import { signOut } from "@/actions/auth"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { useRouter } from "next/navigation"
-import SearchBar from "@/components/layout/searchbar" // <-- Import your custom SearchBar
+import SearchBar from "@/components/layout/searchbar"
 
 interface HeaderProps {
   user?: {
@@ -52,8 +51,6 @@ export default function Header({ user }: HeaderProps) {
 
   function handleAuthSuccess() {
     setIsAuthModalOpen(false)
-
-    // Redirect to the appropriate dashboard based on user role
     if (user) {
       if (user.type === "admin") {
         router.push("/admin")
@@ -63,7 +60,6 @@ export default function Header({ user }: HeaderProps) {
         router.push("/dashboard")
       }
     } else {
-      // Refresh the page to update the user state
       window.location.reload()
     }
   }
@@ -84,10 +80,7 @@ export default function Header({ user }: HeaderProps) {
 
   // Handle category navigation - redirect to coming-soon for unimplemented categories
   const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, category: string) => {
-    // Convert category to slug format
     const categorySlug = category.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-
-    // Check if this category is implemented
     if (!implementedCategories.includes(categorySlug)) {
       e.preventDefault()
       router.push("/coming-soon")
@@ -106,41 +99,54 @@ export default function Header({ user }: HeaderProps) {
       {/* Top Navigation - Fixed */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
         <div className="container mx-auto px-2 py-2">
-          {/* Main Navigation Row - Single row with all elements */}
-          <div className="flex items-center justify-between">
-            {/* Logo - Always visible */}
-            <Link href="/" className="flex items-center gap-2 min-w-[80px] shrink-0">
-              <div className="w-8 h-8 bg-emerald-400 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-semibold hidden sm:inline">IND2B</span>
-            </Link>
+          {/* Responsive: single row on all screens, reduced search bar on mobile */}
+          <div className="flex flex-row items-center justify-between gap-2">
+            {/* Logo */}
+            <div className="flex items-center gap-2 min-w-[60px] shrink-0">
+              <Link href="/" className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-emerald-400 rounded-lg flex items-center justify-center">
+                  <ShoppingBag className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-lg font-semibold hidden sm:inline">IND2B</span>
+              </Link>
+            </div>
 
-            {/* Search Bar - Always visible in the middle */}
-            <div className="flex-1 mx-2 max-w-[500px]">
+            {/* Search Bar - shrinks on mobile */}
+            <div className="flex-1 mx-2 max-w-[500px] min-w-0">
               <SearchBar>
+                <form onSubmit={handleSearch} className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full py-2 pl-8 pr-4 text-xs sm:text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200
+                      max-w-[180px] xs:max-w-[220px] sm:max-w-[320px] md:max-w-[500px]"
+                  />
+                  <button type="submit" className="absolute inset-y-0 left-0 pl-2.5 flex items-center">
+                    <Search className="h-4 w-4 text-gray-400" />
+                  </button>
+                </form>
               </SearchBar>
             </div>
 
-            {/* Right Navigation - Always visible */}
-            <div className="flex items-center gap-4 md:gap-5 shrink-0">
-              {/* Wishlist - Always visible */}
+            {/* Right Navigation */}
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-5 shrink-0">
+              {/* Wishlist */}
               <Link href="/dashboard/wishlist" className="relative flex items-center justify-center">
-                <Heart className="w-6 h-6 text-gray-600" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] md:text-xs rounded-full flex items-center justify-center">
                   {wishlistItemsCount}
                 </span>
               </Link>
-
-              {/* Cart - Always visible */}
+              {/* Cart */}
               <Link href="/cart" className="relative flex items-center justify-center">
-                <Image src="/cart.png" alt="Shopping Cart" width={24} height={24} />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                <Image src="/cart.png" alt="Shopping Cart" width={22} height={22} className="sm:w-6 sm:h-6" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] md:text-xs rounded-full flex items-center justify-center">
                   {cartItemsCount}
                 </span>
               </Link>
-
-              {/* User Menu - Always visible */}
+              {/* User Menu */}
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -163,7 +169,7 @@ export default function Header({ user }: HeaderProps) {
               ) : (
                 <Button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="bg-emerald-500 hover:bg-orange-900 text-white rounded-md px-4 py-2 text-lg font-medium ml-2 transition-colors h-9 min-h-0"
+                  className="bg-emerald-500 hover:bg-orange-900 text-white rounded-md px-2 sm:px-3 md:px-4 py-1.5 md:py-2 text-xs sm:text-sm md:text-lg font-medium ml-1 sm:ml-2 transition-colors h-8 md:h-9 min-h-0"
                 >
                   Login
                 </Button>
@@ -173,14 +179,14 @@ export default function Header({ user }: HeaderProps) {
         </div>
       </div>
 
-      {/* Empty space to compensate for the fixed header */}
-      <div className="h-[60px]"></div>
+      {/* Responsive empty space to compensate for the fixed header */}
+      <div className="h-[62px] sm:h-[70px] md:h-[60px]"></div>
 
       {/* Categories Navigation - Scrollable on mobile */}
       <div className="bg-[#004D40] text-white overflow-x-auto">
         <div className="container mx-auto px-3">
-          <div className="flex items-center py-3 space-x-4 whitespace-nowrap">
-            <span className="text-xs font-medium">Explore:</span>
+          <div className="flex items-center py-2 md:py-3 space-x-4 whitespace-nowrap">
+            <span className="text-xs font-medium hidden xs:inline">Explore:</span>
             {categories.map((category, index) => (
               <Link
                 key={index}

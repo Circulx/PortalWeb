@@ -54,6 +54,7 @@ interface Product {
 function ProductCarousel({ products, title, isLoading }: { products: Product[]; title: string; isLoading: boolean }) {
   const [startIndex, setStartIndex] = useState(0)
   const [visibleProducts, setVisibleProducts] = useState(6)
+  // const [touchStartX, setTouchStartX] = useState<number | null>(null)
 
   useEffect(() => {
     const handleResize = () => {
@@ -75,17 +76,39 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
     return () => window.removeEventListener("resize", handleResize)
   }, [])
 
+  // Endless carousel logic
   const handlePrevious = () => {
-    // Move back by just one product instead of the full visible count
-    setStartIndex((prevIndex) => Math.max(0, prevIndex - 1))
+    setStartIndex((prevIndex) =>
+      prevIndex === 0 ? Math.max(0, products.length - visibleProducts) : prevIndex - 1
+    )
   }
 
   const handleNext = () => {
-    // Move forward by just one product instead of the full visible count
-    setStartIndex((prevIndex) => Math.min(products.length - visibleProducts, prevIndex + 1))
+    setStartIndex((prevIndex) =>
+      prevIndex >= products.length - visibleProducts ? 0 : prevIndex + 1
+    )
   }
 
-  // Check if we're at the beginning or end to disable buttons
+  // // Touch/swipe support for mobile
+  // const handleTouchStart = (e: React.TouchEvent) => {
+  //   setTouchStartX(e.touches[0].clientX)
+  // }
+
+  // const handleTouchEnd = (e: React.TouchEvent) => {
+  //   if (touchStartX === null) return
+  //   const touchEndX = e.changedTouches[0].clientX
+  //   const diff = touchStartX - touchEndX
+  //   if (Math.abs(diff) > 50) {
+  //     if (diff > 0) {
+  //       handleNext()
+  //     } else {
+  //       handlePrevious()
+  //     }
+  //   }
+  //   setTouchStartX(null)
+  // }
+
+  // Check if we're at the beginning or end to disable buttons (for accessibility, but not for endless logic)
   const isAtBeginning = startIndex === 0
   const isAtEnd = startIndex >= products.length - visibleProducts
 
@@ -97,9 +120,12 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
     <div className="mb-12">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">{title}</h2>
       <div className="relative">
-        <div className="flex overflow-hidden">
+        <div
+          className="flex overflow-hidden"
+          // onTouchStart={handleTouchStart}
+          // onTouchEnd={handleTouchEnd}
+        >
           {isLoading ? (
-            // Show skeletons when loading
             Array(visibleProducts)
               .fill(0)
               .map((_, index) => (
@@ -121,7 +147,6 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
                 </div>
               ))
           ) : products.length > 0 ? (
-            // Show actual products when loaded
             currentProducts.map((product) => (
               <div
                 key={product.product_id}
@@ -154,7 +179,6 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
               </div>
             ))
           ) : (
-            // Show message when no products
             <div className="w-full text-center py-8">
               <p className="text-gray-500">No products available in this category</p>
             </div>
@@ -164,11 +188,8 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
           <>
             <button
               onClick={handlePrevious}
-              disabled={isAtBeginning}
               className={`absolute left-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 ${
-                isAtBeginning
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
+                "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
               }`}
               aria-label="Previous product"
             >
@@ -176,11 +197,8 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
             </button>
             <button
               onClick={handleNext}
-              disabled={isAtEnd}
               className={`absolute right-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 ${
-                isAtEnd
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
+                "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
               }`}
               aria-label="Next product"
             >

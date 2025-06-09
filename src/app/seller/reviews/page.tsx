@@ -3,7 +3,7 @@ import { StatsCard } from "@/components/seller/reviews/stats-card"
 import { RatingDistribution } from "@/components/seller/reviews/rating-distribution"
 import { ReviewItem } from "@/components/seller/reviews/review-item"
 import { ProductDetails } from "@/components/seller/reviews/product-details"
-import type { Review, RatingStats, ProductDetails as IProductDetails, ProductMetrics } from "@/types/review"
+import type { /*Review*/ RatingStats, ProductDetails as IProductDetails, ProductMetrics } from "@/types/review"
 import { Card, CardContent } from "@/components/ui/card"
 
 const ratingStats: RatingStats = {
@@ -47,38 +47,38 @@ const productMetrics: ProductMetrics = {
   },
 }
 
-const reviews: Review[] = [
-  {
-    id: "1",
-    productName: "Aluminum Sheets",
-    sku: "AL123",
-    company: "XYZ Industries",
-    rating: 2.5,
-    text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
-    date: "24th Dec 2023",
-    imageUrl: "/image.png",
-  },
-  {
-    id: "2",
-    productName: "Aluminum Sheets",
-    sku: "AL123",
-    company: "XYZ Industries",
-    rating: 4.5,
-    text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
-    date: "14th Dec 2022",
-    imageUrl: "/image.png",
-  },
-  {
-    id: "3",
-    productName: "Aluminum Sheets",
-    sku: "AL123",
-    company: "XYZ Industries",
-    rating: 4.5,
-    text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
-    date: "24th Dec 2023",
-    imageUrl: "/image.png",
-  },
-]
+// const reviews: Review[] = [
+//   {
+//     id: "1",
+//     productName: "Aluminum Sheets",
+//     sku: "AL123",
+//     company: "XYZ Industries",
+//     rating: 2.5,
+//     text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
+//     date: "24th Dec 2023",
+//     imageUrl: "/image.png",
+//   },
+//   {
+//     id: "2",
+//     productName: "Aluminum Sheets",
+//     sku: "AL123",
+//     company: "XYZ Industries",
+//     rating: 4.5,
+//     text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
+//     date: "14th Dec 2022",
+//     imageUrl: "/image.png",
+//   },
+//   {
+//     id: "3",
+//     productName: "Aluminum Sheets",
+//     sku: "AL123",
+//     company: "XYZ Industries",
+//     rating: 4.5,
+//     text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
+//     date: "24th Dec 2023",
+//     imageUrl: "/image.png",
+//   },
+// ]
 
 export default function RatingAndReview() {
   return (
@@ -120,11 +120,11 @@ export default function RatingAndReview() {
             </div>
           </div>
 
-          <div className="bg-card rounded-lg border divide-y">
+          {/* <div className="bg-card rounded-lg border divide-y">
             {reviews.map((review) => (
               <ReviewItem key={review.id} review={review} />
             ))}
-          </div>
+          </div> */}
         </div>
 
         {/* Product Analysis Section */}

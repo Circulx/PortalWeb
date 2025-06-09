@@ -17,6 +17,7 @@ import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
 import { useToast } from "@/hooks/use-toast"
+import Link from "next/link"
 
 interface Product {
   product_id: number
@@ -443,6 +444,7 @@ export default function Cart() {
                       >
                         {/* Product info - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex items-center mb-3 sm:mb-0">
+                        <Link href={`${item.id}`} className="flex items-center w-full">
                           <div className="relative w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] flex-shrink-0">
                             <Image
                               src={item.image_link || "/placeholder.svg"}
@@ -461,6 +463,7 @@ export default function Cart() {
                               Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
                             </p>
                           </div>
+                          </Link>
                         </div>
 
                         {/* Price - Hidden on mobile, shown on larger screens */}
