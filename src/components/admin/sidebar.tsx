@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, ShoppingBag, Star, Store, PackageOpen } from "lucide-react"
+import { LayoutDashboard, Users, ShoppingBag, Star, Store, PackageOpen, ImageIcon } from "lucide-react"
 
 const sidebarLinks = [
   {
@@ -35,6 +35,11 @@ const sidebarLinks = [
     href: "/admin/sellers",
     title: "Sellers",
     icon: Store,
+  },
+  {
+    href: "/admin/advertisements",
+    title: "Advertisements",
+    icon: ImageIcon,
   },
 ]
 

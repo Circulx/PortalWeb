@@ -17,6 +17,21 @@ interface ICategoryBrand {
   authorizedBrands: string[]
 }
 
+// Advertisement interface
+interface IAdvertisement {
+  title: string
+  subtitle: string
+  description: string
+  imageUrl?: string
+  imageData?: string
+  linkUrl?: string
+  isActive: boolean
+  order: number
+  deviceType: "all" | "desktop" | "mobile" | "tablet"
+  startDate?: Date
+  endDate?: Date
+}
+
 // Cache the database connection
 let cachedConnection: Connection | null = null
 let connectionPromise: Promise<Connection> | null = null
@@ -35,20 +50,29 @@ export async function connectProfileDB(): Promise<Connection> {
   }
 
   console.log("Creating new profile database connection")
+  console.log("Connecting to PROFILE_DB:", PROFILE_DB)
 
   // Create a new connection promise with increased timeouts
   connectionPromise = mongoose
     .createConnection(PROFILE_DB, {
-      serverSelectionTimeoutMS: 60000, // Increase from 30000 to 60000
-      socketTimeoutMS: 90000, // Increase from 45000 to 90000
-      connectTimeoutMS: 60000, // Add explicit connect timeout
+      serverSelectionTimeoutMS: 60000,
+      socketTimeoutMS: 90000,
+      connectTimeoutMS: 60000,
+      dbName: "test", // Explicitly specify the database name
     })
     .asPromise()
     .then((conn) => {
       console.log("Profile database connected successfully")
+      // Add null check for conn.db
+      if (conn.db) {
+        console.log("Connected to database:", conn.db.databaseName)
+      } else {
+        console.log("Database connection established but db instance is undefined")
+      }
       cachedConnection = conn
       // Register models with the connection
       registerModels(conn)
+      console.log("Models registered:", Object.keys(conn.models))
       return conn
     })
     .catch((error) => {
@@ -166,7 +190,7 @@ const ProfileProgressSchema = new mongoose.Schema<IProfileProgress>(
     status: {
       type: String,
       enum: ["Approved", "Reject", "Review"],
-      default: "Review", // Default status
+      default: "Review",
     },
   },
   { timestamps: true },
@@ -208,7 +232,7 @@ const OrderSchema = new mongoose.Schema(
     products: [
       {
         productId: { type: String, required: true },
-        seller_id:{type: String, required: true},
+        seller_id: { type: String, required: true },
         title: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
@@ -255,8 +279,6 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Add the CartSchema after the OrderSchema
-
 // Define Cart schema
 const CartSchema = new mongoose.Schema(
   {
@@ -299,42 +321,91 @@ const WishlistSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Update the registerModels function to include the Cart model
+// Define Advertisement schema - Make sure this matches your database structure
+const AdvertisementSchema = new mongoose.Schema<IAdvertisement>(
+  {
+    title: { type: String, required: true, maxlength: 100 },
+    subtitle: { type: String, required: true, maxlength: 150 },
+    description: { type: String, required: true, maxlength: 500 },
+    imageUrl: { type: String }, // External URL (optional)
+    imageData: { type: String }, // Base64 encoded image data (optional)
+    linkUrl: { type: String },
+    isActive: { type: Boolean, default: true },
+    order: { type: Number, default: 0 },
+    deviceType: {
+      type: String,
+      enum: ["all", "desktop", "mobile", "tablet"],
+      default: "all",
+    },
+    startDate: { type: Date, default: null },
+    endDate: { type: Date, default: null },
+  },
+  {
+    timestamps: true,
+    collection: "advertisements", // Explicitly specify collection name
+  },
+)
+
+// Add indexes for efficient querying
+AdvertisementSchema.index({ isActive: 1, order: 1 })
+AdvertisementSchema.index({ startDate: 1, endDate: 1 })
+AdvertisementSchema.index({ deviceType: 1 })
+
+// Update the registerModels function to include all models
 function registerModels(connection: Connection) {
+  console.log("Registering models...")
+
   // Only register models if they don't already exist
   if (!connection.models.Business) {
     connection.model("Business", BusinessSchema)
+    console.log("Registered Business model")
   }
   if (!connection.models.Contact) {
     connection.model("Contact", ContactSchema)
+    console.log("Registered Contact model")
   }
   if (!connection.models.CategoryBrand) {
     connection.model("CategoryBrand", CategoryBrandSchema)
+    console.log("Registered CategoryBrand model")
   }
   if (!connection.models.Address) {
     connection.model("Address", AddressSchema)
+    console.log("Registered Address model")
   }
   if (!connection.models.Bank) {
     connection.model("Bank", BankSchema)
+    console.log("Registered Bank model")
   }
   if (!connection.models.Document) {
     connection.model("Document", DocumentSchema)
+    console.log("Registered Document model")
   }
   if (!connection.models.ProfileProgress) {
     connection.model("ProfileProgress", ProfileProgressSchema)
+    console.log("Registered ProfileProgress model")
   }
   if (!connection.models.Product) {
     connection.model("Product", ProductSchema)
+    console.log("Registered Product model")
   }
   if (!connection.models.Order) {
     connection.model("Order", OrderSchema)
+    console.log("Registered Order model")
   }
   if (!connection.models.Cart) {
     connection.model("Cart", CartSchema)
+    console.log("Registered Cart model")
   }
   if (!connection.models.Wishlist) {
     connection.model("Wishlist", WishlistSchema)
+    console.log("Registered Wishlist model")
   }
+  if (!connection.models.Advertisement) {
+    connection.model("Advertisement", AdvertisementSchema)
+    console.log("Registered Advertisement model")
+  }
+
+  console.log("All models registered successfully")
 }
 
 // Export schemas for use in other files
@@ -350,4 +421,5 @@ export {
   OrderSchema,
   CartSchema,
   WishlistSchema,
+  AdvertisementSchema,
 }

@@ -9,7 +9,7 @@ import Providers from "./providers"
 export const metadata: Metadata = {
   title: "IND2B",
   description: "Your one-stop shop for all your needs",
-    generator: 'v0.dev'
+  generator: "v0.dev",
 }
 
 export const viewport: Viewport = {
@@ -25,7 +25,7 @@ export default async function RootLayout({
   const user = await getCurrentUser()
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="bg-gray-100">
         <Providers>
           <Header user={user} />
