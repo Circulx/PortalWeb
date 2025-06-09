@@ -17,6 +17,20 @@ interface ICategoryBrand {
   authorizedBrands: string[]
 }
 
+// Advertisement interface
+interface IAdvertisement {
+  title: string
+  subtitle: string
+  description: string
+  imageUrl: string
+  linkUrl?: string
+  isActive: boolean
+  order: number
+  deviceType: "all" | "desktop" | "mobile" | "tablet"
+  startDate?: Date
+  endDate?: Date
+}
+
 // Cache the database connection
 let cachedConnection: Connection | null = null
 let connectionPromise: Promise<Connection> | null = null
@@ -208,7 +222,7 @@ const OrderSchema = new mongoose.Schema(
     products: [
       {
         productId: { type: String, required: true },
-        seller_id:{type: String, required: true},
+        seller_id: { type: String, required: true },
         title: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },
@@ -255,8 +269,6 @@ const OrderSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Add the CartSchema after the OrderSchema
-
 // Define Cart schema
 const CartSchema = new mongoose.Schema(
   {
@@ -299,7 +311,33 @@ const WishlistSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-// Update the registerModels function to include the Cart model
+// Define Advertisement schema - THIS IS THE KEY FIX
+const AdvertisementSchema = new mongoose.Schema<IAdvertisement>(
+  {
+    title: { type: String, required: true, maxlength: 100 },
+    subtitle: { type: String, required: true, maxlength: 150 },
+    description: { type: String, required: true, maxlength: 500 },
+    imageUrl: { type: String, required: true },
+    linkUrl: { type: String },
+    isActive: { type: Boolean, default: true },
+    order: { type: Number, default: 0 },
+    deviceType: {
+      type: String,
+      enum: ["all", "desktop", "mobile", "tablet"],
+      default: "all",
+    },
+    startDate: { type: Date },
+    endDate: { type: Date },
+  },
+  { timestamps: true },
+)
+
+// Add indexes for efficient querying
+AdvertisementSchema.index({ isActive: 1, order: 1 })
+AdvertisementSchema.index({ startDate: 1, endDate: 1 })
+AdvertisementSchema.index({ deviceType: 1 })
+
+// Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   // Only register models if they don't already exist
   if (!connection.models.Business) {
@@ -335,6 +373,9 @@ function registerModels(connection: Connection) {
   if (!connection.models.Wishlist) {
     connection.model("Wishlist", WishlistSchema)
   }
+  if (!connection.models.Advertisement) {
+    connection.model("Advertisement", AdvertisementSchema)
+  }
 }
 
 // Export schemas for use in other files
@@ -350,4 +391,5 @@ export {
   OrderSchema,
   CartSchema,
   WishlistSchema,
+  AdvertisementSchema,
 }
