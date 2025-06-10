@@ -1,5 +1,24 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
+import type mongoose from "mongoose"
+
+// Define a type for the Advertisement document
+interface AdvertisementDocument {
+  _id: mongoose.Types.ObjectId | string
+  title: string
+  subtitle: string
+  description: string
+  imageUrl?: string
+  linkUrl?: string
+  isActive: boolean
+  order: number
+  deviceType: string
+  startDate?: Date | null
+  endDate?: Date | null
+  createdAt?: Date
+  updatedAt?: Date
+  [key: string]: any // For any additional fields
+}
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -14,7 +33,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const { id } = params
     console.log("Fetching advertisement with ID:", id)
 
-    const advertisement = await Advertisement.findById(id).lean()
+    const advertisement = (await Advertisement.findById(id).lean()) as AdvertisementDocument | null
 
     if (!advertisement) {
       return NextResponse.json(
@@ -57,10 +76,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const body = await request.json()
     console.log("Updating advertisement with ID:", id, "Data:", body)
 
-    const updatedAdvertisement = await Advertisement.findByIdAndUpdate(id, body, {
+    const updatedAdvertisement = (await Advertisement.findByIdAndUpdate(id, body, {
       new: true,
       runValidators: true,
-    }).lean()
+    }).lean()) as AdvertisementDocument | null
 
     if (!updatedAdvertisement) {
       return NextResponse.json(
@@ -72,7 +91,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       )
     }
 
-    console.log("Advertisement updated successfully:", updatedAdvertisement._id)
+    console.log(
+      "Advertisement updated successfully:",
+      typeof updatedAdvertisement._id === "object" ? updatedAdvertisement._id.toString() : updatedAdvertisement._id,
+    )
 
     return NextResponse.json({
       success: true,
@@ -105,7 +127,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const { id } = params
     console.log("Deleting advertisement with ID:", id)
 
-    const deletedAdvertisement = await Advertisement.findByIdAndDelete(id).lean()
+    const deletedAdvertisement = (await Advertisement.findByIdAndDelete(id).lean()) as AdvertisementDocument | null
 
     if (!deletedAdvertisement) {
       return NextResponse.json(
@@ -117,7 +139,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    console.log("Advertisement deleted successfully:", deletedAdvertisement._id)
+    console.log(
+      "Advertisement deleted successfully:",
+      typeof deletedAdvertisement._id === "object" ? deletedAdvertisement._id.toString() : deletedAdvertisement._id,
+    )
 
     return NextResponse.json({
       success: true,

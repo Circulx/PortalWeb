@@ -13,7 +13,8 @@ import { signOut } from "@/actions/auth"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { useRouter } from "next/navigation"
-import SearchBar from "@/components/layout/searchbar"
+// Remove this line:
+// import SearchBar from "@/components/layout/searchbar"
 
 interface HeaderProps {
   user?: {
@@ -113,21 +114,19 @@ export default function Header({ user }: HeaderProps) {
 
             {/* Search Bar - shrinks on mobile */}
             <div className="flex-1 mx-2 max-w-[500px] min-w-0">
-              <SearchBar>
-                <form onSubmit={handleSearch} className="relative">
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full py-2 pl-8 pr-4 text-xs sm:text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200
-                      max-w-[180px] xs:max-w-[220px] sm:max-w-[320px] md:max-w-[500px]"
-                  />
-                  <button type="submit" className="absolute inset-y-0 left-0 pl-2.5 flex items-center">
-                    <Search className="h-4 w-4 text-gray-400" />
-                  </button>
-                </form>
-              </SearchBar>
+              <form onSubmit={handleSearch} className="relative">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full py-2 pl-8 pr-4 text-xs sm:text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200
+                    max-w-[180px] xs:max-w-[220px] sm:max-w-[320px] md:max-w-[500px]"
+                />
+                <button type="submit" className="absolute inset-y-0 left-0 pl-2.5 flex items-center">
+                  <Search className="h-4 w-4 text-gray-400" />
+                </button>
+              </form>
             </div>
 
             {/* Right Navigation */}
