@@ -20,7 +20,7 @@ interface AdvertisementDocument {
   [key: string]: any // For any additional fields
 }
 
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Connect to the profile database
     const connection = await connectProfileDB()
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       throw new Error("Advertisement model not found")
     }
 
-    const { id } = params
+    const { id } = await params
     console.log("Fetching advertisement with ID:", id)
 
     const advertisement = (await Advertisement.findById(id).lean()) as AdvertisementDocument | null
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Connect to the profile database
     const connection = await connectProfileDB()
@@ -72,7 +72,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       throw new Error("Advertisement model not found")
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
     console.log("Updating advertisement with ID:", id, "Data:", body)
 
@@ -114,7 +114,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Connect to the profile database
     const connection = await connectProfileDB()
@@ -124,7 +124,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       throw new Error("Advertisement model not found")
     }
 
-    const { id } = params
+    const { id } = await params
     console.log("Deleting advertisement with ID:", id)
 
     const deletedAdvertisement = (await Advertisement.findByIdAndDelete(id).lean()) as AdvertisementDocument | null
