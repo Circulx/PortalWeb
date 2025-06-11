@@ -1,7 +1,7 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import Slider from "rc-slider"
 import "rc-slider/assets/index.css"
 import Link from "next/link"
@@ -46,13 +46,25 @@ export default function SearchResultsPage() {
   const [showMobileFilters, setShowMobileFilters] = useState(false)
   const [tempFilters, setTempFilters] = useState<any>({})
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(12)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const listRef = useRef<HTMLUListElement>(null)
+
   // View mode state: "grid" or "list"
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   useEffect(() => {
     if (!query) return
+    setIsLoading(true)
+    setError(null)
     fetch(`/api/products?q=${encodeURIComponent(query)}`)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error("Failed to fetch products")
+        return res.json()
+      })
       .then((data: Product[]) => {
         setResults(data)
         setFiltered(data)
@@ -62,7 +74,10 @@ export default function SearchResultsPage() {
         if (prices.length) {
           setPriceRange([Math.min(...prices), Math.max(...prices)])
         }
+        setCurrentPage(1)
       })
+      .catch(err => setError(err.message))
+      .finally(() => setIsLoading(false))
   }, [query])
 
   useEffect(() => {
@@ -109,6 +124,42 @@ export default function SearchResultsPage() {
     seller,
     subCategory,
   ])
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [
+    results,
+    category,
+    selectedBrands,
+    priceRange,
+    minPrice,
+    maxPrice,
+    minRating,
+    inStockOnly,
+    minDiscount,
+    seller,
+    subCategory,
+  ])
+
+  // Pagination logic
+  const totalResults = filtered.length
+  const totalPages = Math.ceil(totalResults / pageSize)
+  const paginated = filtered.slice((currentPage - 1) * pageSize, currentPage * pageSize)
+
+  // Scroll to top of list on page change
+  useEffect(() => {
+    if (listRef.current) {
+      listRef.current.scrollIntoView({ behavior: "smooth" })
+    }
+  }, [currentPage])
+
+  // Edge case: handle crazy page numbers
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages)
+    }
+  }, [totalPages, currentPage])
 
   const handleBrandChange = (brand: string) => {
     setSelectedBrands(prev =>
@@ -185,15 +236,13 @@ export default function SearchResultsPage() {
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
-      {/* Smaller heading, less space */}
       <h1 className="text-base sm:text-lg font-semibold mb-2 text-black text-center sm:text-left">
         Search Results for <span className="font-normal text-gray-700">"{query}"</span>
       </h1>
       <div className="flex flex-col md:flex-row gap-4 md:gap-6">
-        {/* Desktop/Tablet: show sidebar filters */}
+        {/* Sidebar Filters */}
         <aside className="w-full md:max-w-xs bg-white border rounded p-4 hidden md:block">
           <h2 className="font-semibold mb-2 text-black">Filters</h2>
-          {/* ...filters unchanged... */}
           {/* Category Filter */}
           <div className="mb-4">
             <label className="block text-sm mb-1 font-medium text-black">Category</label>
@@ -331,7 +380,6 @@ export default function SearchResultsPage() {
 
         {/* Mobile/Tablet: show filter button and modal */}
         <div className="block md:hidden w-full">
-          {/* Filter and layout toggle in the same row */}
           <div className="flex items-center justify-between mb-4 gap-2">
             <button
               className="bg-blue-600 text-white py-2 px-4 rounded font-semibold"
@@ -361,7 +409,6 @@ export default function SearchResultsPage() {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
               <div className="bg-white rounded-lg shadow-lg w-[95vw] max-w-md mx-auto max-h-[90vh] overflow-y-auto p-4 relative">
                 <h2 className="font-semibold mb-2 text-black text-lg">Filters</h2>
-                {/* ...filters unchanged... */}
                 {/* Category Filter */}
                 <div className="mb-4">
                   <label className="block text-sm mb-1 font-medium text-black">Category</label>
@@ -535,15 +582,18 @@ export default function SearchResultsPage() {
               </button>
             </div>
           </div>
-          {filtered.length === 0 ? (
+          {error ? (
+            <p className="text-red-600">Error: {error}</p>
+          ) : isLoading ? (
+            <p className="text-black">Loading products...</p>
+          ) : totalResults === 0 ? (
             <p className="text-black">No products found.</p>
           ) : (
             <>
               {/* Grid/List rendering */}
               {viewMode === "grid" ? (
-                // Responsive grid: 1 col on xs, 2 on sm (including mobile landscape), 3 on lg
-                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filtered.map(product => (
+                <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" ref={listRef}>
+                  {paginated.map(product => (
                     <li key={product.product_id} className="border rounded p-3 sm:p-4 flex flex-col items-start bg-white transition-shadow hover:shadow-lg">
                       <Link
                         key={product.product_id}
@@ -551,7 +601,6 @@ export default function SearchResultsPage() {
                         className="block w-full"
                         style={{ textDecoration: "none" }}
                       >
-                        {/* Image container for consistent sizing */}
                         <div className="w-full h-36 sm:h-40 flex items-center justify-center bg-white mb-2">
                           {product.image_link && (
                             <img
@@ -561,11 +610,9 @@ export default function SearchResultsPage() {
                             />
                           )}
                         </div>
-                        {/* Product title truncated for grid */}
                         <div className="font-semibold text-base sm:text-lg text-black truncate">{product.title}</div>
                         <div className="text-xs sm:text-sm text-black mb-1">{product.brand || product.category_name}</div>
                         <div className="text-orange-600 font-bold mb-1 text-sm sm:text-base">₹{product.price}</div>
-                        {/* Rating */}
                         <div className="flex items-center mb-1">
                           <span className="text-yellow-500 mr-1 text-xs sm:text-base">
                             {product.rating ? "★".repeat(Math.round(product.rating)) : "★"}
@@ -574,7 +621,6 @@ export default function SearchResultsPage() {
                             {product.rating ? product.rating.toFixed(1) : "No rating"}
                           </span>
                         </div>
-                        {/* Delivery Option */}
                         <div className="text-xs text-green-700 mb-2">
                           {product.delivery_option || "Free Delivery Available"}
                         </div>
@@ -589,9 +635,8 @@ export default function SearchResultsPage() {
                   ))}
                 </ul>
               ) : (
-                // List view: horizontal on desktop, stacked on mobile
-                <ul className="flex flex-col gap-4">
-                  {filtered.map(product => (
+                <ul className="flex flex-col gap-4" ref={listRef}>
+                  {paginated.map(product => (
                     <li
                       key={product.product_id}
                       className="border rounded p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center bg-white transition-shadow hover:shadow-lg"
@@ -616,13 +661,11 @@ export default function SearchResultsPage() {
                           className="block"
                           style={{ textDecoration: "none" }}
                         >
-                          {/* Product title truncated for list, max-w to avoid overflow */}
                           <div className="font-semibold text-base sm:text-lg text-black mb-1 truncate max-w-full sm:max-w-[28rem]">
                             {product.title}
                           </div>
                           <div className="text-xs sm:text-sm text-black mb-1">{product.brand || product.category_name}</div>
                           <div className="text-orange-600 font-bold mb-1 text-sm sm:text-base">₹{product.price}</div>
-                          {/* Rating */}
                           <div className="flex items-center mb-1">
                             <span className="text-yellow-500 mr-1 text-xs sm:text-base">
                               {product.rating ? "★".repeat(Math.round(product.rating)) : "★"}
@@ -631,7 +674,6 @@ export default function SearchResultsPage() {
                               {product.rating ? product.rating.toFixed(1) : "No rating"}
                             </span>
                           </div>
-                          {/* Delivery Option */}
                           <div className="text-xs text-green-700 mb-2">
                             {product.delivery_option || "Free Delivery Available"}
                           </div>
@@ -647,6 +689,59 @@ export default function SearchResultsPage() {
                   ))}
                 </ul>
               )}
+
+              {/* Pagination Controls */}
+              <div className="flex flex-col sm:flex-row items-center justify-between mt-6 gap-2">
+                <div className="text-xs text-gray-700">
+                  Showing {(currentPage - 1) * pageSize + 1}
+                  {" - "}
+                  {Math.min(currentPage * pageSize, totalResults)} of {totalResults} products
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    className="px-3 py-1 rounded border text-sm font-medium bg-white text-blue-600 border-blue-600 disabled:opacity-50"
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                  >
+                    {"<<"}
+                  </button>
+                  <button
+                    className="px-3 py-1 rounded border text-sm font-medium bg-white text-blue-600 border-blue-600 disabled:opacity-50"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                  >
+                    {"<"}
+                  </button>
+                  <span className="text-sm font-medium text-black">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    className="px-3 py-1 rounded border text-sm font-medium bg-white text-blue-600 border-blue-600 disabled:opacity-50"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                  >
+                    {">"}
+                  </button>
+                  <button
+                    className="px-3 py-1 rounded border text-sm font-medium bg-white text-blue-600 border-blue-600 disabled:opacity-50"
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                  >
+                    {">>"}
+                  </button>
+                  {/* <select
+                    className="ml-2 px-2 py-1 border rounded text-sm"
+                    value={pageSize}
+                    onChange={e => setPageSize(Number(e.target.value))}
+                  >
+                    {[6, 12, 24, 48].map(size => (
+                      <option key={size} value={size}>
+                        {size} / page
+                      </option>
+                    ))}
+                  </select> */}
+                </div>
+              </div>
             </>
           )}
         </main>
