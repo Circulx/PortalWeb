@@ -13,7 +13,8 @@ interface Advertisement {
   title: string
   subtitle: string
   description: string
-  imageUrl: string
+  imageUrl?: string // Make this optional
+  imageData?: string // Add this property
   linkUrl?: string
   isActive: boolean
   order: number

@@ -18,7 +18,7 @@ interface Advertisement {
   title: string
   subtitle: string
   description: string
-  imageUrl: string
+  imageUrl?: string // Make this optional to match the page component
   imageData?: string // Base64 encoded image data
   linkUrl?: string
   isActive: boolean
@@ -26,6 +26,8 @@ interface Advertisement {
   deviceType: "all" | "desktop" | "mobile" | "tablet"
   startDate?: string
   endDate?: string
+  createdAt: string
+  updatedAt: string
 }
 
 interface AdvertisementModalProps {
