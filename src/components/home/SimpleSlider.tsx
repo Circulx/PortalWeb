@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 
 interface Advertisement {
   _id: string
@@ -24,7 +25,7 @@ const defaultSlides = [
     title: "Delivery Within",
     subtitle: "24 HOURS",
     description: "At No Extra Cost",
-    image: "/placeholder.svg?height=400&width=800",
+    image: "/placeholder.svg?height=400&width=1200",
     linkUrl: "/products",
   },
   {
@@ -32,7 +33,7 @@ const defaultSlides = [
     title: "Special Offers",
     subtitle: "UP TO 50% OFF",
     description: "Limited Time Only",
-    image: "/placeholder.svg?height=400&width=800",
+    image: "/placeholder.svg?height=400&width=1200",
     linkUrl: "/products",
   },
   {
@@ -40,7 +41,7 @@ const defaultSlides = [
     title: "New Arrivals",
     subtitle: "SHOP NOW",
     description: "Fresh Stock Available",
-    image: "/placeholder.svg?height=400&width=800",
+    image: "/placeholder.svg?height=400&width=1200",
     linkUrl: "/products",
   },
 ]
@@ -81,7 +82,6 @@ export default function SimpleSlider() {
 
       if (result.success) {
         setAdvertisements(result.data || [])
-
         console.log("Set advertisements:", result.data?.length || 0)
       } else {
         console.error("API returned error:", result.error)
@@ -113,7 +113,7 @@ export default function SimpleSlider() {
   const getImageSource = (ad: Advertisement) => {
     if (ad.imageData) return ad.imageData
     if (ad.imageUrl) return ad.imageUrl
-    return "/placeholder.svg?height=400&width=800"
+    return "/placeholder.svg?height=400&width=1200"
   }
 
   // Create slides from advertisements or use default slides if no active ads
@@ -134,7 +134,7 @@ export default function SimpleSlider() {
 
     const timer = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
-    }, 2000) // 2 seconds per slide
+    }, 5000) // 5 seconds per slide
 
     return () => clearInterval(timer)
   }, [slides.length])
@@ -148,6 +148,11 @@ export default function SimpleSlider() {
     setCurrentSlide(index)
   }
 
+  // Check if a slide has content (title, subtitle, or description)
+  const hasContent = (slide: (typeof slides)[0]) => {
+    return slide.title || slide.subtitle || slide.description
+  }
+
   // Show loading state
   if (loading) {
     return (
@@ -157,11 +162,6 @@ export default function SimpleSlider() {
         </div>
       </div>
     )
-  }
-
-  // Show error state with fallback to default slides
-  if (error) {
-    console.log("Error occurred, falling back to default slides")
   }
 
   // Always show slides (either from database or default)
@@ -175,55 +175,92 @@ export default function SimpleSlider() {
       )}
 
       {slides.map((slide, index) => {
+        const hasSlideContent = hasContent(slide)
+
         const SlideContent = () => (
           <div
-            className={`absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${
+            className={`absolute top-0 left-0 w-full h-full transition-opacity duration-700 ${
               index === currentSlide ? "opacity-100" : "opacity-0"
             }`}
           >
-            <div className="container mx-auto px-4 h-full flex flex-col sm:flex-row items-center">
-              <div className="w-full sm:w-1/2 text-center sm:text-left mb-4 sm:mb-0 z-10">
-                <h2 className="text-2xl sm:text-4xl lg:text-5xl font-bold mb-2 text-gray-800">{slide.title}</h2>
-                <div className="text-3xl sm:text-6xl lg:text-7xl font-bold mb-4 text-primary">{slide.subtitle}</div>
-                <p className="text-lg sm:text-xl lg:text-2xl text-gray-600">👍 {slide.description}</p>
-              </div>
-              <div className="w-full sm:w-1/2 relative">
-                {!imageErrors[slide.id] ? (
-                  slide.image && slide.image.startsWith("http") && !slide.image.startsWith(window.location.origin) ? (
-                    <img
-                      src={slide.image || "/placeholder.svg"}
-                      alt={slide.title}
-                      className="object-contain w-full h-auto max-h-[250px] sm:max-h-[350px]"
-                      onError={() => handleImageError(slide.id)}
-                    />
-                  ) : (
-                    <Image
-                      src={slide.image || "/placeholder.svg"}
-                      alt={slide.title}
-                      width={800}
-                      height={400}
-                      className="object-contain w-full h-auto max-h-[250px] sm:max-h-[350px]"
-                      onError={() => handleImageError(slide.id)}
-                      priority={index === 0}
-                      unoptimized={slide.image?.startsWith("data:")}
-                    />
-                  )
+            {/* Full-width image container with responsive sizing */}
+            <div className="absolute inset-0 w-full h-full">
+              {!imageErrors[slide.id] ? (
+                slide.image && slide.image.startsWith("http") && !slide.image.startsWith(window.location.origin) ? (
+                  <img
+                    src={slide.image || "/placeholder.svg"}
+                    alt={slide.title || "Advertisement"}
+                    className="w-full h-full object-cover"
+                    onError={() => handleImageError(slide.id)}
+                  />
                 ) : (
-                  <div className="w-full h-[250px] sm:h-[350px] bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-gray-400">Image not available</span>
-                  </div>
-                )}
-              </div>
+                  <Image
+                    src={slide.image || "/placeholder.svg?height=400&width=1200&query=industrial%20equipment"}
+                    alt={slide.title || "Advertisement"}
+                    fill
+                    className="object-cover"
+                    onError={() => handleImageError(slide.id)}
+                    priority={index === 0}
+                    unoptimized={slide.image?.startsWith("data:")}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
+                  />
+                )
+              ) : (
+                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                  <span className="text-gray-400">Image not available</span>
+                </div>
+              )}
+
+              {/* Responsive gradient overlay for text readability */}
+              {hasSlideContent && (
+                <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent sm:from-black/60 sm:via-black/40" />
+              )}
+            </div>
+
+            {/* Content container with responsive positioning */}
+            <div className="relative h-full container mx-auto px-4 flex items-center">
+              {hasSlideContent && (
+                <div
+                  className={`w-full sm:w-2/3 md:w-1/2 lg:w-2/5 text-left z-10 p-4 md:p-6 rounded-lg 
+                    ${hasSlideContent ? "bg-white/10 backdrop-blur-sm" : ""}`}
+                >
+                  {slide.title && (
+                    <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 text-white drop-shadow-md">
+                      {slide.title}
+                    </h2>
+                  )}
+                  {slide.subtitle && (
+                    <div className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white drop-shadow-lg">
+                      {slide.subtitle}
+                    </div>
+                  )}
+                  {slide.description && (
+                    <p className="text-base sm:text-lg text-white/90 drop-shadow-md mb-4">{slide.description}</p>
+                  )}
+
+                  {slide.linkUrl && (
+                    <div className="mt-4">
+                      <Link
+                        href={slide.linkUrl}
+                        className="inline-flex items-center px-4 py-2 bg-white text-primary font-medium rounded-md hover:bg-primary hover:text-white transition-colors duration-300 text-sm"
+                      >
+                        Explore Now
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )
 
         return slide.linkUrl ? (
-          <Link key={slide.id} href={slide.linkUrl} className="block">
+          <Link key={slide.id} href={slide.linkUrl} className="block h-full">
             <SlideContent />
           </Link>
         ) : (
-          <div key={slide.id}>
+          <div key={slide.id} className="h-full">
             <SlideContent />
           </div>
         )
@@ -236,8 +273,8 @@ export default function SimpleSlider() {
             <button
               key={index}
               onClick={() => goToSlide(index)}
-              className={`w-3 h-3 rounded-full transition-colors duration-200 ${
-                currentSlide === index ? "bg-primary" : "bg-white/50 hover:bg-white/75"
+              className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                currentSlide === index ? "bg-white" : "bg-white/30 hover:bg-white/50"
               }`}
               aria-label={`Go to slide ${index + 1}`}
             />
@@ -245,35 +282,37 @@ export default function SimpleSlider() {
         </div>
       )}
 
-      {/* Navigation Arrows for larger screens */}
+      {/* Navigation Arrows */}
       {slides.length > 1 && (
-        <div className="hidden sm:block">
+        <>
           <button
-            onClick={() => goToSlide((currentSlide - 1 + slides.length) % slides.length)}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 transition-colors duration-200 z-20"
+            onClick={(e) => {
+              e.preventDefault()
+              goToSlide((currentSlide - 1 + slides.length) % slides.length)
+            }}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors duration-300 z-20 backdrop-blur-sm"
             aria-label="Previous slide"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
+            <ArrowLeft className="w-4 h-4" />
           </button>
           <button
-            onClick={() => goToSlide((currentSlide + 1) % slides.length)}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 transition-colors duration-200 z-20"
+            onClick={(e) => {
+              e.preventDefault()
+              goToSlide((currentSlide + 1) % slides.length)
+            }}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors duration-300 z-20 backdrop-blur-sm"
             aria-label="Next slide"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
+            <ArrowRight className="w-4 h-4" />
           </button>
-        </div>
+        </>
       )}
 
       {/* Progress Bar */}
       {slides.length > 1 && (
-        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/30">
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20">
           <div
-            className="h-full bg-primary transition-all duration-2000 ease-linear"
+            className="h-full bg-white transition-all duration-500 ease-linear"
             style={{
               width: `${((currentSlide + 1) / slides.length) * 100}%`,
             }}

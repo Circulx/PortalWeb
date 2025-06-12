@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
-import { Upload, X } from "lucide-react"
+import { Upload, X, Info } from "lucide-react"
 import Image from "next/image"
 
 interface Advertisement {
@@ -174,7 +174,35 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Image Upload */}
           <div className="space-y-2">
-            <Label htmlFor="image">Advertisement Image *</Label>
+            <Label htmlFor="image" className="flex items-center gap-2">
+              Advertisement Image *<span className="text-red-500">★</span>
+            </Label>
+
+            {/* Recommended Size Info */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-800">
+                  <p className="font-medium mb-1">★ Recommended Image Sizes:</p>
+                  <ul className="space-y-1 text-xs">
+                    <li>
+                      <strong>Desktop:</strong> 1200×400px (3:1 ratio) - Best quality
+                    </li>
+                    <li>
+                      <strong>Tablet:</strong> 1024×400px - Good for tablets
+                    </li>
+                    <li>
+                      <strong>Mobile:</strong> 768×300px - Mobile optimized
+                    </li>
+                  </ul>
+                  <p className="mt-2 text-xs">
+                    <strong>Tips:</strong> Images will auto-adjust for all devices. Keep important content on the right
+                    side (text appears on left).
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
               {imagePreview ? (
                 <div className="relative">
@@ -185,15 +213,15 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                       src={imagePreview || "/placeholder.svg"}
                       alt="Preview"
                       width={400}
-                      height={200}
-                      className="w-full h-48 object-cover rounded-lg"
+                      height={133}
+                      className="w-full h-32 object-cover rounded-lg"
                       unoptimized
                     />
                   ) : (
                     <img
                       src={imagePreview || "/placeholder.svg"}
                       alt="Preview"
-                      className="w-full h-48 object-cover rounded-lg"
+                      className="w-full h-32 object-cover rounded-lg"
                     />
                   )}
                   <Button
@@ -208,6 +236,11 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                   >
                     <X className="w-4 h-4" />
                   </Button>
+
+                  {/* Image dimensions info */}
+                  <div className="mt-2 text-xs text-gray-500">
+                    Preview: Image will automatically adjust for all devices (Desktop, Tablet, Mobile)
+                  </div>
                 </div>
               ) : (
                 <div className="text-center">
@@ -228,6 +261,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                     </label>
                   </div>
                   <p className="text-sm text-gray-500">PNG, JPG, GIF up to 5MB</p>
+                  <p className="text-xs text-gray-400 mt-1">★ Best: 1200×400px for optimal quality</p>
                 </div>
               )}
             </div>
@@ -240,7 +274,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                   setFormData((prev) => ({ ...prev, imageUrl: e.target.value, imageData: "" }))
                   setImagePreview(e.target.value)
                 }}
-                placeholder="https://example.com/image.jpg"
+                placeholder="https://example.com/image.jpg (★ Recommended: 1200×400px)"
               />
             </div>
           </div>
@@ -309,11 +343,12 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                 }
                 className="w-full p-2 border rounded-md"
               >
-                <option value="all">All Devices</option>
+                <option value="all">All Devices (★ Recommended)</option>
                 <option value="desktop">Desktop Only</option>
                 <option value="tablet">Tablet Only</option>
                 <option value="mobile">Mobile Only</option>
               </select>
+              <p className="text-xs text-gray-500">★ "All Devices" automatically optimizes for each screen size</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="order">Display Order</Label>

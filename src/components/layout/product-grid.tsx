@@ -5,7 +5,9 @@ import ProductCard from "./product-card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import type { AppDispatch, RootState } from "@/store"
-import { fetchProducts } from "@/store/slices/productSlice"
+import { fetchProducts, fetchProductsByCategory } from "@/store/slices/productSlice"
+import { LazySection } from "./lazy-section"
+import { SectionSkeleton } from "./section-skeleton"
 
 // Loading skeleton component
 const Skeleton = ({ className = "", ...props }: { className?: string; [key: string]: any }) => {
@@ -51,10 +53,21 @@ interface Product {
   sub_category_name: string
 }
 
-function ProductCarousel({ products, title, isLoading }: { products: Product[]; title: string; isLoading: boolean }) {
+function ProductCarousel({
+  products,
+  title,
+  isLoading,
+  category,
+  onLoadMore,
+}: {
+  products: Product[]
+  title: string
+  isLoading: boolean
+  category?: string
+  onLoadMore?: () => void
+}) {
   const [startIndex, setStartIndex] = useState(0)
   const [visibleProducts, setVisibleProducts] = useState(6)
-  // const [touchStartX, setTouchStartX] = useState<number | null>(null)
 
   useEffect(() => {
     const handleResize = () => {
@@ -78,39 +91,21 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
 
   // Endless carousel logic
   const handlePrevious = () => {
-    setStartIndex((prevIndex) =>
-      prevIndex === 0 ? Math.max(0, products.length - visibleProducts) : prevIndex - 1
-    )
+    setStartIndex((prevIndex) => (prevIndex === 0 ? Math.max(0, products.length - visibleProducts) : prevIndex - 1))
   }
 
   const handleNext = () => {
-    setStartIndex((prevIndex) =>
-      prevIndex >= products.length - visibleProducts ? 0 : prevIndex + 1
-    )
+    setStartIndex((prevIndex) => {
+      const nextIndex = prevIndex >= products.length - visibleProducts ? 0 : prevIndex + 1
+
+      // Load more products when reaching near the end
+      if (nextIndex >= products.length - visibleProducts - 2 && onLoadMore) {
+        onLoadMore()
+      }
+
+      return nextIndex
+    })
   }
-
-  // // Touch/swipe support for mobile
-  // const handleTouchStart = (e: React.TouchEvent) => {
-  //   setTouchStartX(e.touches[0].clientX)
-  // }
-
-  // const handleTouchEnd = (e: React.TouchEvent) => {
-  //   if (touchStartX === null) return
-  //   const touchEndX = e.changedTouches[0].clientX
-  //   const diff = touchStartX - touchEndX
-  //   if (Math.abs(diff) > 50) {
-  //     if (diff > 0) {
-  //       handleNext()
-  //     } else {
-  //       handlePrevious()
-  //     }
-  //   }
-  //   setTouchStartX(null)
-  // }
-
-  // Check if we're at the beginning or end to disable buttons (for accessibility, but not for endless logic)
-  const isAtBeginning = startIndex === 0
-  const isAtEnd = startIndex >= products.length - visibleProducts
 
   // Ensure we don't go out of bounds
   const safeStartIndex = Math.min(startIndex, Math.max(0, products.length - visibleProducts))
@@ -120,11 +115,7 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
     <div className="mb-12">
       <h2 className="text-2xl font-bold mb-6 text-gray-800">{title}</h2>
       <div className="relative">
-        <div
-          className="flex overflow-hidden"
-          // onTouchStart={handleTouchStart}
-          // onTouchEnd={handleTouchEnd}
-        >
+        <div className="flex overflow-hidden">
           {isLoading ? (
             Array(visibleProducts)
               .fill(0)
@@ -169,7 +160,7 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
                   price={product.price}
                   discount={product.discount}
                   image_link={product.image_link || "/placeholder.svg?height=200&width=200"}
-                  href={`/product/${product.product_id}`}
+                  href={`/products/${product.product_id}`}
                   rating={product.rating}
                   originalPrice={product.price + product.discount}
                   hoverImage={product.image_link || "/placeholder.svg?height=200&width=200"}
@@ -188,18 +179,14 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
           <>
             <button
               onClick={handlePrevious}
-              className={`absolute left-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 ${
-                "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
-              }`}
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
               aria-label="Previous product"
             >
               <ChevronLeft className="w-6 h-6" />
             </button>
             <button
               onClick={handleNext}
-              className={`absolute right-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 ${
-                "bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
-              }`}
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
               aria-label="Next product"
             >
               <ChevronRight className="w-6 h-6" />
@@ -208,6 +195,44 @@ function ProductCarousel({ products, title, isLoading }: { products: Product[]; 
         )}
       </div>
     </div>
+  )
+}
+
+// Lazy loaded category section
+function LazyCategorySection({
+  category,
+  subcategories,
+}: {
+  category: string
+  subcategories: Record<string, Product[]>
+}) {
+  const dispatch = useDispatch<AppDispatch>()
+  const [hasLoadedMore, setHasLoadedMore] = useState(false)
+
+  const handleLoadMore = () => {
+    if (!hasLoadedMore) {
+      dispatch(fetchProductsByCategory(category))
+      setHasLoadedMore(true)
+    }
+  }
+
+  return (
+    <LazySection delay={200} fallback={<SectionSkeleton type="grid" />} className="mb-12">
+      <div>
+        <h2 className="text-3xl font-bold mb-6 text-gray-800">{category}</h2>
+        {Object.entries(subcategories).map(([subcategory, products]) => (
+          <div key={subcategory} className="mb-8">
+            <ProductCarousel
+              products={products}
+              title={subcategory}
+              isLoading={false}
+              category={category}
+              onLoadMore={handleLoadMore}
+            />
+          </div>
+        ))}
+      </div>
+    </LazySection>
   )
 }
 
@@ -221,22 +246,28 @@ export default function ProductGrid() {
   } = useSelector((state: RootState) => state.products)
 
   const isLoading = status === "loading"
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   useEffect(() => {
-    // Only fetch products if they haven't been loaded yet
+    // Only fetch initial products if they haven't been loaded yet
     if (status === "idle") {
-      dispatch(fetchProducts())
+      dispatch(fetchProducts({ limit: 30 })).then(() => {
+        setInitialLoadComplete(true)
+      })
+    } else if (status === "succeeded") {
+      setInitialLoadComplete(true)
     }
   }, [dispatch, status])
 
-  // Render product carousels for each category
+  // Render product carousels for each category with lazy loading
   const renderCategorySubcategoryCarousels = () => {
     if (Object.keys(categorySubcategoryProducts).length === 0) {
-      if (isLoading) {
+      if (isLoading || !initialLoadComplete) {
         return (
           <>
-            <ProductCarousel products={[]} title="Loading Products..." isLoading={true} />
-            <ProductCarousel products={[]} title="Loading More..." isLoading={true} />
+            <SectionSkeleton type="grid" className="mb-8" />
+            <SectionSkeleton type="grid" className="mb-8" />
+            <SectionSkeleton type="grid" className="mb-8" />
           </>
         )
       }
@@ -248,16 +279,36 @@ export default function ProductGrid() {
       )
     }
 
-    return Object.entries(categorySubcategoryProducts).map(([category, subcategories]) => (
-      <div key={category} className="mb-12">
-        <h2 className="text-3xl font-bold mb-6 text-gray-800">{category}</h2>
-        {Object.entries(subcategories).map(([subcategory, products]) => (
-          <div key={subcategory} className="mb-8">
-            <ProductCarousel products={products} title={subcategory} isLoading={isLoading} />
+    // Split categories for progressive loading
+    const categories = Object.entries(categorySubcategoryProducts)
+    const firstCategory = categories[0]
+    const remainingCategories = categories.slice(1)
+
+    return (
+      <>
+        {/* Load first category immediately */}
+        {firstCategory && (
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold mb-6 text-gray-800">{firstCategory[0]}</h2>
+            {Object.entries(firstCategory[1]).map(([subcategory, products]) => (
+              <div key={subcategory} className="mb-8">
+                <ProductCarousel
+                  products={products}
+                  title={subcategory}
+                  isLoading={isLoading}
+                  category={firstCategory[0]}
+                />
+              </div>
+            ))}
           </div>
+        )}
+
+        {/* Lazy load remaining categories */}
+        {remainingCategories.map(([category, subcategories]) => (
+          <LazyCategorySection key={category} category={category} subcategories={subcategories} />
         ))}
-      </div>
-    ))
+      </>
+    )
   }
 
   return (

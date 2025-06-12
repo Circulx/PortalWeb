@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
-import mongoose from "mongoose"
 
 export async function GET(request: Request) {
   try {
@@ -16,26 +15,16 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Product model not found" }, { status: 500 })
     }
 
-    // Log available collections to debug
-    if (mongoose.connection && mongoose.connection.readyState === 1 && mongoose.connection.db) {
-      try {
-        const collections = await mongoose.connection.db.listCollections().toArray()
-        console.log(
-          "Available collections in main connection:",
-          collections.map((c) => c.name),
-        )
-      } catch (err) {
-        console.error("Error listing collections:", err)
-      }
-    }
-
-    // Parse query parameters for filtering and limiting results
+    // Parse query parameters for filtering and pagination
     const { searchParams } = new URL(request.url)
     const query = searchParams.get("q") || ""
-    const limit = parseInt(searchParams.get("limit") || "0", 10)
+    const limit = Number.parseInt(searchParams.get("limit") || "0", 10) // Default to 0 (no limit) like before
+    const offset = Number.parseInt(searchParams.get("offset") || "0", 10)
+    const category = searchParams.get("category")
 
     // Build filter: only fetch products that are active and not drafts
-    let filter: any = { isActive: true, is_draft: false }
+    const filter: any = { isActive: true, is_draft: false }
+
     if (query) {
       filter.$or = [
         { title: { $regex: query, $options: "i" } },
@@ -46,16 +35,54 @@ export async function GET(request: Request) {
       ]
     }
 
-    // Query the database
-    let productsQuery = ProductModel.find(filter).lean()
-    if (limit > 0) productsQuery = productsQuery.limit(limit)
+    if (category) {
+      filter.category_name = { $regex: category, $options: "i" }
+    }
 
+    // Query the database - optimized for faster response
+    let productsQuery = ProductModel.find(filter)
+      .lean() // Use lean() for better performance
+      .select({
+        // Select only necessary fields to reduce payload
+        product_id: 1,
+        title: 1,
+        description: 1,
+        image_link: 1,
+        stock: 1,
+        price: 1,
+        discount: 1,
+        SKU: 1,
+        seller_id: 1,
+        rating: 1,
+        seller_name: 1,
+        location: 1,
+        category_name: 1,
+        sub_category_name: 1,
+        created_at: 1,
+      })
+
+    // Only apply pagination if limit is specified and > 0
+    if (offset > 0) {
+      productsQuery = productsQuery.skip(offset)
+    }
+
+    if (limit > 0) {
+      productsQuery = productsQuery.limit(limit)
+    }
+
+    const startTime = Date.now()
     const products = await productsQuery
+    const queryTime = Date.now() - startTime
 
-    console.log(`Found ${products.length} active products in PROFILE_DB`)
+    console.log(`Found ${products.length} active products in PROFILE_DB (query time: ${queryTime}ms)`)
 
-    // Return products (or empty array if none found)
-    return NextResponse.json(products, { status: 200 })
+    // Add cache headers for better performance
+    const response = NextResponse.json(products, { status: 200 })
+
+    // Cache for 5 minutes for better performance
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600")
+
+    return response
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "Unknown error"
     console.error("Error fetching products from PROFILE_DB:", errorMessage)

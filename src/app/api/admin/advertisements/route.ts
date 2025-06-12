@@ -84,29 +84,30 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("Creating advertisement with data:", body)
 
-    // Validate required fields
-    const { title, subtitle, description, imageUrl, isActive, order, deviceType } = body
+    // Only validate required fields - title, subtitle, description are now optional
+    const { imageUrl, imageData } = body
 
-    if (!title || !subtitle || !description) {
+    if (!imageUrl && !imageData) {
       return NextResponse.json(
         {
           success: false,
-          error: "Missing required fields: title, subtitle, description",
+          error: "Image is required. Please provide either imageUrl or imageData",
         },
         { status: 400 },
       )
     }
 
-    // Create new advertisement
+    // Create new advertisement with optional fields
     const advertisement = new Advertisement({
-      title,
-      subtitle,
-      description,
+      title: body.title || "", // Default to empty string if not provided
+      subtitle: body.subtitle || "", // Default to empty string if not provided
+      description: body.description || "", // Default to empty string if not provided
       imageUrl: imageUrl || "",
+      imageData: imageData || "",
       linkUrl: body.linkUrl || "",
-      isActive: isActive !== undefined ? isActive : true,
-      order: order || 1,
-      deviceType: deviceType || "all",
+      isActive: body.isActive !== undefined ? body.isActive : true,
+      order: body.order || 1,
+      deviceType: body.deviceType || "all",
       startDate: body.startDate || null,
       endDate: body.endDate || null,
     })
