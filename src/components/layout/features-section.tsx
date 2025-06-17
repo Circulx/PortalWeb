@@ -26,7 +26,7 @@ export default function FeaturesSection() {
     {
       icon: <Truck size={28} />,
       title: "Free Shipping",
-      description: "Order above $200",
+      description: "Order above 200",
       iconColor: "text-blue-600",
       hoverColor: "hover:bg-blue-100 hover:bg-opacity-80 hover:shadow-lg",
     },
@@ -40,7 +40,7 @@ export default function FeaturesSection() {
     {
       icon: <Lock size={28} />,
       title: "Secure Payments",
-      description: "Secured by Stripe",
+      description: "Secured by Razorpay",
       iconColor: "text-purple-600",
       hoverColor: "hover:bg-purple-100 hover:bg-opacity-80 hover:shadow-lg",
     },

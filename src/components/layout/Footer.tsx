@@ -47,7 +47,7 @@ export default function Footer() {
               <span className="text-xl font-semibold">IND2B</span>
             </Link>
             <p className="text-sm text-white">
-              © 2024 Conscious Club Transfer Your Social Username Into A Payment Alias
+              © 2024 One step Ecommerce Solutions
             </p>
           </div>
 
