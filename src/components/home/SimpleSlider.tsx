@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowLeft, ArrowRight } from "lucide-react"
+import { ArrowRight } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchAdvertisements, type Advertisement } from "@/store/slices/advertisementSlice"
 import type { AppDispatch, RootState } from "@/store"
@@ -123,9 +123,7 @@ export default function SimpleSlider() {
   if (status === "loading" && advertisements.length === 0) {
     return (
       <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gray-100 animate-pulse">
-        <div className="container mx-auto px-4 h-full flex items-center justify-center">
-          <div className="text-gray-400">Loading advertisements...</div>
-        </div>
+        
       </div>
     )
   }
@@ -141,11 +139,9 @@ export default function SimpleSlider() {
       {/* Show indicator if using default slides */}
       {advertisements.length === 0 && status !== "loading" && (
         <div className="absolute top-2 right-2 z-30 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-          Sample Ads
+          
         </div>
       )}
-
-      
 
       {slides.map((slide, index) => {
         const hasSlideContent = hasContent(slide)
@@ -258,7 +254,7 @@ export default function SimpleSlider() {
         </div>
       )}
 
-      {/* Navigation Arrows */}
+      {/* Small Navigation Indicators */}
       {slides.length > 1 && (
         <>
           <button
@@ -266,20 +262,20 @@ export default function SimpleSlider() {
               e.preventDefault()
               goToSlide((currentSlide - 1 + slides.length) % slides.length)
             }}
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors duration-300 z-20 backdrop-blur-sm"
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/30 hover:bg-white/50 rounded-full transition-all duration-300 z-20 backdrop-blur-sm flex items-center justify-center group"
             aria-label="Previous slide"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <div className="w-2 h-2 border-l-2 border-b-2 border-white transform rotate-45 group-hover:scale-110 transition-transform"></div>
           </button>
           <button
             onClick={(e) => {
               e.preventDefault()
               goToSlide((currentSlide + 1) % slides.length)
             }}
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white rounded-full p-2 transition-colors duration-300 z-20 backdrop-blur-sm"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/30 hover:bg-white/50 rounded-full transition-all duration-300 z-20 backdrop-blur-sm flex items-center justify-center group"
             aria-label="Next slide"
           >
-            <ArrowRight className="w-4 h-4" />
+            <div className="w-2 h-2 border-r-2 border-t-2 border-white transform rotate-45 group-hover:scale-110 transition-transform"></div>
           </button>
         </>
       )}
