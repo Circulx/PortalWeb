@@ -13,8 +13,6 @@ import { signOut } from "@/actions/auth"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { useRouter } from "next/navigation"
-// Remove this line:
-// import SearchBar from "@/components/layout/searchbar"
 
 interface HeaderProps {
   user?: {
@@ -48,6 +46,11 @@ export default function Header({ user }: HeaderProps) {
     "Gratings",
     "Clothes",
     "Tools",
+    "Machines",
+    "Cosmetcis",
+    "Mobile & Computers",
+    "Papers",
+    "Gratings"
   ]
 
   function handleAuthSuccess() {
@@ -181,8 +184,8 @@ export default function Header({ user }: HeaderProps) {
       {/* Responsive empty space to compensate for the fixed header */}
       <div className="h-[62px] sm:h-[70px] md:h-[60px]"></div>
 
-      {/* Categories Navigation - Scrollable on mobile */}
-      <div className="bg-[#004D40] text-white overflow-x-auto">
+      {/* Categories Navigation - Scrollable on mobile - CHANGED FROM GREEN TO ORANGE-500 */}
+      <div className="bg-orange-500 text-white overflow-x-auto">
         <div className="container mx-auto px-3">
           <div className="flex items-center py-2 md:py-3 space-x-4 whitespace-nowrap">
             <span className="text-xs font-medium hidden xs:inline">Explore:</span>

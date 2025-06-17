@@ -1,17 +1,31 @@
 "use client"
 
-import { Suspense } from "react"
 import dynamic from "next/dynamic"
-import { SectionSkeleton } from "@/components/layout/section-skeleton"
+import { Suspense } from "react"
 
-const SimpleSlider = dynamic(() => import("@/components/home/SimpleSlider"), {
-  loading: () => <SectionSkeleton type="slider" />,
-  ssr: false,
+// Dynamically import the SimpleSlider component
+const SimpleSlider = dynamic(() => import("./SimpleSlider"), {
+  ssr: true,
+  loading: () => (
+    <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gray-100 animate-pulse">
+      <div className="container mx-auto px-4 h-full flex items-center justify-center">
+        <div className="text-gray-400">Loading advertisements...</div>
+      </div>
+    </div>
+  ),
 })
 
 export function LazySimpleSlider() {
   return (
-    <Suspense fallback={<SectionSkeleton type="slider" />}>
+    <Suspense
+      fallback={
+        <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gray-100 animate-pulse">
+          <div className="container mx-auto px-4 h-full flex items-center justify-center">
+            <div className="text-gray-400">Loading advertisements...</div>
+          </div>
+        </div>
+      }
+    >
       <SimpleSlider />
     </Suspense>
   )

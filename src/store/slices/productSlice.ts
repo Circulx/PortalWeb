@@ -26,6 +26,12 @@ export interface Product {
   sub_category_name: string
 }
 
+// Define cache entry interface
+interface CacheEntry {
+  data: any
+  timestamp: number
+}
+
 // Define the state structure
 interface ProductState {
   products: Product[]
@@ -33,7 +39,7 @@ interface ProductState {
   status: "idle" | "loading" | "succeeded" | "failed"
   error: string | null
   lastFetched: number | null
-  cache: Map<string, { data: any; timestamp: number }>
+  cache: Record<string, CacheEntry> // Changed from Map to plain object
 }
 
 // Initial state
@@ -43,7 +49,7 @@ const initialState: ProductState = {
   status: "idle",
   error: null,
   lastFetched: null,
-  cache: new Map(),
+  cache: {}, // Changed from new Map() to {}
 }
 
 // Fetch ALL products without any limit (like the original implementation)
@@ -146,7 +152,7 @@ export const fetchProductsByCategory = createAsyncThunk(
   async (category: string, { getState, rejectWithValue }) => {
     const state = getState() as { products: ProductState }
     const cacheKey = `category_${category}`
-    const cached = state.products.cache.get(cacheKey)
+    const cached = state.products.cache[cacheKey] // Changed from .get() to bracket notation
 
     // Check cache (5 minutes)
     if (cached && Date.now() - cached.timestamp < 5 * 60 * 1000) {
@@ -179,16 +185,17 @@ const productSlice = createSlice({
       state.categorySubcategoryProducts = {}
       state.status = "idle"
       state.lastFetched = null
-      state.cache.clear()
+      state.cache = {} // Changed from .clear() to {}
     },
     updateCache: (state, action: PayloadAction<{ key: string; data: any }>) => {
-      state.cache.set(action.payload.key, {
+      // Changed from .set() to bracket notation
+      state.cache[action.payload.key] = {
         data: action.payload.data,
         timestamp: Date.now(),
-      })
+      }
     },
     clearCache: (state) => {
-      state.cache.clear()
+      state.cache = {} // Changed from .clear() to {}
     },
   },
   extraReducers: (builder) => {
@@ -226,12 +233,12 @@ const productSlice = createSlice({
       .addCase(fetchProductsByCategory.fulfilled, (state, action) => {
         const { category, products } = action.payload
 
-        // Update cache for this category
+        // Update cache for this category - Changed from .set() to bracket notation
         const cacheKey = `category_${category}`
-        state.cache.set(cacheKey, {
+        state.cache[cacheKey] = {
           data: products,
           timestamp: Date.now(),
-        })
+        }
 
         // Update category products if not already loaded
         if (!state.categorySubcategoryProducts[category]) {

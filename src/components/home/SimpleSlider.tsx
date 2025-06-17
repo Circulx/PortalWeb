@@ -4,19 +4,9 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowLeft, ArrowRight } from "lucide-react"
-
-interface Advertisement {
-  _id: string
-  title: string
-  subtitle: string
-  description: string
-  imageUrl?: string
-  imageData?: string
-  linkUrl?: string
-  isActive: boolean
-  order: number
-  deviceType: "all" | "desktop" | "mobile" | "tablet"
-}
+import { useDispatch, useSelector } from "react-redux"
+import { fetchAdvertisements, type Advertisement } from "@/store/slices/advertisementSlice"
+import type { AppDispatch, RootState } from "@/store"
 
 // Default sample advertisements to show when no active ads are available
 const defaultSlides = [
@@ -48,10 +38,11 @@ const defaultSlides = [
 
 export default function SimpleSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
-  const [advertisements, setAdvertisements] = useState<Advertisement[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
+  const [deviceType, setDeviceType] = useState<string>("desktop")
+
+  const dispatch = useDispatch<AppDispatch>()
+  const { advertisements, status, error } = useSelector((state: RootState) => state.advertisements)
 
   // Get device type for responsive ads
   const getDeviceType = () => {
@@ -63,51 +54,26 @@ export default function SimpleSlider() {
     return "desktop"
   }
 
-  const fetchAdvertisements = async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const deviceType = getDeviceType()
-      console.log("Fetching advertisements for device type:", deviceType)
-
-      const response = await fetch(`/api/advertisements/active?deviceType=${deviceType}`)
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-
-      const result = await response.json()
-      console.log("API Response:", result)
-
-      if (result.success) {
-        setAdvertisements(result.data || [])
-        console.log("Set advertisements:", result.data?.length || 0)
-      } else {
-        console.error("API returned error:", result.error)
-        setError(result.error || "Failed to fetch advertisements")
-        setAdvertisements([])
-      }
-    } catch (error) {
-      console.error("Error fetching advertisements:", error)
-      setError(error instanceof Error ? error.message : "Failed to fetch advertisements")
-      setAdvertisements([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
   useEffect(() => {
-    fetchAdvertisements()
+    // Set initial device type
+    const initialDeviceType = getDeviceType()
+    setDeviceType(initialDeviceType)
+
+    // Fetch advertisements with device type
+    dispatch(fetchAdvertisements(initialDeviceType))
 
     // Refetch on window resize to get appropriate device type
     const handleResize = () => {
-      fetchAdvertisements()
+      const newDeviceType = getDeviceType()
+      if (newDeviceType !== deviceType) {
+        setDeviceType(newDeviceType)
+        dispatch(fetchAdvertisements(newDeviceType))
+      }
     }
 
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
-  }, [])
+  }, [dispatch, deviceType])
 
   // Get image source - prioritize imageData (base64) over imageUrl
   const getImageSource = (ad: Advertisement) => {
@@ -153,8 +119,8 @@ export default function SimpleSlider() {
     return slide.title || slide.subtitle || slide.description
   }
 
-  // Show loading state
-  if (loading) {
+  // Show loading state only for initial load
+  if (status === "loading" && advertisements.length === 0) {
     return (
       <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gray-100 animate-pulse">
         <div className="container mx-auto px-4 h-full flex items-center justify-center">
@@ -164,15 +130,22 @@ export default function SimpleSlider() {
     )
   }
 
+  // Show error state with fallback to default slides
+  if (status === "failed" && advertisements.length === 0) {
+    console.warn("Failed to load advertisements, using default slides:", error)
+  }
+
   // Always show slides (either from database or default)
   return (
     <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
       {/* Show indicator if using default slides */}
-      {advertisements.length === 0 && !loading && (
+      {advertisements.length === 0 && status !== "loading" && (
         <div className="absolute top-2 right-2 z-30 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
           Sample Ads
         </div>
       )}
+
+      
 
       {slides.map((slide, index) => {
         const hasSlideContent = hasContent(slide)
@@ -186,7 +159,10 @@ export default function SimpleSlider() {
             {/* Full-width image container with responsive sizing */}
             <div className="absolute inset-0 w-full h-full">
               {!imageErrors[slide.id] ? (
-                slide.image && slide.image.startsWith("http") && !slide.image.startsWith(window.location.origin) ? (
+                slide.image &&
+                slide.image.startsWith("http") &&
+                typeof window !== "undefined" &&
+                !slide.image.startsWith(window.location.origin) ? (
                   <img
                     src={slide.image || "/placeholder.svg"}
                     alt={slide.title || "Advertisement"}
@@ -195,7 +171,7 @@ export default function SimpleSlider() {
                   />
                 ) : (
                   <Image
-                    src={slide.image || "/placeholder.svg?height=400&width=1200&query=industrial%20equipment"}
+                    src={slide.image || "/placeholder.svg?height=400&width=1200"}
                     alt={slide.title || "Advertisement"}
                     fill
                     className="object-cover"

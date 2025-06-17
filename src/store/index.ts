@@ -1,18 +1,23 @@
 import { configureStore } from "@reduxjs/toolkit"
-import cartReducer from "@/store/slices/cartSlice"
-import productReducer from "@/store/slices/productSlice"
-import wishlistReducer from "@/store/slices/wishlistSlice"
+import cartReducer from "./slices/cartSlice"
+import wishlistReducer from "./slices/wishlistSlice"
+import productReducer from "./slices/productSlice"
+import advertisementReducer from "./slices/advertisementSlice"
 
-const store = configureStore({
+export const store = configureStore({
   reducer: {
     cart: cartReducer,
-    products: productReducer,
     wishlist: wishlistReducer,
+    products: productReducer,
+    advertisements: advertisementReducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: {
+        ignoredActions: ["persist/PERSIST"],
+      },
+    }),
 })
 
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
-
-export default store
-export { store }
