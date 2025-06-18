@@ -59,7 +59,7 @@ export function BrandCarousel() {
 
   return (
     <div className="w-full py-6">
-      <h2 className="text-2xl font-bold text-center mb-2">Top Brand & Categories</h2>
+      <h2 className="text-2xl font-bold text-center mb-2">Trending Brands</h2>
       <ScrollArea className="w-full whitespace-nowrap rounded-lg">
         <div className="flex justify-center space-x-4 p-4">
           {visibleBrands.map((brand, i) => (
