@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, ShoppingBag, LogOut, Search } from "lucide-react"
+import { Heart, LogOut, Search } from "lucide-react"
 import { AuthModal } from "../auth/auth-modal"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -50,7 +50,7 @@ export default function Header({ user }: HeaderProps) {
     "Cosmetcis",
     "Mobile & Computers",
     "Papers",
-    "Gratings"
+    "Gratings",
   ]
 
   function handleAuthSuccess() {
@@ -102,67 +102,94 @@ export default function Header({ user }: HeaderProps) {
     <header className="w-full bg-white shadow-sm">
       {/* Top Navigation - Fixed */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
-        <div className="container mx-auto px-2 py-2">
-          {/* Responsive: single row on all screens, reduced search bar on mobile */}
-          <div className="flex flex-row items-center justify-between gap-2">
-            {/* Logo */}
-            <div className="flex items-center gap-2 min-w-[60px] shrink-0">
-              <Link href="/" className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-emerald-400 rounded-lg flex items-center justify-center">
-                  <ShoppingBag className="w-5 h-5 text-white" />
-                </div>
-                <span className="text-lg font-semibold hidden sm:inline">IND2B</span>
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
+          {/* Main Navigation Layout */}
+          <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6">
+            {/* Logo - Left Side */}
+            <div className="flex-shrink-0">
+              <Link href="/" className="flex items-center">
+                <Image
+                  src="/ind2b.png"
+                  alt="IND2B Logo"
+                  width={40}
+                  height={40}
+                  className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 object-contain"
+                  priority
+                />
               </Link>
             </div>
 
-            {/* Search Bar - shrinks on mobile */}
-            <div className="flex-1 mx-2 max-w-[500px] min-w-0">
-              <form onSubmit={handleSearch} className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full py-2 pl-8 pr-4 text-xs sm:text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-200
-                    max-w-[180px] xs:max-w-[220px] sm:max-w-[320px] md:max-w-[500px]"
-                />
-                <button type="submit" className="absolute inset-y-0 left-0 pl-2.5 flex items-center">
-                  <Search className="h-4 w-4 text-gray-400" />
-                </button>
+            {/* Search Bar - Center (Takes remaining space) */}
+            <div className="flex-1 max-w-2xl mx-auto">
+              <form onSubmit={handleSearch} className="relative w-full">
+                <div className="relative flex items-center">
+                  <Search className="absolute left-3 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 z-10" />
+                  <input
+                    type="text"
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full h-9 sm:h-10 lg:h-11 pl-9 sm:pl-10 pr-4 text-sm sm:text-base 
+                      border border-gray-300 rounded-full 
+                      focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
+                      transition-all duration-200 bg-gray-50 hover:bg-white"
+                  />
+                </div>
               </form>
             </div>
 
-            {/* Right Navigation */}
-            <div className="flex items-center gap-2 sm:gap-3 md:gap-5 shrink-0">
+            {/* Right Side Actions */}
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 flex-shrink-0">
               {/* Wishlist */}
-              <Link href="/dashboard/wishlist" className="relative flex items-center justify-center">
-                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] md:text-xs rounded-full flex items-center justify-center">
-                  {wishlistItemsCount}
-                </span>
+              <Link
+                href="/dashboard/wishlist"
+                className="relative p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 hover:text-red-500 transition-colors" />
+                {wishlistItemsCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white 
+                    text-[10px] sm:text-xs rounded-full flex items-center justify-center font-medium"
+                  >
+                    {wishlistItemsCount > 99 ? "99+" : wishlistItemsCount}
+                  </span>
+                )}
               </Link>
+
               {/* Cart */}
-              <Link href="/cart" className="relative flex items-center justify-center">
-                <Image src="/cart.png" alt="Shopping Cart" width={22} height={22} className="sm:w-6 sm:h-6" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] md:text-xs rounded-full flex items-center justify-center">
-                  {cartItemsCount}
-                </span>
+              <Link href="/cart" className="relative p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <Image src="/cart.png" alt="Shopping Cart" width={24} height={24} className="w-5 h-5 sm:w-6 sm:h-6" />
+                {cartItemsCount > 0 && (
+                  <span
+                    className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white 
+                    text-[10px] sm:text-xs rounded-full flex items-center justify-center font-medium"
+                  >
+                    {cartItemsCount > 99 ? "99+" : cartItemsCount}
+                  </span>
+                )}
               </Link>
-              {/* User Menu */}
+
+              {/* User Authentication */}
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="rounded-lg h-7 px-2 flex items-center gap-1">
-                      <Avatar className="h-5 w-5">
+                    <Button
+                      variant="outline"
+                      className="h-8 sm:h-9 lg:h-10 px-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 
+                        border-gray-300 hover:border-gray-400 transition-colors"
+                    >
+                      <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
                         <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
-                        <AvatarFallback>{user.name[0]}</AvatarFallback>
+                        <AvatarFallback className="text-xs sm:text-sm">{user.name[0]}</AvatarFallback>
                       </Avatar>
-                      <span className="hidden sm:inline text-xs">{user.name.split(" ")[0]}</span>
+                      <span className="hidden sm:inline text-xs sm:text-sm font-medium">{user.name.split(" ")[0]}</span>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={navigateToDashboard}>Dashboard</DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => signOut()}>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem onClick={navigateToDashboard} className="cursor-pointer">
+                      Dashboard
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
                       <LogOut className="w-4 h-4 mr-2" />
                       Sign Out
                     </DropdownMenuItem>
@@ -171,7 +198,10 @@ export default function Header({ user }: HeaderProps) {
               ) : (
                 <Button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="bg-emerald-500 hover:bg-orange-900 text-white rounded-md px-2 sm:px-3 md:px-4 py-1.5 md:py-2 text-xs sm:text-sm md:text-lg font-medium ml-1 sm:ml-2 transition-colors h-8 md:h-9 min-h-0"
+                  className="h-8 sm:h-9 lg:h-10 px-3 sm:px-4 lg:px-6 
+                    bg-emerald-500 hover:bg-emerald-600 text-white 
+                    text-xs sm:text-sm lg:text-base font-medium 
+                    rounded-md transition-colors"
                 >
                   Login
                 </Button>
@@ -181,19 +211,19 @@ export default function Header({ user }: HeaderProps) {
         </div>
       </div>
 
-      {/* Responsive empty space to compensate for the fixed header */}
-      <div className="h-[62px] sm:h-[70px] md:h-[60px]"></div>
+      {/* Spacer for fixed header */}
+      <div className="h-12 sm:h-14 lg:h-16"></div>
 
-      {/* Categories Navigation - Scrollable on mobile - CHANGED FROM GREEN TO ORANGE-500 */}
+      {/* Categories Navigation */}
       <div className="bg-orange-500 text-white overflow-x-auto">
-        <div className="container mx-auto px-3">
-          <div className="flex items-center py-2 md:py-3 space-x-4 whitespace-nowrap">
-            <span className="text-xs font-medium hidden xs:inline">Explore:</span>
+        <div className="w-full px-3 sm:px-4 lg:px-6">
+          <div className="flex items-center py-2 sm:py-2.5 lg:py-3 space-x-4 sm:space-x-6 whitespace-nowrap">
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0">Explore:</span>
             {categories.map((category, index) => (
               <Link
                 key={index}
                 href={`/category/${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                className="text-xs hover:text-gray-200 transition-colors"
+                className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0"
                 onClick={(e) => handleCategoryClick(e, category)}
               >
                 {category}

@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { ShoppingBag } from "lucide-react"
+import Image from "next/image"
 
 export default function Footer() {
   const [email, setEmail] = useState("")
@@ -40,15 +40,17 @@ export default function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
           {/* Logo and Description */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-emerald-400 rounded-lg flex items-center justify-center">
-                <ShoppingBag className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-semibold">IND2B</span>
+            <Link href="/" className="inline-block">
+              <Image
+                src="/ind2b.png"
+                alt="IND2B Logo"
+                width={32}
+                height={32}
+                className="w-8 h-8 object-contain"
+                priority
+              />
             </Link>
-            <p className="text-sm text-white">
-              © 2024 One step Ecommerce Solutions
-            </p>
+            <p className="text-sm text-white">© 2024 One step Ecommerce Solutions</p>
           </div>
 
           {/* About Links */}

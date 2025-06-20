@@ -1,7 +1,16 @@
 "use client"
 
 import { Search } from "lucide-react"
-import React, { useState, useEffect, useRef, KeyboardEvent, ChangeEvent, FocusEvent, MouseEvent } from "react"
+import type React from "react"
+import {
+  useState,
+  useEffect,
+  useRef,
+  type KeyboardEvent,
+  type ChangeEvent,
+  type FocusEvent,
+  type MouseEvent,
+} from "react"
 import { useRouter } from "next/navigation"
 
 type ProductSuggestion = {
@@ -15,11 +24,46 @@ type ProductSuggestion = {
 
 // Dummy best sellers (replace with real API in production)
 const DUMMY_BEST_SELLERS: ProductSuggestion[] = [
-  { product_id: "b1", title: "Bosch Cordless Drill", brand: "Bosch", category_name: "Tools", price: 2999, image_link: "/dummy/bosch.jpg" },
-  { product_id: "b2", title: "Philips LED Bulb", brand: "Philips", category_name: "Electronics", price: 199, image_link: "/dummy/philips.jpg" },
-  { product_id: "b3", title: "Asian Paints Emulsion", brand: "Asian Paints", category_name: "Paints", price: 1200, image_link: "/dummy/asianpaints.jpg" },
-  { product_id: "b4", title: "Stanley Hammer", brand: "Stanley", category_name: "Tools", price: 499, image_link: "/dummy/stanley.jpg" },
-  { product_id: "b5", title: "Havells Wire", brand: "Havells", category_name: "Electronics", price: 899, image_link: "/dummy/havells.jpg" },
+  {
+    product_id: "b1",
+    title: "Bosch Cordless Drill",
+    brand: "Bosch",
+    category_name: "Tools",
+    price: 2999,
+    image_link: "/dummy/bosch.jpg",
+  },
+  {
+    product_id: "b2",
+    title: "Philips LED Bulb",
+    brand: "Philips",
+    category_name: "Electronics",
+    price: 199,
+    image_link: "/dummy/philips.jpg",
+  },
+  {
+    product_id: "b3",
+    title: "Asian Paints Emulsion",
+    brand: "Asian Paints",
+    category_name: "Paints",
+    price: 1200,
+    image_link: "/dummy/asianpaints.jpg",
+  },
+  {
+    product_id: "b4",
+    title: "Stanley Hammer",
+    brand: "Stanley",
+    category_name: "Tools",
+    price: 499,
+    image_link: "/dummy/stanley.jpg",
+  },
+  {
+    product_id: "b5",
+    title: "Havells Wire",
+    brand: "Havells",
+    category_name: "Electronics",
+    price: 899,
+    image_link: "/dummy/havells.jpg",
+  },
 ]
 
 const SearchBar: React.FC = () => {
@@ -136,9 +180,7 @@ const SearchBar: React.FC = () => {
   }
 
   // Suggest a search item based on what the user is typing
-  const suggestSearchItem = searchQuery.trim()
-    ? `Search for "${searchQuery.trim()}"`
-    : ""
+  const suggestSearchItem = searchQuery.trim() ? `Search for "${searchQuery.trim()}"` : ""
 
   // Carousel state for best sellers
   const [carouselIndex, setCarouselIndex] = useState(0)
@@ -155,7 +197,7 @@ const SearchBar: React.FC = () => {
 
   return (
     <div className="w-full flex justify-center">
-      <div className="relative w-full max-w-xl">
+      <div className="relative w-full max-w-3xl">
         {/* Search input with icon */}
         <div className="flex items-center bg-white border border-gray-300 rounded-full shadow-sm focus-within:ring-2 focus-within:ring-blue-400 transition">
           <Search className="ml-3 text-gray-500 w-5 h-5" />
@@ -172,9 +214,7 @@ const SearchBar: React.FC = () => {
             aria-autocomplete="list"
             aria-controls="search-suggestions"
             aria-activedescendant={
-              highlightedIndex >= 0 && showSuggestions
-                ? `suggestion-${highlightedIndex}`
-                : undefined
+              highlightedIndex >= 0 && showSuggestions ? `suggestion-${highlightedIndex}` : undefined
             }
           />
         </div>
@@ -184,12 +224,7 @@ const SearchBar: React.FC = () => {
             className="absolute left-0 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96"
             style={{ overflowY: "auto", overflowX: "hidden" }}
           >
-            <ul
-              className="list-none p-0 m-0"
-              ref={suggestionsRef}
-              id="search-suggestions"
-              role="listbox"
-            >
+            <ul className="list-none p-0 m-0" ref={suggestionsRef} id="search-suggestions" role="listbox">
               {/* Suggest a search item */}
               {suggestSearchItem && (
                 <li
@@ -223,7 +258,7 @@ const SearchBar: React.FC = () => {
                 >
                   {product.image_link && (
                     <img
-                      src={product.image_link}
+                      src={product.image_link || "/placeholder.svg"}
                       alt={product.title}
                       className="w-8 h-8 object-contain rounded bg-white border"
                     />
@@ -232,12 +267,13 @@ const SearchBar: React.FC = () => {
                     <span className="font-medium truncate max-w-xs" title={product.title}>
                       {product.title}
                     </span>
-                    <span className="text-xs text-gray-500 truncate max-w-xs" title={product.brand || product.category_name}>
+                    <span
+                      className="text-xs text-gray-500 truncate max-w-xs"
+                      title={product.brand || product.category_name}
+                    >
                       {product.brand || product.category_name}
                     </span>
-                    <span className="text-xs text-orange-600 font-semibold truncate max-w-xs">
-                      ₹{product.price}
-                    </span>
+                    <span className="text-xs text-orange-600 font-semibold truncate max-w-xs">₹{product.price}</span>
                   </div>
                 </li>
               ))}
@@ -279,7 +315,7 @@ const SearchBar: React.FC = () => {
                     >
                       {product.image_link && (
                         <img
-                          src={product.image_link}
+                          src={product.image_link || "/placeholder.svg"}
                           alt={product.title}
                           className="w-10 h-10 object-contain rounded mb-1 bg-white border"
                         />
@@ -287,7 +323,10 @@ const SearchBar: React.FC = () => {
                       <span className="font-medium text-xs text-center truncate w-full" title={product.title}>
                         {product.title}
                       </span>
-                      <span className="text-[10px] text-gray-500 truncate w-full text-center" title={product.brand || product.category_name}>
+                      <span
+                        className="text-[10px] text-gray-500 truncate w-full text-center"
+                        title={product.brand || product.category_name}
+                      >
                         {product.brand || product.category_name}
                       </span>
                       <span className="text-xs text-orange-600 font-semibold truncate w-full text-center">
