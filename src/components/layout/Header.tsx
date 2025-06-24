@@ -44,8 +44,7 @@ export default function Header({ user }: HeaderProps) {
     "Containers",
     "Papers",
     "Gratings",
-    "Clothes",
-    "Tools",
+   
     "Machines",
     "Cosmetcis",
     "Mobile & Computers",
@@ -109,11 +108,11 @@ export default function Header({ user }: HeaderProps) {
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center">
                 <Image
-                  src="/ind2b.png"
+                  src="/logo1.png"
                   alt="IND2B Logo"
-                  width={40}
-                  height={40}
-                  className="w-8 h-8 sm:w-9 sm:h-9 lg:w-10 lg:h-10 object-contain"
+                  width={120}
+                  height={80}
+                  className="w-16 h-16 sm:w-18 sm:h-18 lg:w-12 lg:h-10 object-contain"
                   priority
                 />
               </Link>

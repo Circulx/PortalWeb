@@ -42,11 +42,11 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className="inline-block">
               <Image
-                src="/ind2b.png"
+                src="/logo1.png"
                 alt="IND2B Logo"
-                width={32}
-                height={32}
-                className="w-8 h-8 object-contain"
+                width={80}
+                height={80}
+                className="w-24 h-24 object-contain"
                 priority
               />
             </Link>
