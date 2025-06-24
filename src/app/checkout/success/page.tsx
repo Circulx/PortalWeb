@@ -76,21 +76,82 @@ export default function CheckoutSuccessPage() {
       }
 
       const data = await response.json()
+      console.log("=== DEBUG: Raw API Response ===")
+      console.log("Full response:", JSON.stringify(data, null, 2))
+      console.log("Products array:", data.products)
+      if (data.products && data.products.length > 0) {
+        console.log("First product:", JSON.stringify(data.products[0], null, 2))
+        console.log("Product keys:", Object.keys(data.products[0]))
+      }
+      console.log("=== END DEBUG ===")
+      console.log("Raw API response:", data)
 
       // Transform the data to match our OrderDetails interface
       const transformedData: OrderDetails = {
         orderId: data._id || data.orderId || id,
         totalAmount: data.totalAmount || data.total || 0,
         products:
-          data.products?.map((product: any) => ({
-            id: product.productId || product.id || "unknown",
-            title: product.title || product.name || "Product",
-            price: product.price || 0,
-            quantity: product.quantity || 1,
-            image_link: product.image_link || product.image || product.imageUrl || "/placeholder.svg",
-          })) || [],
+          data.products?.map((product: any, index: number) => {
+            console.log(`Processing product ${index}:`, product)
+
+            // Try to extract product details from various possible structures
+            let productTitle = "Product"
+            let productPrice = 0
+            let productQuantity = 1
+            let imageUrl = "/placeholder.svg"
+
+            // Extract title/name
+            if (product.title && product.title.trim() !== "") {
+              productTitle = product.title
+            } else if (product.name && product.name.trim() !== "") {
+              productTitle = product.name
+            } else if (product.productName && product.productName.trim() !== "") {
+              productTitle = product.productName
+            }
+
+            // Extract price
+            if (typeof product.price === "number" && product.price > 0) {
+              productPrice = product.price
+            } else if (typeof product.price === "string" && product.price.trim() !== "") {
+              const parsedPrice = Number.parseFloat(product.price)
+              if (!isNaN(parsedPrice) && parsedPrice > 0) {
+                productPrice = parsedPrice
+              }
+            }
+
+            // Extract quantity
+            if (typeof product.quantity === "number" && product.quantity > 0) {
+              productQuantity = product.quantity
+            } else if (typeof product.quantity === "string" && product.quantity.trim() !== "") {
+              const parsedQuantity = Number.parseInt(product.quantity)
+              if (!isNaN(parsedQuantity) && parsedQuantity > 0) {
+                productQuantity = parsedQuantity
+              }
+            }
+
+            // Extract image URL
+            const imageFields = ["image_link", "image", "imageUrl", "img", "thumbnail", "photo", "picture"]
+            for (const field of imageFields) {
+              if (product[field] && typeof product[field] === "string" && product[field].trim() !== "") {
+                imageUrl = product[field]
+                break
+              }
+            }
+
+            const transformedProduct = {
+              id: product.productId || product.product_id || product.id || `product-${index}`,
+              title: productTitle,
+              price: productPrice,
+              quantity: productQuantity,
+              image_link: imageUrl,
+            }
+
+            console.log(`Transformed product ${index}:`, transformedProduct)
+            return transformedProduct
+          }) || [],
       }
 
+      console.log("Final transformed data:", transformedData)
       setOrderDetails(transformedData)
     } catch (error) {
       console.error("Error fetching order details:", error)
@@ -111,6 +172,55 @@ export default function CheckoutSuccessPage() {
   // Function to handle image errors
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     e.currentTarget.src = "/placeholder.svg"
+  }
+
+  // Function to extract image URL from product data
+  const extractImageUrl = (product: any): string => {
+    // Try different possible field names for the image
+    const possibleFields = ["image_link", "image", "imageUrl", "img", "thumbnail", "photo", "picture", "imageLink"]
+
+    for (const field of possibleFields) {
+      if (product[field] && typeof product[field] === "string" && product[field].trim() !== "") {
+        return formatImageUrl(product[field])
+      }
+    }
+
+    // If no image field is found, check if there's an images array
+    if (product.images && Array.isArray(product.images) && product.images.length > 0) {
+      const firstImage = product.images[0]
+      if (typeof firstImage === "string") {
+        return formatImageUrl(firstImage)
+      } else if (firstImage && firstImage.url) {
+        return formatImageUrl(firstImage.url)
+      }
+    }
+
+    return "/placeholder.svg"
+  }
+
+  // Function to format image URLs correctly
+  const formatImageUrl = (url: string | undefined): string => {
+    if (!url || url.trim() === "") return "/placeholder.svg"
+
+    const trimmedUrl = url.trim()
+
+    // If URL is already absolute (starts with http or https), return as is
+    if (trimmedUrl.startsWith("http://") || trimmedUrl.startsWith("https://")) {
+      return trimmedUrl
+    }
+
+    // If URL starts with a slash, it's a relative URL from the root
+    if (trimmedUrl.startsWith("/")) {
+      return trimmedUrl
+    }
+
+    // If URL starts with data: (base64 image), return as is
+    if (trimmedUrl.startsWith("data:")) {
+      return trimmedUrl
+    }
+
+    // Otherwise, ensure it has a leading slash
+    return `/${trimmedUrl}`
   }
 
   if (loading) {

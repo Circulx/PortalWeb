@@ -44,7 +44,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       return NextResponse.json({ error: "Unauthorized access to this order" }, { status: 403 })
     }
 
-    // Transform the order to handle MongoDB ObjectId serialization
+    // Transform the order to handle MongoDB ObjectId serialization and ensure proper product data
     const serializedOrder = {
       ...order.toObject(),
       _id: order._id.toString(),
@@ -52,11 +52,63 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       createdAt: order.createdAt ? new Date(order.createdAt).toISOString() : new Date().toISOString(),
       updatedAt: order.updatedAt ? new Date(order.updatedAt).toISOString() : new Date().toISOString(),
       products:
-        order.products?.map((product: any) => ({
-          ...product,
-          productId: product.productId ? product.productId.toString() : undefined,
-          product_id: product.product_id ? product.product_id.toString() : undefined,
-        })) || [],
+        order.products?.map((product: any) => {
+          console.log("Raw product data from DB:", product)
+
+          // Handle different possible product data structures
+          const productData = {
+            productId: product.productId
+              ? product.productId.toString()
+              : product.product_id
+                ? product.product_id.toString()
+                : product.id || "unknown",
+            product_id: product.product_id
+              ? product.product_id.toString()
+              : product.productId
+                ? product.productId.toString()
+                : undefined,
+            title: product.title || product.name || product.productName || "Product",
+            name: product.name || product.title || product.productName || "Product",
+            price:
+              typeof product.price === "number"
+                ? product.price
+                : typeof product.price === "string"
+                  ? Number.parseFloat(product.price)
+                  : 0,
+            quantity:
+              typeof product.quantity === "number"
+                ? product.quantity
+                : typeof product.quantity === "string"
+                  ? Number.parseInt(product.quantity)
+                  : 1,
+            image_link:
+              product.image_link ||
+              product.image ||
+              product.imageUrl ||
+              product.img ||
+              product.thumbnail ||
+              "/placeholder.svg",
+            image:
+              product.image ||
+              product.image_link ||
+              product.imageUrl ||
+              product.img ||
+              product.thumbnail ||
+              "/placeholder.svg",
+            imageUrl:
+              product.imageUrl ||
+              product.image_link ||
+              product.image ||
+              product.img ||
+              product.thumbnail ||
+              "/placeholder.svg",
+            // Include any other fields that might be present
+            ...product,
+          }
+
+          console.log("Transformed product data:", productData)
+          return productData
+        }) || [],
     }
 
     return NextResponse.json(serializedOrder)
