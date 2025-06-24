@@ -16,15 +16,15 @@ const sidebarLinks = [
     title: "Users",
     icon: Users,
   },
+ 
   {
-    href: "/admin/order",
-    title: "Orders",
-    icon: ShoppingBag,
+    href: "/admin/order-manager",
+    title: "Order Manager",
+    icon: PackageOpen,
   },
-  
   {
     href: "/admin/reviews",
-    title: "Product review",
+    title: "Reviews",
     icon: Star,
   },
   {

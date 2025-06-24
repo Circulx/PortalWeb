@@ -33,7 +33,7 @@ const AdditionalServicesCard: React.FC<AdditionalServicesProps> = ({ onSubmit, d
     <div
       className={`p-6 bg-white rounded-lg shadow-md border border-gray-200 ${disabled ? "opacity-60 pointer-events-none" : ""}`}
     >
-      <h2 className="text-lg font-medium mb-4">Additional Services</h2>
+      
 
       {/* Show current selections at the top if any are selected */}
       {(warehouseNeeded || logisticsNeeded) && (

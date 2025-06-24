@@ -22,7 +22,7 @@ const AdditionalInfo: React.FC<AdditionalInfoProps> = ({ onSubmit, disabled = fa
       onSubmit={handleSubmit}
       className={`p-6 bg-white rounded-lg shadow-md border border-gray-200 ${disabled ? "opacity-70 pointer-events-none" : ""}`}
     >
-      <h2 className="text-lg font-medium mb-4">Additional Information</h2>
+     
       <p className="text-sm text-gray-600 mb-4">
         If you have any special instructions or notes for your order, please enter them below.
       </p>

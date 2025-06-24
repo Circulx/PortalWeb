@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { OrderStats } from "./order-stats"
+import StatsSection from "../order/StatsSection"
+import ChartsSection from "../order/ChartsSection"
 import { OrderFilters } from "./order-filters"
 import { OrdersTable } from "./orders-table"
 import { OrderDetailModal } from "./order-detail-modal"
@@ -189,14 +190,16 @@ export function OrderManagerDashboard() {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Orders Overview</h2>
+        <h2 className="text-xl font-semibold"></h2>
         <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
           <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
 
-      <OrderStats orders={orders} loading={loading} />
+      {/* Keep original Stats and Charts sections */}
+            <StatsSection />
+            <ChartsSection />
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4">

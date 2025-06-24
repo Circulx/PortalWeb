@@ -212,7 +212,7 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
 
   return (
     <form onSubmit={handleSubmit} className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
-      <h2 className="text-lg font-medium mb-4">Billing and Shipping Information</h2>
+     
 
       <div className="mb-4">
         <div className="flex flex-col sm:flex-row gap-3">
