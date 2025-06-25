@@ -20,7 +20,8 @@ export default function CategoryGrid() {
   const [currentIndex, setCurrentIndex] = useState(0)
 
   const CATEGORIES_PER_PAGE = 7
-  const AUTO_SCROLL_INTERVAL = 5000 // 10 seconds
+  const AUTO_SCROLL_INTERVAL = 5000 // 5 seconds
+  const FEATURED_CATEGORIES_COUNT = 6
 
   useEffect(() => {
     fetchCategories()
@@ -103,10 +104,16 @@ export default function CategoryGrid() {
     return visibleCategories
   }
 
+  // Get top 6 categories with most products for featured section
+  const getFeaturedCategories = () => {
+    return [...categories].sort((a, b) => b.count - a.count).slice(0, FEATURED_CATEGORIES_COUNT)
+  }
+
   const visibleCategories = getVisibleCategories()
+  const featuredCategories = getFeaturedCategories()
 
   return (
-    <section className="py-16 bg-gray">
+    <section className="py-16 bg-gray-200">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-12">
@@ -116,8 +123,8 @@ export default function CategoryGrid() {
           </p>
         </div>
 
-        {/* Categories Grid with Auto-scroll */}
-        <div className="w-[95%] mx-auto overflow-hidden">
+        {/* Categories Carousel */}
+        <div className="w-[95%] mx-auto overflow-hidden mb-16">
           <div
             className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 sm:gap-4 md:gap-6 transition-all duration-1000 ease-in-out"
             style={{
@@ -158,19 +165,66 @@ export default function CategoryGrid() {
               </Link>
             ))}
           </div>
+
+          {/* Auto-scroll indicator */}
+          {categories.length > CATEGORIES_PER_PAGE && (
+            <div className="flex justify-center mt-8">
+              <div className="flex space-x-1">
+                {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentIndex % Math.min(categories.length, 10) ? "bg-green-900 w-4" : "bg-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Auto-scroll indicator */}
-        {categories.length > CATEGORIES_PER_PAGE && (
-          <div className="flex justify-center mt-8">
-            <div className="flex space-x-1">
-              {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                    index === currentIndex % Math.min(categories.length, 10) ? "bg-green-900 w-4" : "bg-gray-300"
-                  }`}
-                />
+        {/* Featured Categories Section */}
+        {featuredCategories.length > 0 && (
+          <div className="w-[95%] mx-auto">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Featured Categories</h3>
+              <p className="text-gray-600">Explore our most popular product categories</p>
+            </div>
+
+            {/* Featured Categories Grid - 2 rows x 3 columns */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {featuredCategories.map((category, index) => (
+                <Link
+                  key={`featured-${category.name}`}
+                  href={`/categories/${encodeURIComponent(category.name)}`}
+                  className="group relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3] block transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
+                >
+                  {/* Background Image */}
+                  <div className="absolute inset-0">
+                    <Image
+                      src={category.sampleImage || "/placeholder.svg?height=300&width=400"}
+                      alt={category.name}
+                      fill
+                      className="object-cover transition-all duration-500 group-hover:scale-110"
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    />
+                  </div>
+
+                  {/* Overlay Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-all duration-300" />
+
+                  {/* Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+                    <h4 className="text-white font-bold text-lg md:text-xl mb-1 group-hover:text-white transition-colors duration-300 leading-tight uppercase">
+                      {category.name}
+                    </h4>
+                    <p className="text-white/80 text-sm mb-2">Collection</p>
+                    <p className="text-white/70 text-xs">{category.count} products available</p>
+                  </div>
+
+                  {/* Hover Effect Overlay */}
+                  <div className="absolute inset-0 border-2 border-transparent group-hover:border-white/20 rounded-lg transition-all duration-300" />
+                </Link>
               ))}
             </div>
           </div>
