@@ -7,6 +7,7 @@ import { LazyFeatureCard } from "@/components/layout/lazy-feature-card"
 import { LazyPromotionSection } from "@/components/layout/lazy-promotion-section"
 import LazyCategorySection from "@/components/layout/lazy-category-section"
 import LazyFeaturedCategories from "@/components/layout/lazy-featured-categories"
+import CategoryGrid from "@/components/categories/category-grid"
 
 export default function Home() {
   return (
@@ -19,15 +20,14 @@ export default function Home() {
         <LazyBrandCarousel />
       </LazySection>
 
-      {/* Category Section - Load when in view */}
-      <LazySection delay={150} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="grid" />}>
-        <LazyCategorySection />
+      {/* Category Grid - Load when in view */}
+      <LazySection delay={175} threshold={0.2} rootMargin="125px" fallback={<SectionSkeleton type="grid" />}>
+        <CategoryGrid />
       </LazySection>
 
-      {/* Featured Categories - Load when in view */}
-      <LazySection delay={200} threshold={0.2} rootMargin="150px" fallback={<SectionSkeleton type="grid" />}>
-        <LazyFeaturedCategories />
-      </LazySection>
+      
+
+     
 
       {/* Product Grid - Load when in view with delay */}
       <LazySection delay={300} threshold={0.2} rootMargin="200px" fallback={<SectionSkeleton type="grid" />}>
