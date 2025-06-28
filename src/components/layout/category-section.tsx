@@ -1,142 +1,234 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import Image from "next/image"
+import Link from "next/link"
+import { Loader2, Package } from "lucide-react"
 
 interface Category {
-  id: string
   name: string
-  image: string
-  href: string
+  count: number
+  sampleImage: string
+  avgPrice: number
+  subcategories: string[]
 }
 
-const categories: Category[] = [
-  {
-    id: "power-tools",
-    name: "Power Tools",
-    image: "/powertools.jpeg",
-    href: "/products?category=power-tools",
-  },
-  {
-    id: "safety",
-    name: "Safety",
-    image: "/safety.jpeg",
-    href: "/products?category=safety",
-  },
-  {
-    id: "appliances",
-    name: "Appliances",
-    image: "/appliances.jpeg",
-    href: "/products?category=appliances",
-  },
-  
-  {
-    id: "electricals",
-    name: "Electricals",
-    image: "/electrical.jpeg",
-    href: "/products?category=electricals",
-  },
-  {
-    id: "electricals",
-    name: "Electricals",
-    image: "/electrical.jpeg",
-    href: "/products?category=electricals",
-  },
-  {
-    id: "security",
-    name: "Security",
-    image: "/security.jpeg",
-    href: "/products?category=security",
-  },
-]
+export default function CategoryGrid() {
+  const [categories, setCategories] = useState<Category[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [currentIndex, setCurrentIndex] = useState(0)
 
-function CategoryCard({ category }: { category: Category }) {
-  const [imageError, setImageError] = useState(false)
-
-  return (
-    <Link
-      href={category.href}
-      className="group flex flex-col items-center p-4 rounded-lg transition-all duration-300 hover:bg-gray-50 hover:shadow-md"
-    >
-      <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 mb-3 overflow-hidden rounded-full bg-gray-100 shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-        <Image
-          src={imageError ? "/placeholder.svg?height=120&width=120" : category.image}
-          alt={category.name}
-          fill
-          className="object-cover transition-transform duration-300 group-hover:scale-110"
-          onError={() => setImageError(true)}
-          sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, (max-width: 1024px) 112px, 128px"
-        />
-        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300 rounded-full" />
-      </div>
-      <h3 className="text-sm sm:text-base font-medium text-gray-800 text-center group-hover:text-gray-900 transition-colors duration-300">
-        {category.name}
-      </h3>
-    </Link>
-  )
-}
-
-export default function CategorySection() {
-  const [mounted, setMounted] = useState(false)
+  const CATEGORIES_PER_PAGE = 7
+  const AUTO_SCROLL_INTERVAL = 5000 // 5 seconds
+  const FEATURED_CATEGORIES_COUNT = 6
 
   useEffect(() => {
-    setMounted(true)
+    fetchCategories()
   }, [])
 
-  if (!mounted) {
+  useEffect(() => {
+    if (categories.length <= CATEGORIES_PER_PAGE) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        // Move one category at a time, creating infinite loop
+        return (prevIndex + 1) % categories.length
+      })
+    }, AUTO_SCROLL_INTERVAL)
+
+    return () => clearInterval(interval)
+  }, [categories.length])
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/categories")
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch categories")
+      }
+
+      const data = await response.json()
+      setCategories(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load categories")
+      console.error("Error fetching categories:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
     return (
-      <section className="w-full px-4 py-4 sm:py-6 bg-gray-50">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-4 sm:mb-6">
-            <div className="h-8 bg-gray-200 rounded w-64 mx-auto animate-pulse" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6 md:gap-8">
-            {Array(6)
-              .fill(0)
-              .map((_, index) => (
-                <div key={index} className="flex flex-col items-center p-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 bg-gray-200 rounded-full animate-pulse mb-3" />
-                  <div className="h-4 bg-gray-200 rounded w-16 animate-pulse" />
-                </div>
-              ))}
-          </div>
-        </div>
-      </section>
+      <div className="flex justify-center items-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-green-900" />
+        <span className="ml-2 text-gray-600">Loading categories...</span>
+      </div>
     )
   }
 
+  if (error) {
+    return (
+      <div className="text-center py-20">
+        <div className="text-red-500 mb-4">Error loading categories</div>
+        <button
+          onClick={fetchCategories}
+          className="px-4 py-2 bg-green-900 text-white rounded hover:bg-green-800 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    )
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="text-center py-20">
+        <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600">No categories found</p>
+      </div>
+    )
+  }
+
+  // Get current visible categories with infinite loop
+  const getVisibleCategories = () => {
+    const visibleCategories = []
+    for (let i = 0; i < CATEGORIES_PER_PAGE; i++) {
+      const categoryIndex = (currentIndex + i) % categories.length
+      visibleCategories.push({
+        ...categories[categoryIndex],
+        key: `${categories[categoryIndex].name}-${currentIndex}-${i}`,
+      })
+    }
+    return visibleCategories
+  }
+
+  // Get top 6 categories with most products for featured section
+  const getFeaturedCategories = () => {
+    return [...categories].sort((a, b) => b.count - a.count).slice(0, FEATURED_CATEGORIES_COUNT)
+  }
+
+  const visibleCategories = getVisibleCategories()
+  const featuredCategories = getFeaturedCategories()
+
   return (
-    <section className="w-full px-4 py-4 sm:py-6 bg-gray">
-      <div className="max-w-7xl mx-auto">
-        {/* Section Header */}
-        <div className="text-center mb-4 sm:mb-6">
-          <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Shop by Categories</h2>
-          <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
+    <section className="py-16 bg-gray-200">
+      <div className="container mx-auto px-4">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Shop by Categories</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto text-lg">
             Discover our wide range of products organized by categories to help you find exactly what you need
           </p>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4 sm:gap-6 md:gap-8">
-          {categories.map((category) => (
-            <CategoryCard key={category.id} category={category} />
-          ))}
+        {/* Categories Carousel */}
+        <div className="w-[95%] mx-auto overflow-hidden mb-16">
+          <div
+            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 sm:gap-4 md:gap-6 transition-all duration-1000 ease-in-out"
+            style={{
+              transform: categories.length > CATEGORIES_PER_PAGE ? "translateX(0)" : "none",
+            }}
+          >
+            {visibleCategories.map((category, index) => (
+              <Link key={category.key} href={`/categories/${encodeURIComponent(category.name)}`} className="group">
+                <div className="flex flex-col items-center text-center transition-all duration-300 hover:scale-105">
+                  {/* Circular Image Container */}
+                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32 mb-3 md:mb-4 rounded-full overflow-hidden bg-white shadow-lg group-hover:shadow-2xl transition-all duration-300 border-2 border-gray-300 group-hover:border-green-900">
+                    <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-green-50 group-hover:to-green-100 transition-all duration-300" />
+                    <div className="relative w-full h-full flex items-center justify-center p-2 sm:p-3 md:p-4">
+                      <Image
+                        src={category.sampleImage || "/placeholder.svg?height=80&width=80"}
+                        alt={category.name}
+                        width={80}
+                        height={80}
+                        className="object-contain transition-all duration-300 group-hover:scale-110 w-full h-full"
+                        sizes="(min-width: 1280px) 128px, (min-width: 1024px) 112px, (min-width: 768px) 96px, (min-width: 640px) 80px, 64px"
+                      />
+                    </div>
+
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-green-900 bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 rounded-full" />
+                  </div>
+
+                  {/* Category Info */}
+                  <div className="space-y-1">
+                    <h3 className="font-semibold text-xs sm:text-sm md:text-base text-gray-900 group-hover:text-green-900 transition-colors duration-300 leading-tight text-center px-1">
+                      {category.name}
+                    </h3>
+                    <p className="text-xs md:text-sm text-gray-500 group-hover:text-green-700 transition-colors duration-300">
+                      {category.count} products
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* Auto-scroll indicator */}
+          {categories.length > CATEGORIES_PER_PAGE && (
+            <div className="flex justify-center mt-8">
+              <div className="flex space-x-1">
+                {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                      index === currentIndex % Math.min(categories.length, 10) ? "bg-green-900 w-4" : "bg-gray-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* View All Categories Link - Commented out as requested
-  <div className="text-center mt-8 sm:mt-12">
-    <Link
-      href="/products"
-      className="inline-flex items-center px-6 py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors duration-300 shadow-md hover:shadow-lg"
-    >
-      View All Categories
-      <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-      </svg>
-    </Link>
-  </div>
-  */}
+        {/* Featured Categories Section */}
+        {featuredCategories.length > 0 && (
+          <div className="w-[95%] mx-auto">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Featured Categories</h3>
+              <p className="text-gray-600">Explore our most popular product categories</p>
+            </div>
+
+            {/* Featured Categories Grid - 2 rows x 3 columns */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+              {featuredCategories.map((category, index) => (
+                <Link
+                  key={`featured-${category.name}`}
+                  href={`/categories/${encodeURIComponent(category.name)}`}
+                  className="group relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3] block transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
+                >
+                  {/* Background Image */}
+                  <div className="absolute inset-0">
+                    <Image
+                      src={category.sampleImage || "/placeholder.svg?height=300&width=400"}
+                      alt={category.name}
+                      fill
+                      className="object-cover transition-all duration-500 group-hover:scale-110"
+                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    />
+                  </div>
+
+                  {/* Overlay Gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-all duration-300" />
+
+                  {/* Content */}
+                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+                    <h4 className="text-white font-bold text-lg md:text-xl mb-1 group-hover:text-white transition-colors duration-300 leading-tight uppercase">
+                      {category.name}
+                    </h4>
+                    <p className="text-white/80 text-sm mb-2">Collection</p>
+                    <p className="text-white/70 text-xs">{category.count} products available</p>
+                  </div>
+
+                  {/* Hover Effect Overlay */}
+                  <div className="absolute inset-0 border-2 border-transparent group-hover:border-white/20 rounded-lg transition-all duration-300" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </section>
   )
