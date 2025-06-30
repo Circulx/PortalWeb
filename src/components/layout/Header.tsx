@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import Image from "next/image"
 import { Heart, LogOut } from "lucide-react"
@@ -24,8 +24,19 @@ interface HeaderProps {
   } | null
 }
 
+interface Category {
+  name: string
+  count: number
+  sampleImage: string
+  avgPrice: number
+  subcategories: string[]
+}
+
 export default function Header({ user }: HeaderProps) {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
+  const [categories, setCategories] = useState<Category[]>([])
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Get cart and wishlist counts from Redux store
   const cartItemsCount = useSelector((state: RootState) => state.cart.items.length)
@@ -33,24 +44,57 @@ export default function Header({ user }: HeaderProps) {
 
   const router = useRouter()
 
-  // List of implemented categories - any others will redirect to coming-soon
-  const implementedCategories = ["electronics", "clothing", "home"]
+  // Auto-scroll settings
+  const SCROLL_INTERVAL = 5000 // 5 seconds
+  const CATEGORIES_PER_VIEW = 8 // Number of categories visible at once on desktop
 
-  const categories = [
-    "Storage Tanks, Drums",
-    "Oils, Grease & Lubricants",
-    "Heater, Thermostat",
-    "Wire Mesh & Gratings",
-    "Containers",
-    "Papers",
-    "Gratings",
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetch("/api/categories")
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(data)
+        } else {
+          console.error("Failed to fetch categories")
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
 
-    "Machines",
-    "Cosmetcis",
-    "Mobile & Computers",
-    "Papers",
-    "Gratings",
-  ]
+    fetchCategories()
+  }, [])
+
+  // Auto-scroll effect
+  useEffect(() => {
+    if (categories.length <= CATEGORIES_PER_VIEW) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        // Move one category at a time, creating infinite loop
+        return (prevIndex + 1) % categories.length
+      })
+    }, SCROLL_INTERVAL)
+
+    return () => clearInterval(interval)
+  }, [categories.length])
+
+  // Get visible categories for current view
+  const getVisibleCategories = () => {
+    if (categories.length === 0) return []
+
+    const visibleCategories = []
+    for (let i = 0; i < CATEGORIES_PER_VIEW; i++) {
+      const categoryIndex = (currentIndex + i) % categories.length
+      visibleCategories.push(categories[categoryIndex])
+    }
+    return visibleCategories
+  }
 
   function handleAuthSuccess() {
     setIsAuthModalOpen(false)
@@ -81,20 +125,20 @@ export default function Header({ user }: HeaderProps) {
     }
   }
 
-  // Handle category navigation - redirect to coming-soon for unimplemented categories
+  // Handle category navigation
   const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, category: string) => {
-    const categorySlug = category.toLowerCase().replace(/[^a-z0-9]+/g, "-")
-    if (!implementedCategories.includes(categorySlug)) {
-      e.preventDefault()
-      router.push("/coming-soon")
-    }
+    // You can add logic here to handle category navigation
+    // For now, it will navigate to the category page
   }
+
+  const visibleCategories = getVisibleCategories()
 
   return (
     <header className="w-full bg-white shadow-sm">
-      {/* Top Navigation - Fixed */}
+      {/* Complete Header Container - Fixed */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
-        <div className="w-full px-3 sm:px-4 lg:px-6 py-2 sm:py-3">
+        {/* Top Navigation */}
+        <div className="w-full px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-white">
           {/* Main Navigation Layout */}
           <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6">
             {/* Logo - Left Side */}
@@ -187,29 +231,73 @@ export default function Header({ user }: HeaderProps) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Spacer for fixed header */}
-      <div className="h-12 sm:h-14 lg:h-16"></div>
+        {/* Dynamic Categories Navigation - Part of Fixed Header */}
+        <div className="bg-orange-500 text-white overflow-hidden">
+          <div className="w-full px-2 sm:px-3 lg:px-4">
+            <div className="flex items-center py-2 sm:py-2.5 lg:py-3">
+              {/* Explore Label */}
+              <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
+                Explore:
+              </span>
 
-      {/* Categories Navigation */}
-      <div className="bg-orange-500 text-white overflow-x-auto">
-        <div className="w-full px-3 sm:px-4 lg:px-6">
-          <div className="flex items-center py-2 sm:py-2.5 lg:py-3 space-x-4 sm:space-x-6 whitespace-nowrap">
-            <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0">Explore:</span>
-            {categories.map((category, index) => (
-              <Link
-                key={index}
-                href={`/category/${category.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
-                className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0"
-                onClick={(e) => handleCategoryClick(e, category)}
-              >
-                {category}
-              </Link>
-            ))}
+              {/* Categories Container */}
+              <div className="flex-1 overflow-hidden">
+                {isLoading ? (
+                  // Loading state
+                  <div className="flex space-x-4 sm:space-x-6 animate-pulse">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <div key={index} className="h-4 bg-orange-400 rounded w-16 sm:w-18 flex-shrink-0"></div>
+                    ))}
+                  </div>
+                ) : (
+                  // Categories with auto-scroll animation
+                  <div className="relative">
+                    <div
+                      className="flex space-x-4 sm:space-x-6 transition-transform duration-1000 ease-in-out"
+                      style={{
+                        transform:
+                          categories.length > CATEGORIES_PER_VIEW
+                            ? `translateX(-${(currentIndex * 100) / categories.length}%)`
+                            : "translateX(0)",
+                      }}
+                    >
+                      {/* Render all categories for smooth infinite scroll */}
+                      {categories.concat(categories).map((category, index) => (
+                        <Link
+                          key={`${category.name}-${index}`}
+                          href={`/categories/${encodeURIComponent(category.name)}`}
+                          className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap"
+                          onClick={(e) => handleCategoryClick(e, category.name)}
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Scroll Indicators */}
+              {!isLoading && categories.length > CATEGORIES_PER_VIEW && (
+                <div className="hidden lg:flex items-center ml-4 space-x-1">
+                  {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
+                    <div
+                      key={index}
+                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                        index === currentIndex % Math.min(categories.length, 10) ? "bg-white w-3" : "bg-orange-300"
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Spacer for complete fixed header (including orange section) */}
+      <div className="h-20 sm:h-24 lg:h-28"></div>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </header>
