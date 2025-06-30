@@ -4,7 +4,7 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, LogOut, Search } from "lucide-react"
+import { Heart, LogOut } from "lucide-react"
 import { AuthModal } from "../auth/auth-modal"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -13,6 +13,7 @@ import { signOut } from "@/actions/auth"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import { useRouter } from "next/navigation"
+import EnhancedSearchBar from "./enhanced-search-bar"
 
 interface HeaderProps {
   user?: {
@@ -24,7 +25,6 @@ interface HeaderProps {
 }
 
 export default function Header({ user }: HeaderProps) {
-  const [searchQuery, setSearchQuery] = useState("")
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
 
   // Get cart and wishlist counts from Redux store
@@ -44,7 +44,7 @@ export default function Header({ user }: HeaderProps) {
     "Containers",
     "Papers",
     "Gratings",
-   
+
     "Machines",
     "Cosmetcis",
     "Mobile & Computers",
@@ -90,13 +90,6 @@ export default function Header({ user }: HeaderProps) {
     }
   }
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}`)
-    }
-  }
-
   return (
     <header className="w-full bg-white shadow-sm">
       {/* Top Navigation - Fixed */}
@@ -120,21 +113,7 @@ export default function Header({ user }: HeaderProps) {
 
             {/* Search Bar - Center (Takes remaining space) */}
             <div className="flex-1 max-w-2xl mx-auto">
-              <form onSubmit={handleSearch} className="relative w-full">
-                <div className="relative flex items-center">
-                  <Search className="absolute left-3 h-4 w-4 sm:h-5 sm:w-5 text-gray-400 z-10" />
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-9 sm:h-10 lg:h-11 pl-9 sm:pl-10 pr-4 text-sm sm:text-base 
-                      border border-gray-300 rounded-full 
-                      focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent
-                      transition-all duration-200 bg-gray-50 hover:bg-white"
-                  />
-                </div>
-              </form>
+              <EnhancedSearchBar />
             </div>
 
             {/* Right Side Actions */}
@@ -175,7 +154,7 @@ export default function Header({ user }: HeaderProps) {
                     <Button
                       variant="outline"
                       className="h-8 sm:h-9 lg:h-10 px-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 
-                        border-gray-300 hover:border-gray-400 transition-colors"
+                        border-gray-300 hover:border-gray-400 transition-colors bg-transparent"
                     >
                       <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
                         <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />

@@ -18,7 +18,7 @@ export async function GET() {
         $match: {
           isActive: true,
           is_draft: false,
-          category_name: { $exists: true, $ne: null, $ne: "" },
+          category_name: { $exists: true, $ne: null, },
         },
       },
       {
