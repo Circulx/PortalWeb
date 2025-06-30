@@ -138,9 +138,9 @@ export default function Header({ user }: HeaderProps) {
       {/* Complete Header Container - Fixed */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
         {/* Top Navigation */}
-        <div className="w-full px-3 sm:px-4 lg:px-6 py-2 sm:py-3 bg-white">
+        <div className="w-full px-2 sm:px-4 lg:px-6 py-2 sm:py-3 bg-white">
           {/* Main Navigation Layout */}
-          <div className="flex items-center justify-between gap-3 sm:gap-4 lg:gap-6">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
             {/* Logo - Left Side */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center">
@@ -149,29 +149,29 @@ export default function Header({ user }: HeaderProps) {
                   alt="IND2B Logo"
                   width={120}
                   height={80}
-                  className="w-16 h-16 sm:w-18 sm:h-18 lg:w-12 lg:h-10 object-contain"
+                  className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-16 object-contain"
                   priority
                 />
               </Link>
             </div>
 
             {/* Search Bar - Center (Takes remaining space) */}
-            <div className="flex-1 max-w-2xl mx-auto">
+            <div className="flex-1 max-w-xl lg:max-w-2xl mx-1 sm:mx-2">
               <EnhancedSearchBar />
             </div>
 
             {/* Right Side Actions */}
-            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 flex-shrink-0">
+            <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 flex-shrink-0">
               {/* Wishlist */}
               <Link
                 href="/dashboard/wishlist"
-                className="relative p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600 hover:text-red-500 transition-colors" />
+                <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600 hover:text-red-500 transition-colors" />
                 {wishlistItemsCount > 0 && (
                   <span
-                    className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white 
-                    text-[10px] sm:text-xs rounded-full flex items-center justify-center font-medium"
+                    className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 bg-red-500 text-white 
+                    text-[8px] sm:text-[10px] lg:text-xs rounded-full flex items-center justify-center font-medium"
                   >
                     {wishlistItemsCount > 99 ? "99+" : wishlistItemsCount}
                   </span>
@@ -179,12 +179,21 @@ export default function Header({ user }: HeaderProps) {
               </Link>
 
               {/* Cart */}
-              <Link href="/cart" className="relative p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Image src="/cart.png" alt="Shopping Cart" width={24} height={24} className="w-5 h-5 sm:w-6 sm:h-6" />
+              <Link
+                href="/cart"
+                className="relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <Image
+                  src="/cart.png"
+                  alt="Shopping Cart"
+                  width={24}
+                  height={24}
+                  className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6"
+                />
                 {cartItemsCount > 0 && (
                   <span
-                    className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white 
-                    text-[10px] sm:text-xs rounded-full flex items-center justify-center font-medium"
+                    className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5 bg-red-500 text-white 
+                    text-[8px] sm:text-[10px] lg:text-xs rounded-full flex items-center justify-center font-medium"
                   >
                     {cartItemsCount > 99 ? "99+" : cartItemsCount}
                   </span>
@@ -197,14 +206,16 @@ export default function Header({ user }: HeaderProps) {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="outline"
-                      className="h-8 sm:h-9 lg:h-10 px-2 sm:px-3 flex items-center gap-1.5 sm:gap-2 
-                        border-gray-300 hover:border-gray-400 transition-colors bg-transparent"
+                      className="h-7 sm:h-8 lg:h-10 px-1.5 sm:px-2 lg:px-3 flex items-center gap-1 sm:gap-1.5 lg:gap-2 
+                        border-gray-300 hover:border-gray-400 transition-colors bg-transparent min-w-0"
                     >
-                      <Avatar className="h-5 w-5 sm:h-6 sm:w-6">
+                      <Avatar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6">
                         <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
-                        <AvatarFallback className="text-xs sm:text-sm">{user.name[0]}</AvatarFallback>
+                        <AvatarFallback className="text-[10px] sm:text-xs lg:text-sm">{user.name[0]}</AvatarFallback>
                       </Avatar>
-                      <span className="hidden sm:inline text-xs sm:text-sm font-medium">{user.name.split(" ")[0]}</span>
+                      <span className="hidden sm:inline text-[10px] sm:text-xs lg:text-sm font-medium truncate max-w-16 lg:max-w-20">
+                        {user.name.split(" ")[0]}
+                      </span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
@@ -220,10 +231,10 @@ export default function Header({ user }: HeaderProps) {
               ) : (
                 <Button
                   onClick={() => setIsAuthModalOpen(true)}
-                  className="h-8 sm:h-9 lg:h-10 px-3 sm:px-4 lg:px-6 
+                  className="h-7 sm:h-8 lg:h-10 px-2 sm:px-3 lg:px-6 
                     bg-emerald-500 hover:bg-emerald-600 text-white 
-                    text-xs sm:text-sm lg:text-base font-medium 
-                    rounded-md transition-colors"
+                    text-[10px] sm:text-xs lg:text-base font-medium 
+                    rounded-md transition-colors whitespace-nowrap min-w-0"
                 >
                   Login
                 </Button>
@@ -297,7 +308,7 @@ export default function Header({ user }: HeaderProps) {
       </div>
 
       {/* Spacer for complete fixed header (including orange section) */}
-      <div className="h-20 sm:h-24 lg:h-28"></div>
+      <div className="h-16 sm:h-20 lg:h-28"></div>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </header>
