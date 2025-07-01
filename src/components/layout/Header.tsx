@@ -244,7 +244,7 @@ export default function Header({ user }: HeaderProps) {
         </div>
 
         {/* Dynamic Categories Navigation - Part of Fixed Header */}
-        <div className="bg-orange-500 text-white overflow-hidden">
+        <div className="bg-orange-600 text-white overflow-hidden">
           <div className="w-full px-2 sm:px-3 lg:px-4">
             <div className="flex items-center py-2 sm:py-2.5 lg:py-3">
               {/* Explore Label */}

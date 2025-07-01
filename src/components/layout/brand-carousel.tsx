@@ -137,7 +137,7 @@ export function BrandCarousel() {
 
   if (loading) {
     return (
-      <section className="w-full px-4 py-4 sm:py-6 bg-gray-200">
+      <section className="w-full px-4 py-2 sm:py-6 bg-gray-200">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-4 sm:mb-6">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Trending Brands</h2>
