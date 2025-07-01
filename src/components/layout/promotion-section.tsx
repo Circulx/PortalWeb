@@ -36,7 +36,7 @@ export default function PromotionSection() {
                   <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"
                     style={{
-                      backgroundImage: "url('/image.png')",
+                      backgroundImage: "url('/hero.png')",
                     }}
                   >
                     <div className="absolute inset-0 bg-black bg-opacity-20 rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"></div>
@@ -65,7 +65,7 @@ export default function PromotionSection() {
                       controls
                       autoPlay
                       onEnded={handleVideoEnd}
-                      poster="/image.png"
+                      poster="/hero.png"
                       style={{ aspectRatio: "16/9" }}
                     >
                       <source src="/placeholder-video.mp4" type="video/mp4" />

@@ -5,9 +5,8 @@ import { LazyBrandCarousel } from "@/components/layout/lazy-brand-carousel"
 import { LazyProductGrid } from "@/components/layout/lazy-product-grid"
 import { LazyFeatureCard } from "@/components/layout/lazy-feature-card"
 import { LazyPromotionSection } from "@/components/layout/lazy-promotion-section"
-import LazyCategorySection from "@/components/layout/lazy-category-section"
-import LazyFeaturedCategories from "@/components/layout/lazy-featured-categories"
 import CategoryGrid from "@/components/categories/category-grid"
+import DeliveryPoster from "@/components/layout/delivery-poster"
 
 export default function Home() {
   return (
@@ -25,9 +24,10 @@ export default function Home() {
         <CategoryGrid />
       </LazySection>
 
-      
-
-     
+      {/* Delivery Poster - Load when in view */}
+      <LazySection delay={200} threshold={0.3} rootMargin="150px" fallback={<SectionSkeleton type="features" />}>
+        <DeliveryPoster />
+      </LazySection>
 
       {/* Product Grid - Load when in view with delay */}
       <LazySection delay={300} threshold={0.2} rootMargin="200px" fallback={<SectionSkeleton type="grid" />}>
