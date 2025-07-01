@@ -249,7 +249,7 @@ export default function Header({ user }: HeaderProps) {
             <div className="flex items-center py-2 sm:py-2.5 lg:py-3">
               {/* Explore Label */}
               <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
-                Explore:
+                Categories:
               </span>
 
               {/* Categories Container */}
