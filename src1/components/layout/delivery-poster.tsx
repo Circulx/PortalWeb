@@ -38,17 +38,17 @@ export default function DeliveryPoster() {
         - Consider lazy loading for below-the-fold content
       */}
 
-      {/* Full width container with updated heights 
+      {/* Full width container with updated heights
       <div className="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56">
         <Image
-          src="/poster1.png"
+          src="/banner.jpg"
           alt="On Time Delivery - Professional delivery service with fast delivery, professional service, and guaranteed quality"
           fill
           className="object-cover w-full h-full"
           sizes="100vw"
           priority
         />
-      </div> */}
+      </div>  */}
 
       {/* 
         Alternative approach - Full width with natural height:
@@ -58,7 +58,7 @@ export default function DeliveryPoster() {
       {
       <div className="relative w-full">
         <Image
-          src="/banner.jpg"
+          src="/poster1.png"
           alt="On Time Delivery - Professional delivery service"
           width={1200}
           height={224}
