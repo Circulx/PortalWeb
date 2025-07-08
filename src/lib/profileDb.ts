@@ -32,6 +32,22 @@ interface IAdvertisement {
   endDate?: Date
 }
 
+// Review interface
+interface IReview {
+  orderId: string
+  userId: string
+  rating: number
+  review: string
+  orderItems: Array<{
+    id: string
+    name: string
+    image_link?: string
+  }>
+  status: "pending" | "approved" | "rejected"
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Cache the database connection
 let cachedConnection: Connection | null = null
 let connectionPromise: Promise<Connection> | null = null
@@ -351,6 +367,39 @@ AdvertisementSchema.index({ isActive: 1, order: 1 })
 AdvertisementSchema.index({ startDate: 1, endDate: 1 })
 AdvertisementSchema.index({ deviceType: 1 })
 
+// Define Review schema
+const ReviewSchema = new mongoose.Schema<IReview>(
+  {
+    orderId: { type: String, required: true, index: true },
+    userId: { type: String, required: true, index: true },
+    rating: { type: Number, required: true, min: 1, max: 5 },
+    review: { type: String, required: true },
+    orderItems: [
+      {
+        id: { type: String, required: true },
+        name: { type: String, required: true },
+        image_link: { type: String },
+      },
+    ],
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "reviews", // Explicitly specify collection name
+  },
+)
+
+// Add indexes for efficient querying
+ReviewSchema.index({ createdAt: -1 })
+ReviewSchema.index({ rating: 1 })
+ReviewSchema.index({ status: 1, createdAt: -1 })
+ReviewSchema.index({ orderId: 1, userId: 1 }, { unique: true }) // Prevent duplicate reviews
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -404,6 +453,10 @@ function registerModels(connection: Connection) {
     connection.model("Advertisement", AdvertisementSchema)
     console.log("Registered Advertisement model")
   }
+  if (!connection.models.Review) {
+    connection.model("Review", ReviewSchema)
+    console.log("Registered Review model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -422,4 +475,5 @@ export {
   CartSchema,
   WishlistSchema,
   AdvertisementSchema,
+  ReviewSchema,
 }

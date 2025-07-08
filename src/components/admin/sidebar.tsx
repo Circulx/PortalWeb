@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, ShoppingBag, Star, Store, PackageOpen, ImageIcon } from "lucide-react"
+import { LayoutDashboard, Users, Star, Store, PackageOpen, ImageIcon, MessageSquare } from "lucide-react"
 
 const sidebarLinks = [
   {
@@ -16,7 +16,7 @@ const sidebarLinks = [
     title: "Users",
     icon: Users,
   },
- 
+
   {
     href: "/admin/order-manager",
     title: "Order Manager",
@@ -26,6 +26,11 @@ const sidebarLinks = [
     href: "/admin/reviews",
     title: "Reviews",
     icon: Star,
+  },
+  {
+    href: "/admin/customer-reviews",
+    title: "Customer Reviews",
+    icon: MessageSquare,
   },
   {
     href: "/admin/sellers",

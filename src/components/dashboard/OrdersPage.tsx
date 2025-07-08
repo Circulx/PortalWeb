@@ -32,6 +32,7 @@ import { format, parseISO } from "date-fns"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { InvoiceModal } from "./InvoiceModal"
+import { RatingModal } from "./RatingModal"
 // Import the SendEmailButton component
 import { SendEmailButton } from "./SendEmailButton"
 
@@ -92,6 +93,11 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
 
+  // Add state for rating modal
+  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false)
+  const [ratingOrderId, setRatingOrderId] = useState<string>("")
+  const [ratingOrderItems, setRatingOrderItems] = useState<Array<{ id: string; name: string; image_link?: string }>>([])
+
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 3
@@ -133,9 +139,10 @@ export default function OrdersPage() {
               console.log("Extracted image URL:", imageUrl)
 
               return {
-                id: product.productId || "N/A",
+                id: product.productId || product.product_id || "N/A",
                 name: product.title || "Product",
                 image: imageUrl,
+                image_link: imageUrl, // Add this for rating modal
                 price: product.price || 0,
                 quantity: product.quantity || 1,
               }
@@ -198,6 +205,19 @@ export default function OrdersPage() {
   const handleViewInvoice = (order: Order) => {
     setSelectedOrder(order)
     setIsInvoiceModalOpen(true)
+  }
+
+  // Function to handle opening the rating modal
+  const handleRateOrder = (order: Order) => {
+    setRatingOrderId(order.id)
+    setRatingOrderItems(
+      order.items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        image_link: item.image_link || item.image,
+      })),
+    )
+    setIsRatingModalOpen(true)
   }
 
   // Function to extract image URL from product data
@@ -478,7 +498,13 @@ export default function OrdersPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToPrevPage} disabled={currentPage === 1} className="h-9 px-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToPrevPage}
+            disabled={currentPage === 1}
+            className="h-9 px-3 bg-transparent"
+          >
             <ChevronLeft className="h-4 w-4 mr-1" />
             Previous
           </Button>
@@ -502,7 +528,7 @@ export default function OrdersPage() {
             size="sm"
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className="h-9 px-3"
+            className="h-9 px-3 bg-transparent"
           >
             Next
             <ChevronRight className="h-4 w-4 ml-1" />
@@ -762,7 +788,7 @@ export default function OrdersPage() {
                                     <Button className="bg-emerald-900 hover:bg-emerald-800">Track Order</Button>
                                     <Button
                                       variant="outline"
-                                      className="flex items-center gap-1"
+                                      className="flex items-center gap-1 bg-transparent"
                                       onClick={() => handleViewInvoice(order)}
                                     >
                                       <FileText className="h-4 w-4" />
@@ -775,12 +801,13 @@ export default function OrdersPage() {
                                   {!hiddenRatingBanners.includes(order.id) && (
                                     <div className="mt-6 p-4 bg-yellow-50 rounded-md border border-yellow-200">
                                       <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => handleRateOrder(order)}
+                                          className="flex items-center gap-2 text-sm md:text-base hover:text-yellow-700 transition-colors"
+                                        >
                                           <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                                          <span className="text-sm md:text-base">
-                                            How was your experience? Rate this order
-                                          </span>
-                                        </div>
+                                          <span>How was your experience? Rate this order</span>
+                                        </button>
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -837,6 +864,18 @@ export default function OrdersPage() {
 
       {/* Invoice Modal */}
       <InvoiceModal order={selectedOrder} isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} />
+
+      {/* Rating Modal */}
+      <RatingModal
+        isOpen={isRatingModalOpen}
+        onClose={() => {
+          setIsRatingModalOpen(false)
+          setRatingOrderId("")
+          setRatingOrderItems([])
+        }}
+        orderId={ratingOrderId}
+        orderItems={ratingOrderItems}
+      />
     </div>
   )
 }
