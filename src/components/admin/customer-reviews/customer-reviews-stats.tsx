@@ -1,119 +1,126 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Star, MessageSquare, Clock, CheckCircle, XCircle, TrendingUp } from "lucide-react"
+"use client"
 
-interface ReviewsStatsProps {
-  stats: {
-    total: number
-    pending: number
-    approved: number
-    rejected: number
-    avgRating: number
-    ratingDistribution: Array<{ _id: number; count: number }>
-  }
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Progress } from "@/components/ui/progress"
+import { Star, MessageSquare, CheckCircle, Clock } from "lucide-react"
+
+interface ReviewStats {
+  totalReviews: number
+  averageRating: number
+  pendingCount: number
+  approvedCount: number
+  rejectedCount: number
 }
 
-export function CustomerReviewsStats({ stats }: ReviewsStatsProps) {
-  const { total, pending, approved, rejected, avgRating, ratingDistribution } = stats
+interface RatingDistribution {
+  rating: number
+  count: number
+}
 
-  const statsCards = [
-    {
-      title: "Total Reviews",
-      value: total,
-      icon: MessageSquare,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: "Pending Reviews",
-      value: pending,
-      icon: Clock,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
-    {
-      title: "Approved Reviews",
-      value: approved,
-      icon: CheckCircle,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: "Rejected Reviews",
-      value: rejected,
-      icon: XCircle,
-      color: "text-red-600",
-      bgColor: "bg-red-50",
-    },
-    {
-      title: "Average Rating",
-      value: avgRating,
-      icon: Star,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-50",
-      suffix: "/5",
-    },
-  ]
+interface CustomerReviewsStatsProps {
+  statistics: ReviewStats
+  ratingDistribution: RatingDistribution[]
+}
 
-  return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {statsCards.map((stat, index) => (
-          <Card key={index} className="hover:shadow-md transition-shadow">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {stat.value}
-                    {stat.suffix || ""}
-                  </p>
-                </div>
-                <div className={`p-2 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`h-5 w-5 ${stat.color}`} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+export function CustomerReviewsStats({ statistics, ratingDistribution }: CustomerReviewsStatsProps) {
+  const renderStars = (rating: number) => {
+    return (
+      <div className="flex items-center gap-1">
+        {[1, 2, 3, 4, 5].map((star) => (
+          <Star
+            key={star}
+            className={`h-4 w-4 ${star <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`}
+          />
         ))}
       </div>
+    )
+  }
+
+  const getProgressPercentage = (count: number) => {
+    return statistics.totalReviews > 0 ? (count / statistics.totalReviews) * 100 : 0
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      {/* Total Reviews */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Reviews</CardTitle>
+          <MessageSquare className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{statistics.totalReviews}</div>
+          <p className="text-xs text-muted-foreground">All customer reviews</p>
+        </CardContent>
+      </Card>
+
+      {/* Average Rating */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Average Rating</CardTitle>
+          <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-2">
+            <div className="text-2xl font-bold">{statistics.averageRating}</div>
+            {renderStars(Math.round(statistics.averageRating))}
+          </div>
+          <p className="text-xs text-muted-foreground">Out of 5 stars</p>
+        </CardContent>
+      </Card>
+
+      {/* Pending Reviews */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Pending Reviews</CardTitle>
+          <Clock className="h-4 w-4 text-orange-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-orange-600">{statistics.pendingCount}</div>
+          <p className="text-xs text-muted-foreground">Awaiting moderation</p>
+        </CardContent>
+      </Card>
+
+      {/* Approved Reviews */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Approved Reviews</CardTitle>
+          <CheckCircle className="h-4 w-4 text-green-500" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold text-green-600">{statistics.approvedCount}</div>
+          <p className="text-xs text-muted-foreground">Published reviews</p>
+        </CardContent>
+      </Card>
 
       {/* Rating Distribution */}
-      {ratingDistribution.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Rating Distribution
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {[5, 4, 3, 2, 1].map((rating) => {
-                const ratingData = ratingDistribution.find((r) => r._id === rating)
-                const count = ratingData ? ratingData.count : 0
-                const percentage = total > 0 ? (count / total) * 100 : 0
-
-                return (
-                  <div key={rating} className="flex items-center gap-3">
-                    <div className="flex items-center gap-1 w-12">
-                      <span className="text-sm font-medium">{rating}</span>
-                      <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                    </div>
-                    <div className="flex-1 bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-yellow-400 h-2 rounded-full transition-all duration-300"
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                    <span className="text-sm text-gray-600 w-12 text-right">{count}</span>
+      <Card className="md:col-span-2 lg:col-span-4">
+        <CardHeader>
+          <CardTitle className="text-lg">Rating Distribution</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {ratingDistribution
+              .slice()
+              .reverse()
+              .map((item) => (
+                <div key={item.rating} className="flex items-center gap-4">
+                  <div className="flex items-center gap-1 w-16">
+                    <span className="text-sm font-medium">{item.rating}</span>
+                    <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                   </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                  <div className="flex-1">
+                    <Progress value={getProgressPercentage(item.count)} className="h-2" />
+                  </div>
+                  <div className="text-sm text-muted-foreground w-12 text-right">{item.count}</div>
+                  <div className="text-xs text-muted-foreground w-12 text-right">
+                    ({getProgressPercentage(item.count).toFixed(1)}%)
+                  </div>
+                </div>
+              ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -78,6 +78,15 @@ export interface Order {
   logistics?: LogisticsInfo
 }
 
+export interface ReviewStatus {
+  hasReview: boolean
+  reviewId?: string
+  rating?: number
+  status?: string
+  reviewText?: string
+  createdAt?: string
+}
+
 export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("orders")
   const [timeFilter, setTimeFilter] = useState("all")
@@ -88,6 +97,9 @@ export default function OrdersPage() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [debug, setDebug] = useState<any>(null)
+
+  // Add state for review status tracking
+  const [reviewStatuses, setReviewStatuses] = useState<Record<string, ReviewStatus>>({})
 
   // Add state for invoice modal
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
@@ -101,6 +113,54 @@ export default function OrdersPage() {
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 3
+
+  // Function to check review status for orders
+  const checkReviewStatuses = async (orderIds: string[]) => {
+    try {
+      const reviewPromises = orderIds.map(async (orderId) => {
+        try {
+          const response = await fetch(`/api/reviews?orderId=${orderId}&userId=current`)
+          if (response.ok) {
+            const data = await response.json()
+            if (data.reviews && data.reviews.length > 0) {
+              const review = data.reviews[0]
+              return {
+                orderId,
+                hasReview: true,
+                reviewId: review._id,
+                rating: review.rating,
+                status: review.status,
+                reviewText: review.review,
+                createdAt: review.createdAt,
+              }
+            }
+          }
+          return { orderId, hasReview: false }
+        } catch (error) {
+          console.error(`Error checking review for order ${orderId}:`, error)
+          return { orderId, hasReview: false }
+        }
+      })
+
+      const results = await Promise.all(reviewPromises)
+      const statusMap: Record<string, ReviewStatus> = {}
+
+      results.forEach((result) => {
+        statusMap[result.orderId] = {
+          hasReview: result.hasReview,
+          reviewId: result.reviewId,
+          rating: result.rating,
+          status: result.status,
+          reviewText: result.reviewText,
+          createdAt: result.createdAt,
+        }
+      })
+
+      setReviewStatuses(statusMap)
+    } catch (error) {
+      console.error("Error checking review statuses:", error)
+    }
+  }
 
   // Fetch orders from the API
   useEffect(() => {
@@ -191,6 +251,12 @@ export default function OrdersPage() {
         })
 
         setOrders(mappedOrders)
+
+        // Check review statuses for all orders
+        const orderIds = mappedOrders.map((order) => order.id)
+        if (orderIds.length > 0) {
+          await checkReviewStatuses(orderIds)
+        }
       } catch (error) {
         console.error("Error fetching orders:", error)
       } finally {
@@ -218,6 +284,25 @@ export default function OrdersPage() {
       })),
     )
     setIsRatingModalOpen(true)
+  }
+
+  // Function to handle successful review submission
+  const handleReviewSubmitted = (orderId: string, reviewData: any) => {
+    // Update the review status for this order
+    setReviewStatuses((prev) => ({
+      ...prev,
+      [orderId]: {
+        hasReview: true,
+        reviewId: reviewData.reviewId,
+        rating: reviewData.rating,
+        status: "pending",
+        reviewText: reviewData.review,
+        createdAt: new Date().toISOString(),
+      },
+    }))
+
+    // Hide the rating banner for this order
+    setHiddenRatingBanners((prev) => [...prev, orderId])
   }
 
   // Function to extract image URL from product data
@@ -576,6 +661,58 @@ export default function OrdersPage() {
     </div>
   )
 
+  // Function to render review section or rating banner
+  const renderReviewSection = (order: Order) => {
+    const reviewStatus = reviewStatuses[order.id]
+
+    if (reviewStatus?.hasReview) {
+      // Show "Order already reviewed" message instead of the detailed review info
+      return (
+        <div className="mt-6 p-4 bg-green-50 rounded-md border border-green-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <span className="text-green-800 font-medium">Order already reviewed</span>
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star
+                    key={i}
+                    className={`h-4 w-4 ${
+                      i < (reviewStatus.rating || 0) ? "text-yellow-400 fill-current" : "text-gray-300"
+                    }`}
+                  />
+                ))}
+                <span className="text-sm text-gray-600 ml-1">({reviewStatus.rating}/5)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
+    // Show rating banner if no review exists and banner is not hidden
+    if (!hiddenRatingBanners.includes(order.id)) {
+      return (
+        <div className="mt-6 p-4 bg-yellow-50 rounded-md border border-yellow-200">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => handleRateOrder(order)}
+              className="flex items-center gap-2 text-sm md:text-base hover:text-yellow-700 transition-colors"
+            >
+              <Star className="h-5 w-5 text-yellow-400 fill-current" />
+              <span>How was your experience? Rate this order</span>
+            </button>
+            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => hideRatingBanner(order.id)}>
+              ×
+            </Button>
+          </div>
+        </div>
+      )
+    }
+
+    return null
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
@@ -797,28 +934,8 @@ export default function OrdersPage() {
                                     <SendEmailButton orderId={order.id} />
                                   </div>
 
-                                  {/* Rating Banner */}
-                                  {!hiddenRatingBanners.includes(order.id) && (
-                                    <div className="mt-6 p-4 bg-yellow-50 rounded-md border border-yellow-200">
-                                      <div className="flex items-center justify-between">
-                                        <button
-                                          onClick={() => handleRateOrder(order)}
-                                          className="flex items-center gap-2 text-sm md:text-base hover:text-yellow-700 transition-colors"
-                                        >
-                                          <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                                          <span>How was your experience? Rate this order</span>
-                                        </button>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="h-8 px-2"
-                                          onClick={() => hideRatingBanner(order.id)}
-                                        >
-                                          ×
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  )}
+                                  {/* Review Section - Show either review status or rating banner */}
+                                  {renderReviewSection(order)}
                                 </CardContent>
                               )}
                             </Card>
@@ -875,6 +992,7 @@ export default function OrdersPage() {
         }}
         orderId={ratingOrderId}
         orderItems={ratingOrderItems}
+        onReviewSubmitted={handleReviewSubmitted}
       />
     </div>
   )

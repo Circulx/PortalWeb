@@ -25,7 +25,24 @@ interface Review {
   updatedAt: string
 }
 
-export function CustomerReviewsTable() {
+interface ReviewStats {
+  totalReviews: number
+  averageRating: number
+  pendingCount: number
+  approvedCount: number
+  rejectedCount: number
+}
+
+interface RatingDistribution {
+  rating: number
+  count: number
+}
+
+interface CustomerReviewsTableProps {
+  onStatsUpdate?: (stats: ReviewStats, distribution: RatingDistribution[]) => void
+}
+
+export function CustomerReviewsTable({ onStatsUpdate }: CustomerReviewsTableProps) {
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -33,6 +50,7 @@ export function CustomerReviewsTable() {
   const [ratingFilter, setRatingFilter] = useState<number | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null)
   const [expandedReview, setExpandedReview] = useState<string | null>(null)
   const { toast } = useToast()
@@ -46,8 +64,9 @@ export function CustomerReviewsTable() {
   const fetchReviews = async () => {
     try {
       setLoading(true)
-      const queryParams = new URLSearchParams()
+      setError(null)
 
+      const queryParams = new URLSearchParams()
       queryParams.append("page", currentPage.toString())
       queryParams.append("limit", reviewsPerPage.toString())
 
@@ -59,20 +78,37 @@ export function CustomerReviewsTable() {
         queryParams.append("rating", ratingFilter.toString())
       }
 
+      console.log("Fetching reviews with params:", queryParams.toString())
+
       const response = await fetch(`/api/admin/customer-reviews?${queryParams.toString()}`)
+      const data = await response.json()
+
+      console.log("API Response:", data)
 
       if (!response.ok) {
-        throw new Error("Failed to fetch reviews")
+        throw new Error(data.details || data.error || "Failed to fetch reviews")
       }
 
-      const data = await response.json()
-      setReviews(data.reviews || [])
-      setTotalPages(Math.ceil((data.total || 0) / reviewsPerPage))
-      setLoading(false)
+      if (data.success) {
+        setReviews(data.reviews || [])
+        setTotal(data.total || 0)
+        setTotalPages(data.totalPages || 1)
+
+        // Update parent component with stats
+        if (onStatsUpdate && data.statistics && data.ratingDistribution) {
+          onStatsUpdate(data.statistics, data.ratingDistribution)
+        }
+      } else {
+        throw new Error(data.error || "Failed to fetch reviews")
+      }
     } catch (err) {
-      setError("Error fetching reviews. Please try again.")
-      setLoading(false)
       console.error("Error fetching reviews:", err)
+      setError(err instanceof Error ? err.message : "Error fetching reviews. Please try again.")
+      setReviews([])
+      setTotal(0)
+      setTotalPages(1)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -94,22 +130,29 @@ export function CustomerReviewsTable() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to update status")
+        throw new Error(data.details || data.error || "Failed to update status")
       }
 
-      setReviews((prevReviews) =>
-        prevReviews.map((review) => (review._id === reviewId ? { ...review, status: newStatus } : review)),
-      )
+      if (data.success) {
+        setReviews((prevReviews) =>
+          prevReviews.map((review) => (review._id === reviewId ? { ...review, status: newStatus } : review)),
+        )
 
-      toast({
-        title: "Status Updated",
-        description: `Review status changed to ${newStatus}`,
-      })
+        toast({
+          title: "Status Updated",
+          description: `Review status changed to ${newStatus}`,
+        })
+
+        // Refresh data to update stats
+        fetchReviews()
+      } else {
+        throw new Error(data.error || "Failed to update status")
+      }
     } catch (error) {
       console.error("Error updating status:", error)
       toast({
         title: "Update Failed",
-        description: "Failed to update review status",
+        description: error instanceof Error ? error.message : "Failed to update review status",
         variant: "destructive",
       })
     } finally {
@@ -177,7 +220,12 @@ export function CustomerReviewsTable() {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center text-red-500">{error}</div>
+          <div className="text-center">
+            <div className="text-red-500 mb-4">{error}</div>
+            <Button onClick={fetchReviews} variant="outline">
+              Try Again
+            </Button>
+          </div>
         </CardContent>
       </Card>
     )
@@ -189,7 +237,10 @@ export function CustomerReviewsTable() {
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h2 className="text-lg font-semibold">Reviews Management</h2>
+            <div>
+              <h2 className="text-lg font-semibold">Reviews Management</h2>
+              <p className="text-sm text-gray-600">Total: {total} reviews</p>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2">
@@ -280,7 +331,9 @@ export function CustomerReviewsTable() {
       <div className="space-y-4">
         {reviews.length === 0 ? (
           <Card>
-            <CardContent className="p-6 text-center text-gray-500">No reviews found</CardContent>
+            <CardContent className="p-6 text-center text-gray-500">
+              {statusFilter || ratingFilter ? "No reviews found with current filters" : "No reviews found"}
+            </CardContent>
           </Card>
         ) : (
           reviews.map((review) => (
@@ -370,11 +423,11 @@ export function CustomerReviewsTable() {
                           <div key={index} className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
                             <div className="w-8 h-8 bg-gray-200 rounded overflow-hidden flex-shrink-0">
                               <img
-                                src={item.image_link || "/placeholder.svg"}
+                                src={item.image_link || "/placeholder.svg?height=32&width=32"}
                                 alt={item.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
-                                  ;(e.target as HTMLImageElement).src = "/placeholder.svg"
+                                  ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=32&width=32"
                                 }}
                               />
                             </div>
@@ -397,7 +450,7 @@ export function CustomerReviewsTable() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-600">
-                Page {currentPage} of {totalPages}
+                Page {currentPage} of {totalPages} ({total} total reviews)
               </div>
               <div className="flex items-center gap-2">
                 <Button

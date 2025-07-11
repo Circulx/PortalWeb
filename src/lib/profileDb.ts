@@ -32,7 +32,7 @@ interface IAdvertisement {
   endDate?: Date
 }
 
-// Review interface
+// Review interface with complete order items
 interface IReview {
   orderId: string
   userId: string
@@ -42,8 +42,12 @@ interface IReview {
     id: string
     name: string
     image_link?: string
+    price?: number
+    quantity?: number
+    seller_id?: string
   }>
   status: "pending" | "approved" | "rejected"
+  isVerifiedPurchase: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -367,7 +371,7 @@ AdvertisementSchema.index({ isActive: 1, order: 1 })
 AdvertisementSchema.index({ startDate: 1, endDate: 1 })
 AdvertisementSchema.index({ deviceType: 1 })
 
-// Define Review schema
+// Define Review schema with enhanced orderItems structure
 const ReviewSchema = new mongoose.Schema<IReview>(
   {
     orderId: { type: String, required: true, index: true },
@@ -378,7 +382,10 @@ const ReviewSchema = new mongoose.Schema<IReview>(
       {
         id: { type: String, required: true },
         name: { type: String, required: true },
-        image_link: { type: String },
+        image_link: { type: String, default: "" },
+        price: { type: Number, default: 0 },
+        quantity: { type: Number, default: 1 },
+        seller_id: { type: String, default: "" },
       },
     ],
     status: {
@@ -386,6 +393,10 @@ const ReviewSchema = new mongoose.Schema<IReview>(
       enum: ["pending", "approved", "rejected"],
       default: "pending",
       index: true,
+    },
+    isVerifiedPurchase: {
+      type: Boolean,
+      default: true,
     },
   },
   {

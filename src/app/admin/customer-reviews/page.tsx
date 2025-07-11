@@ -1,85 +1,56 @@
-import { CustomerReviewsTable } from "@/components/admin/customer-reviews/customer-reviews-table"
+"use client"
+
+import { useState } from "react"
 import { CustomerReviewsStats } from "@/components/admin/customer-reviews/customer-reviews-stats"
-import { connectProfileDB } from "@/lib/profileDb"
-import mongoose from "mongoose"
+import { CustomerReviewsTable } from "@/components/admin/customer-reviews/customer-reviews-table"
 
-async function getReviewsStats() {
-  try {
-    const connection = await connectProfileDB()
-
-    let Review
-    try {
-      Review = connection.models.Review
-    } catch (e) {
-      const reviewSchema = new mongoose.Schema({
-        orderId: { type: String, required: true },
-        userId: { type: String, required: true },
-        rating: { type: Number, required: true, min: 1, max: 5 },
-        review: { type: String, required: true },
-        orderItems: [
-          {
-            id: String,
-            name: String,
-            image_link: String,
-          },
-        ],
-        status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
-        createdAt: { type: Date, default: Date.now },
-        updatedAt: { type: Date, default: Date.now },
-      })
-      Review = connection.model("Review", reviewSchema)
-    }
-
-    const total = await Review.countDocuments()
-    const pending = await Review.countDocuments({ status: "pending" })
-    const approved = await Review.countDocuments({ status: "approved" })
-    const rejected = await Review.countDocuments({ status: "rejected" })
-
-    // Calculate average rating
-    const avgRatingResult = await Review.aggregate([{ $group: { _id: null, avgRating: { $avg: "$rating" } } }])
-    const avgRating = avgRatingResult.length > 0 ? avgRatingResult[0].avgRating : 0
-
-    // Get rating distribution
-    const ratingDistribution = await Review.aggregate([
-      { $group: { _id: "$rating", count: { $sum: 1 } } },
-      { $sort: { _id: 1 } },
-    ])
-
-    return {
-      total,
-      pending,
-      approved,
-      rejected,
-      avgRating: Math.round(avgRating * 10) / 10,
-      ratingDistribution,
-    }
-  } catch (error) {
-    console.error("Error fetching reviews stats:", error)
-    return {
-      total: 0,
-      pending: 0,
-      approved: 0,
-      rejected: 0,
-      avgRating: 0,
-      ratingDistribution: [],
-    }
-  }
+interface ReviewStats {
+  totalReviews: number
+  averageRating: number
+  pendingCount: number
+  approvedCount: number
+  rejectedCount: number
 }
 
-export default async function CustomerReviewsPage() {
-  const stats = await getReviewsStats()
+interface RatingDistribution {
+  rating: number
+  count: number
+}
+
+export default function CustomerReviewsPage() {
+  const [statistics, setStatistics] = useState<ReviewStats>({
+    totalReviews: 0,
+    averageRating: 0,
+    pendingCount: 0,
+    approvedCount: 0,
+    rejectedCount: 0,
+  })
+
+  const [ratingDistribution, setRatingDistribution] = useState<RatingDistribution[]>([
+    { rating: 1, count: 0 },
+    { rating: 2, count: 0 },
+    { rating: 3, count: 0 },
+    { rating: 4, count: 0 },
+    { rating: 5, count: 0 },
+  ])
+
+  const handleStatsUpdate = (newStats: ReviewStats, newDistribution: RatingDistribution[]) => {
+    setStatistics(newStats)
+    setRatingDistribution(newDistribution)
+  }
 
   return (
-    <div className="p-4 max-w-[1400px] mx-auto space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Customer Reviews</h1>
-          <p className="text-gray-600">Manage and moderate customer reviews</p>
+          <h1 className="text-3xl font-bold tracking-tight">Customer Reviews</h1>
+          <p className="text-muted-foreground">Manage and moderate customer reviews</p>
         </div>
       </div>
 
-      <CustomerReviewsStats stats={stats} />
-      <CustomerReviewsTable />
+      <CustomerReviewsStats statistics={statistics} ratingDistribution={ratingDistribution} />
+
+      <CustomerReviewsTable onStatsUpdate={handleStatsUpdate} />
     </div>
   )
 }
