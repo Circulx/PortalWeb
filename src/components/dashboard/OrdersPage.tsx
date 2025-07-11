@@ -295,7 +295,7 @@ export default function OrdersPage() {
         hasReview: true,
         reviewId: reviewData.reviewId,
         rating: reviewData.rating,
-        status: "pending",
+        status: "approved", // Changed from "pending" to "approved"
         reviewText: reviewData.review,
         createdAt: new Date().toISOString(),
       },

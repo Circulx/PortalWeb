@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
       rating: rating,
       review: reviewText,
       orderItems: processedOrderItems,
-      status: "pending",
+      status: "approved", // Changed from "pending" to "approved"
       isVerifiedPurchase: true, // Since we're fetching from actual orders
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        message: "Review submitted successfully",
+        message: "Review submitted and approved successfully",
         reviewId: savedReview._id.toString(),
         data: {
           id: savedReview._id.toString(),

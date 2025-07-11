@@ -65,7 +65,7 @@ export function RatingModal({ isOpen, onClose, orderId, orderItems, onReviewSubm
             reviewId: data.reviewId,
             rating,
             review: review.trim(),
-            status: "pending",
+            status: "approved", // Changed from "pending" to "approved"
           })
         }
 
