@@ -63,20 +63,23 @@ const reviewSchema = new Schema<IReview>(
   },
 )
 
-// Compound indexes for efficient queries
-reviewSchema.index({ userId: 1, orderId: 1, product_id: 1 }, { unique: true })
+// Allow one review per user per product per order
+// Same product in different orders = can review multiple times
+// Same product in same order = can review only once
+reviewSchema.index({ userId: 1, product_id: 1, orderId: 1 }, { unique: true })
 reviewSchema.index({ product_id: 1, status: 1 })
 reviewSchema.index({ userId: 1, status: 1 })
 reviewSchema.index({ orderId: 1, status: 1 })
 reviewSchema.index({ createdAt: -1 })
 
 const getReviewModel = (connection: Connection) => {
-  // Delete existing model to force recreation with new schema
-  if (connection.models.Review) {
-    delete connection.models.Review
+  // Check if model already exists and return it, otherwise create new one
+  try {
+    return connection.model<IReview>("Review")
+  } catch (error) {
+    // Model doesn't exist, create it
+    return connection.model<IReview>("Review", reviewSchema)
   }
-
-  return connection.model<IReview>("Review", reviewSchema)
 }
 
 export default getReviewModel

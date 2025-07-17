@@ -77,28 +77,36 @@ export async function POST(request: NextRequest) {
 
     console.log("Review model found, checking for existing review...")
 
-    // Check if user has already reviewed this specific product (by product_id only)
+    // Check if user has already reviewed this specific product in this specific order
+    // Logic: Same orderId + same productId = cannot review again
+    // Logic: Same orderId + different productId = can review
+    // Logic: Different orderId + same productId = can review
     const existingReview = await Review.findOne({
       userId: user.id,
       product_id: productId,
+      orderId: orderId,
     })
 
     console.log("Existing review check result:", existingReview ? "Found existing review" : "No existing review")
 
     if (existingReview) {
-      console.log("User has already reviewed this product:", {
+      console.log("User has already reviewed this product in this order:", {
         reviewId: (existingReview._id as mongoose.Types.ObjectId).toString(),
         product_id: existingReview.product_id,
+        orderId: existingReview.orderId,
         title: existingReview.title,
         rating: existingReview.rating,
         status: existingReview.status,
       })
       return NextResponse.json(
         {
-          error: "You have already reviewed this product",
+          error: "You have already reviewed this product in this order",
+          message:
+            "You can review other products in this order or review this product if you purchase it again in a different order.",
           existingReview: {
             id: (existingReview._id as mongoose.Types.ObjectId).toString(),
             product_id: existingReview.product_id,
+            orderId: existingReview.orderId,
             title: existingReview.title,
             rating: existingReview.rating,
             review: existingReview.review,
@@ -110,9 +118,50 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("No existing review found, creating new review...")
+    console.log("No existing review found for this product in this order, creating new review...")
 
-    // Create the review for this specific product
+    // First, let's try to clean up any problematic old indexes and data
+    try {
+      console.log("Attempting to clean up old data and indexes...")
+
+      // Get the native MongoDB collection
+      const collection = connection.db?.collection("reviews")
+
+      if (collection) {
+        try {
+          await collection.dropIndex("userId_1_productId_1_orderId_1")
+          console.log("Dropped old problematic index: userId_1_productId_1_orderId_1")
+        } catch (dropError: any) {
+          console.log("Old index not found or already dropped:", dropError?.message || "Unknown error")
+        }
+
+        // Remove any documents with null or undefined product_id/productId
+        const deleteResult = await collection.deleteMany({
+          $or: [
+            { product_id: null },
+            { product_id: { $exists: false } },
+            { productId: null },
+            { productId: { $exists: false } },
+          ],
+        })
+        console.log("Cleaned up documents with null product_id:", deleteResult.deletedCount)
+
+        // Ensure the correct index exists
+        try {
+          await collection.createIndex(
+            { userId: 1, product_id: 1, orderId: 1 },
+            { unique: true, name: "userId_1_product_id_1_orderId_1" },
+          )
+          console.log("Created correct index: userId_1_product_id_1_orderId_1")
+        } catch (indexError: any) {
+          console.log("Index already exists or creation failed:", indexError?.message || "Unknown error")
+        }
+      }
+    } catch (cleanupError: any) {
+      console.log("Cleanup error (continuing anyway):", cleanupError?.message || "Unknown error")
+    }
+
+    // Create the review for this specific product in this specific order
     const reviewData = {
       userId: user.id,
       orderId: orderId,
@@ -120,7 +169,7 @@ export async function POST(request: NextRequest) {
       title: productName,
       rating: rating,
       review: reviewText,
-      status: "approved",
+      status: "approved" as const,
       isVerifiedPurchase: true,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -136,44 +185,122 @@ export async function POST(request: NextRequest) {
       status: reviewData.status,
     })
 
-    const newReview = new Review(reviewData)
-    const savedReview = await newReview.save()
+    try {
+      const newReview = new Review(reviewData)
+      const savedReview = await newReview.save()
 
-    console.log("Review saved successfully:", {
-      id: (savedReview._id as mongoose.Types.ObjectId).toString(),
-      product_id: savedReview.product_id,
-      title: savedReview.title,
-      rating: savedReview.rating,
-      status: savedReview.status,
-    })
+      console.log("Review saved successfully:", {
+        id: (savedReview._id as mongoose.Types.ObjectId).toString(),
+        product_id: savedReview.product_id,
+        orderId: savedReview.orderId,
+        title: savedReview.title,
+        rating: savedReview.rating,
+        status: savedReview.status,
+      })
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: "Review submitted and approved successfully",
-        reviewId: (savedReview._id as mongoose.Types.ObjectId).toString(),
-        data: {
-          id: (savedReview._id as mongoose.Types.ObjectId).toString(),
-          userId: savedReview.userId,
-          orderId: savedReview.orderId,
-          product_id: savedReview.product_id,
-          title: savedReview.title,
-          rating: savedReview.rating,
-          review: savedReview.review,
-          status: savedReview.status,
-          createdAt: savedReview.createdAt,
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Review submitted and approved successfully",
+          reviewId: (savedReview._id as mongoose.Types.ObjectId).toString(),
+          data: {
+            id: (savedReview._id as mongoose.Types.ObjectId).toString(),
+            userId: savedReview.userId,
+            orderId: savedReview.orderId,
+            product_id: savedReview.product_id,
+            title: savedReview.title,
+            rating: savedReview.rating,
+            review: savedReview.review,
+            status: savedReview.status,
+            createdAt: savedReview.createdAt,
+          },
         },
-      },
-      { status: 201 },
-    )
-  } catch (error) {
+        { status: 201 },
+      )
+    } catch (saveError: any) {
+      console.error("Error saving review:", saveError)
+
+      // Handle MongoDB duplicate key error specifically
+      if (saveError instanceof Error && saveError.message.includes("E11000")) {
+        console.log("Duplicate key error during save - attempting manual cleanup and retry...")
+
+        try {
+          // Try to clean up and retry once more
+          const collection = connection.db?.collection("reviews")
+
+          if (collection) {
+            // Remove any conflicting documents
+            await collection.deleteMany({
+              userId: user.id,
+              orderId: orderId,
+              $or: [
+                { product_id: null },
+                { product_id: { $exists: false } },
+                { productId: null },
+                { productId: { $exists: false } },
+              ],
+            })
+
+            // Try to save again
+            const retryReview = new Review(reviewData)
+            const retrySavedReview = await retryReview.save()
+
+            console.log("Review saved successfully on retry:", {
+              id: (retrySavedReview._id as mongoose.Types.ObjectId).toString(),
+              product_id: retrySavedReview.product_id,
+              orderId: retrySavedReview.orderId,
+            })
+
+            return NextResponse.json(
+              {
+                success: true,
+                message: "Review submitted and approved successfully",
+                reviewId: (retrySavedReview._id as mongoose.Types.ObjectId).toString(),
+                data: {
+                  id: (retrySavedReview._id as mongoose.Types.ObjectId).toString(),
+                  userId: retrySavedReview.userId,
+                  orderId: retrySavedReview.orderId,
+                  product_id: retrySavedReview.product_id,
+                  title: retrySavedReview.title,
+                  rating: retrySavedReview.rating,
+                  review: retrySavedReview.review,
+                  status: retrySavedReview.status,
+                  createdAt: retrySavedReview.createdAt,
+                },
+              },
+              { status: 201 },
+            )
+          }
+        } catch (retryError: any) {
+          console.error("Retry also failed:", retryError)
+          return NextResponse.json(
+            {
+              error: "You have already reviewed this product in this order",
+              message:
+                "You can review other products in this order or review this product if you purchase it again in a different order.",
+            },
+            { status: 409 },
+          )
+        }
+      }
+
+      throw saveError
+    }
+  } catch (error: any) {
     console.error("Error submitting review:", error)
 
     // Handle specific MongoDB errors
     if (error instanceof Error) {
-      if (error.message.includes("duplicate key")) {
-        console.log("Duplicate key error - user already reviewed this product")
-        return NextResponse.json({ error: "You have already reviewed this product" }, { status: 409 })
+      if (error.message.includes("duplicate key") || error.message.includes("E11000")) {
+        console.log("Duplicate key error - user already reviewed this product in this order")
+        return NextResponse.json(
+          {
+            error: "You have already reviewed this product in this order",
+            message:
+              "You can review other products in this order or review this product if you purchase it again in a different order.",
+          },
+          { status: 409 },
+        )
       }
 
       if (error.message.includes("validation")) {
@@ -218,7 +345,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Review model not available" }, { status: 500 })
     }
 
-    const query: any = {}
+    const query: Record<string, any> = {}
 
     // Build query based on parameters
     if (status && status !== "all") {
@@ -280,7 +407,7 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit),
       },
     })
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching reviews:", error)
     return NextResponse.json(
       {
