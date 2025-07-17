@@ -36,16 +36,10 @@ interface IAdvertisement {
 interface IReview {
   orderId: string
   userId: string
+  product_id:string
   rating: number
   review: string
-  orderItems: Array<{
-    id: string
-    name: string
-    image_link?: string
-    price?: number
-    quantity?: number
-    seller_id?: string
-  }>
+  
   status: "pending" | "approved" | "rejected"
   isVerifiedPurchase: boolean
   createdAt: Date
@@ -376,18 +370,10 @@ const ReviewSchema = new mongoose.Schema<IReview>(
   {
     orderId: { type: String, required: true, index: true },
     userId: { type: String, required: true, index: true },
+    product_id : { type: String, required: true, index: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     review: { type: String, required: true },
-    orderItems: [
-      {
-        id: { type: String, required: true },
-        name: { type: String, required: true },
-        image_link: { type: String, default: "" },
-        price: { type: Number, default: 0 },
-        quantity: { type: Number, default: 1 },
-        seller_id: { type: String, default: "" },
-      },
-    ],
+  
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],

@@ -64,9 +64,47 @@ export async function POST(request: NextRequest) {
 
     console.log("All validations passed, connecting to database...")
 
-    // Connect to the database
+    // Connect to the PROFILE_DB database
     const connection = await connectProfileDB()
     console.log("Database connected successfully")
+
+    // Clean up old problematic indexes first
+    try {
+      const collection = connection.db?.collection("reviews")
+      if (collection) {
+        // Drop all old problematic indexes
+        const indexes = await collection.indexes()
+        console.log(
+          "Current indexes:",
+          indexes.map((idx) => idx.name),
+        )
+
+        // Drop specific problematic indexes
+        const problematicIndexes = ["userId_1_orderId_1", "userId_1_productId_1_orderId_1", "userId_1_product_id_1"]
+
+        for (const indexName of problematicIndexes) {
+          try {
+            await collection.dropIndex(indexName)
+            console.log(`Dropped problematic index: ${indexName}`)
+          } catch (dropError: any) {
+            console.log(`Index ${indexName} not found or already dropped`)
+          }
+        }
+
+        // Ensure the correct index exists
+        try {
+          await collection.createIndex(
+            { userId: 1, product_id: 1, orderId: 1 },
+            { unique: true, name: "userId_1_product_id_1_orderId_1" },
+          )
+          console.log("Created correct index: userId_1_product_id_1_orderId_1")
+        } catch (indexError: any) {
+          console.log("Index creation result:", indexError?.message || "Index already exists")
+        }
+      }
+    } catch (cleanupError: any) {
+      console.log("Index cleanup error (continuing):", cleanupError?.message)
+    }
 
     // Get the Review model
     const Review = getReviewModel(connection)
@@ -120,52 +158,12 @@ export async function POST(request: NextRequest) {
 
     console.log("No existing review found for this product in this order, creating new review...")
 
-    // First, let's try to clean up any problematic old indexes and data
-    try {
-      console.log("Attempting to clean up old data and indexes...")
-
-      // Get the native MongoDB collection
-      const collection = connection.db?.collection("reviews")
-
-      if (collection) {
-        try {
-          await collection.dropIndex("userId_1_productId_1_orderId_1")
-          console.log("Dropped old problematic index: userId_1_productId_1_orderId_1")
-        } catch (dropError: any) {
-          console.log("Old index not found or already dropped:", dropError?.message || "Unknown error")
-        }
-
-        // Remove any documents with null or undefined product_id/productId
-        const deleteResult = await collection.deleteMany({
-          $or: [
-            { product_id: null },
-            { product_id: { $exists: false } },
-            { productId: null },
-            { productId: { $exists: false } },
-          ],
-        })
-        console.log("Cleaned up documents with null product_id:", deleteResult.deletedCount)
-
-        // Ensure the correct index exists
-        try {
-          await collection.createIndex(
-            { userId: 1, product_id: 1, orderId: 1 },
-            { unique: true, name: "userId_1_product_id_1_orderId_1" },
-          )
-          console.log("Created correct index: userId_1_product_id_1_orderId_1")
-        } catch (indexError: any) {
-          console.log("Index already exists or creation failed:", indexError?.message || "Unknown error")
-        }
-      }
-    } catch (cleanupError: any) {
-      console.log("Cleanup error (continuing anyway):", cleanupError?.message || "Unknown error")
-    }
-
     // Create the review for this specific product in this specific order
+    // Save to PROFILE_DB in reviews collection with product_id attribute
     const reviewData = {
       userId: user.id,
       orderId: orderId,
-      product_id: productId,
+      product_id: productId, // This is the productId attribute that will be saved
       title: productName,
       rating: rating,
       review: reviewText,
@@ -189,7 +187,7 @@ export async function POST(request: NextRequest) {
       const newReview = new Review(reviewData)
       const savedReview = await newReview.save()
 
-      console.log("Review saved successfully:", {
+      console.log("Review saved successfully to PROFILE_DB reviews collection:", {
         id: (savedReview._id as mongoose.Types.ObjectId).toString(),
         product_id: savedReview.product_id,
         orderId: savedReview.orderId,
@@ -218,73 +216,33 @@ export async function POST(request: NextRequest) {
         { status: 201 },
       )
     } catch (saveError: any) {
-      console.error("Error saving review:", saveError)
+      console.error("Error saving review to PROFILE_DB:", saveError)
 
       // Handle MongoDB duplicate key error specifically
       if (saveError instanceof Error && saveError.message.includes("E11000")) {
-        console.log("Duplicate key error during save - attempting manual cleanup and retry...")
-
-        try {
-          // Try to clean up and retry once more
-          const collection = connection.db?.collection("reviews")
-
-          if (collection) {
-            // Remove any conflicting documents
-            await collection.deleteMany({
-              userId: user.id,
-              orderId: orderId,
-              $or: [
-                { product_id: null },
-                { product_id: { $exists: false } },
-                { productId: null },
-                { productId: { $exists: false } },
-              ],
-            })
-
-            // Try to save again
-            const retryReview = new Review(reviewData)
-            const retrySavedReview = await retryReview.save()
-
-            console.log("Review saved successfully on retry:", {
-              id: (retrySavedReview._id as mongoose.Types.ObjectId).toString(),
-              product_id: retrySavedReview.product_id,
-              orderId: retrySavedReview.orderId,
-            })
-
-            return NextResponse.json(
-              {
-                success: true,
-                message: "Review submitted and approved successfully",
-                reviewId: (retrySavedReview._id as mongoose.Types.ObjectId).toString(),
-                data: {
-                  id: (retrySavedReview._id as mongoose.Types.ObjectId).toString(),
-                  userId: retrySavedReview.userId,
-                  orderId: retrySavedReview.orderId,
-                  product_id: retrySavedReview.product_id,
-                  title: retrySavedReview.title,
-                  rating: retrySavedReview.rating,
-                  review: retrySavedReview.review,
-                  status: retrySavedReview.status,
-                  createdAt: retrySavedReview.createdAt,
-                },
-              },
-              { status: 201 },
-            )
-          }
-        } catch (retryError: any) {
-          console.error("Retry also failed:", retryError)
-          return NextResponse.json(
-            {
-              error: "You have already reviewed this product in this order",
-              message:
-                "You can review other products in this order or review this product if you purchase it again in a different order.",
-            },
-            { status: 409 },
-          )
-        }
+        console.log("Duplicate key error - user already reviewed this product in this order")
+        return NextResponse.json(
+          {
+            error: "You have already reviewed this product in this order",
+            message:
+              "You can review other products in this order or review this product if you purchase it again in a different order.",
+          },
+          { status: 409 },
+        )
       }
 
-      throw saveError
+      if (saveError instanceof Error && saveError.message.includes("validation")) {
+        console.log("Validation error:", saveError.message)
+        return NextResponse.json({ error: "Invalid data provided", details: saveError.message }, { status: 400 })
+      }
+
+      return NextResponse.json(
+        {
+          error: "Failed to save review to database",
+          details: saveError instanceof Error ? saveError.message : "Unknown error",
+        },
+        { status: 500 },
+      )
     }
   } catch (error: any) {
     console.error("Error submitting review:", error)
@@ -337,7 +295,7 @@ export async function GET(request: NextRequest) {
 
     console.log("GET reviews request:", { orderId, productId, userId, page, limit, status })
 
-    // Connect to the database
+    // Connect to the PROFILE_DB database
     const connection = await connectProfileDB()
     const Review = getReviewModel(connection)
 
@@ -383,7 +341,7 @@ export async function GET(request: NextRequest) {
       query.status = "approved"
     }
 
-    console.log("Query:", query)
+    console.log("Query for PROFILE_DB reviews collection:", query)
 
     const skip = (page - 1) * limit
 
@@ -392,7 +350,7 @@ export async function GET(request: NextRequest) {
       Review.countDocuments(query),
     ])
 
-    console.log(`Found ${reviews.length} reviews out of ${total} total`)
+    console.log(`Found ${reviews.length} reviews out of ${total} total in PROFILE_DB`)
 
     return NextResponse.json({
       success: true,
@@ -408,7 +366,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error: any) {
-    console.error("Error fetching reviews:", error)
+    console.error("Error fetching reviews from PROFILE_DB:", error)
     return NextResponse.json(
       {
         error: "Failed to fetch reviews",
