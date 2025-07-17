@@ -5,6 +5,9 @@ import Header from "@/components/layout/Header"
 import Footer from "@/components/layout/Footer"
 import { getCurrentUser } from "../actions/auth"
 import Providers from "./providers"
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics"
+import PageViewTracker from "@/components/analytics/PageViewTracker"
+import { Suspense } from "react"
 
 export const metadata: Metadata = {
   title: "IND2B",
@@ -50,8 +53,12 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body className="bg-gray-100">
+        <GoogleAnalytics />
         <Providers>
           <Header user={user} />
+          <Suspense fallback={null}>
+            <PageViewTracker />
+          </Suspense>
           <main className="min-h-screen">{children}</main>
           <Footer />
         </Providers>

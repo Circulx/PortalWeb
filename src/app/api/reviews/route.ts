@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
-import mongoose from "mongoose"
+import getReviewModel from "@/models/profile/review"
+import type mongoose from "mongoose"
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,12 +21,22 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log("Request body:", body)
 
-    const { orderId, rating, review, orderItems } = body
+    const { orderId, productId, rating, review, productName } = body
 
     // Validate required fields
     if (!orderId) {
       console.log("Missing orderId")
       return NextResponse.json({ error: "Order ID is required" }, { status: 400 })
+    }
+
+    if (!productId) {
+      console.log("Missing productId")
+      return NextResponse.json({ error: "Product ID is required" }, { status: 400 })
+    }
+
+    if (!productName) {
+      console.log("Missing productName")
+      return NextResponse.json({ error: "Product name is required" }, { status: 400 })
     }
 
     if (!rating) {
@@ -58,127 +69,98 @@ export async function POST(request: NextRequest) {
     console.log("Database connected successfully")
 
     // Get the Review model
-    const Review = connection.models.Review
+    const Review = getReviewModel(connection)
     if (!Review) {
-      console.log("Review model not found in connection.models")
+      console.log("Review model not found")
       return NextResponse.json({ error: "Review model not available" }, { status: 500 })
-    }
-
-    // Get the Order model to fetch order details
-    const Order = connection.models.Order
-    if (!Order) {
-      console.log("Order model not found in connection.models")
-      return NextResponse.json({ error: "Order model not available" }, { status: 500 })
     }
 
     console.log("Review model found, checking for existing review...")
 
-    // Check if user has already reviewed this order
+    // Check if user has already reviewed this specific product (by product_id only)
     const existingReview = await Review.findOne({
       userId: user.id,
-      orderId: orderId,
+      product_id: productId,
     })
 
+    console.log("Existing review check result:", existingReview ? "Found existing review" : "No existing review")
+
     if (existingReview) {
-      console.log("User has already reviewed this order")
-      return NextResponse.json({ error: "You have already reviewed this order" }, { status: 409 })
+      console.log("User has already reviewed this product:", {
+        reviewId: (existingReview._id as mongoose.Types.ObjectId).toString(),
+        product_id: existingReview.product_id,
+        title: existingReview.title,
+        rating: existingReview.rating,
+        status: existingReview.status,
+      })
+      return NextResponse.json(
+        {
+          error: "You have already reviewed this product",
+          existingReview: {
+            id: (existingReview._id as mongoose.Types.ObjectId).toString(),
+            product_id: existingReview.product_id,
+            title: existingReview.title,
+            rating: existingReview.rating,
+            review: existingReview.review,
+            status: existingReview.status,
+            createdAt: existingReview.createdAt,
+          },
+        },
+        { status: 409 },
+      )
     }
 
-    console.log("No existing review found, fetching order details...")
+    console.log("No existing review found, creating new review...")
 
-    // Fetch the actual order details to get all products
-    let orderDetails = null
-    try {
-      // Try to find order by MongoDB ObjectId first
-      if (mongoose.Types.ObjectId.isValid(orderId)) {
-        orderDetails = await Order.findById(orderId)
-      }
-
-      // If not found by ObjectId, try to find by orderId field
-      if (!orderDetails) {
-        orderDetails = await Order.findOne({ orderId: orderId })
-      }
-
-      // If still not found, try to find by _id as string
-      if (!orderDetails) {
-        orderDetails = await Order.findOne({ _id: orderId })
-      }
-
-      console.log("Order details found:", orderDetails ? "Yes" : "No")
-      if (orderDetails) {
-        console.log("Order products count:", orderDetails.products?.length || 0)
-      }
-    } catch (error) {
-      console.error("Error fetching order details:", error)
-    }
-
-    // Prepare order items data from the actual order
-    let processedOrderItems = []
-
-    if (orderDetails && orderDetails.products && Array.isArray(orderDetails.products)) {
-      // Use products from the actual order
-      processedOrderItems = orderDetails.products.map((product: any) => ({
-        id: product.productId || product._id || product.id || "",
-        name: product.title || product.name || "Unknown Product",
-        image_link: product.image_link || product.image || "",
-        price: product.price || 0,
-        quantity: product.quantity || 1,
-        seller_id: product.seller_id || "",
-      }))
-      console.log("Using order products:", processedOrderItems.length, "items")
-    } else if (orderItems && Array.isArray(orderItems)) {
-      // Fallback to orderItems from request if order not found
-      processedOrderItems = orderItems.map((item: any) => ({
-        id: item.id || item.productId || "",
-        name: item.name || item.title || "Unknown Product",
-        image_link: item.image_link || item.image || "",
-        price: item.price || 0,
-        quantity: item.quantity || 1,
-        seller_id: item.seller_id || "",
-      }))
-      console.log("Using fallback orderItems:", processedOrderItems.length, "items")
-    } else {
-      console.log("No order items found, using empty array")
-      processedOrderItems = []
-    }
-
-    console.log("Final processed order items:", processedOrderItems)
-
-    // Create the review with complete order information
+    // Create the review for this specific product
     const reviewData = {
       userId: user.id,
       orderId: orderId,
+      product_id: productId,
+      title: productName,
       rating: rating,
       review: reviewText,
-      orderItems: processedOrderItems,
-      status: "approved", // Changed from "pending" to "approved"
-      isVerifiedPurchase: true, // Since we're fetching from actual orders
+      status: "approved",
+      isVerifiedPurchase: true,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
     console.log("Creating review with data:", {
-      ...reviewData,
-      orderItems: `${reviewData.orderItems.length} items`,
+      userId: reviewData.userId,
+      orderId: reviewData.orderId,
+      product_id: reviewData.product_id,
+      title: reviewData.title,
+      rating: reviewData.rating,
+      review: `${reviewData.review.substring(0, 50)}...`,
+      status: reviewData.status,
     })
 
     const newReview = new Review(reviewData)
     const savedReview = await newReview.save()
 
-    console.log("Review saved successfully:", savedReview._id)
-    console.log("Saved orderItems count:", savedReview.orderItems?.length || 0)
+    console.log("Review saved successfully:", {
+      id: (savedReview._id as mongoose.Types.ObjectId).toString(),
+      product_id: savedReview.product_id,
+      title: savedReview.title,
+      rating: savedReview.rating,
+      status: savedReview.status,
+    })
 
     return NextResponse.json(
       {
         success: true,
         message: "Review submitted and approved successfully",
-        reviewId: savedReview._id.toString(),
+        reviewId: (savedReview._id as mongoose.Types.ObjectId).toString(),
         data: {
-          id: savedReview._id.toString(),
+          id: (savedReview._id as mongoose.Types.ObjectId).toString(),
+          userId: savedReview.userId,
+          orderId: savedReview.orderId,
+          product_id: savedReview.product_id,
+          title: savedReview.title,
           rating: savedReview.rating,
           review: savedReview.review,
           status: savedReview.status,
-          orderItemsCount: savedReview.orderItems?.length || 0,
           createdAt: savedReview.createdAt,
         },
       },
@@ -190,8 +172,8 @@ export async function POST(request: NextRequest) {
     // Handle specific MongoDB errors
     if (error instanceof Error) {
       if (error.message.includes("duplicate key")) {
-        console.log("Duplicate key error - user already reviewed this order")
-        return NextResponse.json({ error: "You have already reviewed this order" }, { status: 409 })
+        console.log("Duplicate key error - user already reviewed this product")
+        return NextResponse.json({ error: "You have already reviewed this product" }, { status: 409 })
       }
 
       if (error.message.includes("validation")) {
@@ -201,7 +183,7 @@ export async function POST(request: NextRequest) {
 
       if (error.message.includes("Cast to ObjectId failed")) {
         console.log("Invalid ObjectId format")
-        return NextResponse.json({ error: "Invalid order ID format" }, { status: 400 })
+        return NextResponse.json({ error: "Invalid order or product ID format" }, { status: 400 })
       }
     }
 
@@ -220,16 +202,17 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const orderId = searchParams.get("orderId")
+    const productId = searchParams.get("productId")
     const userId = searchParams.get("userId")
     const page = Number.parseInt(searchParams.get("page") || "1")
     const limit = Number.parseInt(searchParams.get("limit") || "10")
     const status = searchParams.get("status") || "approved"
 
-    console.log("GET reviews request:", { orderId, userId, page, limit, status })
+    console.log("GET reviews request:", { orderId, productId, userId, page, limit, status })
 
     // Connect to the database
     const connection = await connectProfileDB()
-    const Review = connection.models.Review
+    const Review = getReviewModel(connection)
 
     if (!Review) {
       return NextResponse.json({ error: "Review model not available" }, { status: 500 })
@@ -244,6 +227,10 @@ export async function GET(request: NextRequest) {
 
     if (orderId) {
       query.orderId = orderId
+    }
+
+    if (productId) {
+      query.product_id = productId
     }
 
     if (userId) {
@@ -285,7 +272,6 @@ export async function GET(request: NextRequest) {
       reviews: reviews.map((review) => ({
         ...review,
         _id: (review._id as mongoose.Types.ObjectId).toString(),
-        orderItemsCount: review.orderItems?.length || 0,
       })),
       pagination: {
         page,

@@ -23,8 +23,6 @@ import {
   User,
   Home,
   Globe,
-  Plus,
-  Minus,
   Hash,
   FileText,
 } from "lucide-react"
@@ -66,6 +64,7 @@ export interface LogisticsInfo {
 
 export interface Order {
   id: string
+  originalOrderId?: string // Add this new field
   date: string
   total: number
   subtotal: number
@@ -98,7 +97,7 @@ export default function OrdersPage() {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [debug, setDebug] = useState<any>(null)
 
-  // Add state for review status tracking
+  // Add state for review status tracking (now per product_id)
   const [reviewStatuses, setReviewStatuses] = useState<Record<string, ReviewStatus>>({})
 
   // Add state for invoice modal
@@ -108,24 +107,31 @@ export default function OrdersPage() {
   // Add state for rating modal
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false)
   const [ratingOrderId, setRatingOrderId] = useState<string>("")
-  const [ratingOrderItems, setRatingOrderItems] = useState<Array<{ id: string; name: string; image_link?: string }>>([])
+  const [ratingProductId, setRatingProductId] = useState<string>("")
+  const [ratingProductName, setRatingProductName] = useState<string>("")
+  const [ratingProductImage, setRatingProductImage] = useState<string>("")
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 3
 
-  // Function to check review status for orders
-  const checkReviewStatuses = async (orderIds: string[]) => {
+  // Function to check review status for products by product_id
+  const checkReviewStatuses = async (productIds: string[]) => {
     try {
-      const reviewPromises = orderIds.map(async (orderId) => {
+      console.log("Checking review statuses for product IDs:", productIds)
+
+      const reviewPromises = productIds.map(async (productId) => {
         try {
-          const response = await fetch(`/api/reviews?orderId=${orderId}&userId=current`)
+          // Check if current user has reviewed this product_id
+          const response = await fetch(`/api/reviews?productId=${productId}&userId=current`)
           if (response.ok) {
             const data = await response.json()
+            console.log(`Review check for product ${productId}:`, data)
+
             if (data.reviews && data.reviews.length > 0) {
               const review = data.reviews[0]
               return {
-                orderId,
+                productId,
                 hasReview: true,
                 reviewId: review._id,
                 rating: review.rating,
@@ -135,10 +141,10 @@ export default function OrdersPage() {
               }
             }
           }
-          return { orderId, hasReview: false }
+          return { productId, hasReview: false }
         } catch (error) {
-          console.error(`Error checking review for order ${orderId}:`, error)
-          return { orderId, hasReview: false }
+          console.error(`Error checking review for product ${productId}:`, error)
+          return { productId, hasReview: false }
         }
       })
 
@@ -146,7 +152,7 @@ export default function OrdersPage() {
       const statusMap: Record<string, ReviewStatus> = {}
 
       results.forEach((result) => {
-        statusMap[result.orderId] = {
+        statusMap[result.productId] = {
           hasReview: result.hasReview,
           reviewId: result.reviewId,
           rating: result.rating,
@@ -156,6 +162,7 @@ export default function OrdersPage() {
         }
       })
 
+      console.log("Review status map:", statusMap)
       setReviewStatuses(statusMap)
     } catch (error) {
       console.error("Error checking review statuses:", error)
@@ -252,10 +259,20 @@ export default function OrdersPage() {
 
         setOrders(mappedOrders)
 
-        // Check review statuses for all orders
-        const orderIds = mappedOrders.map((order) => order.id)
-        if (orderIds.length > 0) {
-          await checkReviewStatuses(orderIds)
+        // Collect all unique product IDs for review status checking
+        const allProductIds: string[] = []
+        mappedOrders.forEach((order) => {
+          order.items.forEach((item) => {
+            if (item.id && item.id !== "N/A" && !allProductIds.includes(item.id)) {
+              allProductIds.push(item.id)
+            }
+          })
+        })
+
+        console.log("All product IDs to check for reviews:", allProductIds)
+
+        if (allProductIds.length > 0) {
+          await checkReviewStatuses(allProductIds)
         }
       } catch (error) {
         console.error("Error fetching orders:", error)
@@ -273,36 +290,32 @@ export default function OrdersPage() {
     setIsInvoiceModalOpen(true)
   }
 
-  // Function to handle opening the rating modal
-  const handleRateOrder = (order: Order) => {
-    setRatingOrderId(order.id)
-    setRatingOrderItems(
-      order.items.map((item) => ({
-        id: item.id,
-        name: item.name,
-        image_link: item.image_link || item.image,
-      })),
-    )
+  // Update the handleRateOrder function to handle individual products
+  const handleRateOrder = (order: Order, productId: string, productName: string, productImage: string) => {
+    setRatingOrderId(order.originalOrderId || order.id)
+    setRatingProductId(productId)
+    setRatingProductName(productName)
+    setRatingProductImage(productImage)
     setIsRatingModalOpen(true)
   }
 
   // Function to handle successful review submission
-  const handleReviewSubmitted = (orderId: string, reviewData: any) => {
-    // Update the review status for this order
+  const handleReviewSubmitted = (orderId: string, productId: string, reviewData: any) => {
+    // Update the review status for this specific product_id
     setReviewStatuses((prev) => ({
       ...prev,
-      [orderId]: {
+      [productId]: {
         hasReview: true,
         reviewId: reviewData.reviewId,
         rating: reviewData.rating,
-        status: "approved", // Changed from "pending" to "approved"
+        status: "approved",
         reviewText: reviewData.review,
         createdAt: new Date().toISOString(),
       },
     }))
 
-    // Hide the rating banner for this order
-    setHiddenRatingBanners((prev) => [...prev, orderId])
+    // Hide the rating banner for this specific product
+    setHiddenRatingBanners((prev) => [...prev, productId])
   }
 
   // Function to extract image URL from product data
@@ -351,36 +364,63 @@ export default function OrdersPage() {
   }
 
   const filteredOrders = useMemo(() => {
+    let baseOrders = orders
+
     // If filter is "all", return all orders sorted by date
     if (timeFilter === "all") {
-      return orders
+      baseOrders = orders
         .filter((order) => {
           const orderDate = parseISO(order.date)
           return !isNaN(orderDate.getTime()) // Only filter out invalid dates
         })
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    } else {
+      const now = new Date()
+      const year = timeFilter === "2024" ? 2024 : timeFilter === "2023" ? 2023 : null
+
+      baseOrders = orders
+        .filter((order) => {
+          const orderDate = parseISO(order.date)
+          if (isNaN(orderDate.getTime())) return false
+
+          if (year) {
+            return orderDate.getFullYear() === year
+          }
+
+          // For past3Months and past6Months
+          const months = timeFilter === "past3Months" ? 3 : 6
+          const filterDate = new Date()
+          filterDate.setMonth(filterDate.getMonth() - months)
+
+          return orderDate >= filterDate && orderDate <= now
+        })
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     }
 
-    const now = new Date()
-    const year = timeFilter === "2024" ? 2024 : timeFilter === "2023" ? 2023 : null
+    // Transform orders to show each product as a separate entry
+    const expandedOrders: Order[] = []
 
-    return orders
-      .filter((order) => {
-        const orderDate = parseISO(order.date)
-        if (isNaN(orderDate.getTime())) return false
+    baseOrders.forEach((order) => {
+      order.items.forEach((item, itemIndex) => {
+        // Calculate individual item total (price * quantity)
+        const itemTotal = item.price * item.quantity
+        // Calculate proportional tax for this item
+        const itemTax = (order.tax * itemTotal) / order.subtotal || 0
 
-        if (year) {
-          return orderDate.getFullYear() === year
-        }
-
-        // For past3Months and past6Months
-        const months = timeFilter === "past3Months" ? 3 : 6
-        const filterDate = new Date()
-        filterDate.setMonth(filterDate.getMonth() - months)
-
-        return orderDate >= filterDate && orderDate <= now
+        expandedOrders.push({
+          ...order,
+          id: `${order.id}-item-${itemIndex}`, // Unique ID for each product entry
+          originalOrderId: order.id, // Keep reference to original order ID
+          items: [item], // Only this one item
+          subtotal: itemTotal,
+          tax: itemTax,
+          total: itemTotal + itemTax,
+          shipTo: order.shipTo,
+        })
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    })
+
+    return expandedOrders
   }, [timeFilter, orders])
 
   // Pagination calculations
@@ -402,8 +442,8 @@ export default function OrdersPage() {
     setCurrentPage((prev) => Math.max(prev - 1, 1))
   }
 
-  const hideRatingBanner = (orderId: string) => {
-    setHiddenRatingBanners((prev) => [...prev, orderId])
+  const hideRatingBanner = (productId: string) => {
+    setHiddenRatingBanners((prev) => [...prev, productId])
   }
 
   const toggleOrderExpand = (orderId: string) => {
@@ -502,7 +542,7 @@ export default function OrdersPage() {
           sizes="80px"
           className="object-cover"
           onError={() => handleImageError(item.id)}
-          priority
+          priority={false}
         />
       </div>
     )
@@ -661,18 +701,21 @@ export default function OrdersPage() {
     </div>
   )
 
-  // Function to render review section or rating banner
+  // Update the renderReviewSection function to use product_id-based review status
   const renderReviewSection = (order: Order) => {
-    const reviewStatus = reviewStatuses[order.id]
+    const currentItem = order.items[0] // Since we now have only one item per order entry
+    const reviewStatus = reviewStatuses[currentItem.id] // Use product_id directly
+
+    console.log(`Review status for product ${currentItem.id}:`, reviewStatus)
 
     if (reviewStatus?.hasReview) {
-      // Show "Order already reviewed" message instead of the detailed review info
+      // Show "Product already reviewed" message
       return (
         <div className="mt-6 p-4 bg-green-50 rounded-md border border-green-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-600" />
-              <span className="text-green-800 font-medium">Order already reviewed</span>
+              <span className="text-green-800 font-medium">Product already reviewed</span>
               <div className="flex items-center gap-1">
                 {[...Array(5)].map((_, i) => (
                   <Star
@@ -686,23 +729,24 @@ export default function OrdersPage() {
               </div>
             </div>
           </div>
+          {reviewStatus.reviewText && <p className="text-sm text-green-700 mt-2">"{reviewStatus.reviewText}"</p>}
         </div>
       )
     }
 
     // Show rating banner if no review exists and banner is not hidden
-    if (!hiddenRatingBanners.includes(order.id)) {
+    if (!hiddenRatingBanners.includes(currentItem.id)) {
       return (
         <div className="mt-6 p-4 bg-yellow-50 rounded-md border border-yellow-200">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => handleRateOrder(order)}
+              onClick={() => handleRateOrder(order, currentItem.id, currentItem.name, currentItem.image)}
               className="flex items-center gap-2 text-sm md:text-base hover:text-yellow-700 transition-colors"
             >
               <Star className="h-5 w-5 text-yellow-400 fill-current" />
-              <span>How was your experience? Rate this order</span>
+              <span>How was your experience with this product? Rate it now</span>
             </button>
-            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => hideRatingBanner(order.id)}>
+            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => hideRatingBanner(currentItem.id)}>
               ×
             </Button>
           </div>
@@ -773,10 +817,11 @@ export default function OrdersPage() {
                           const isExpanded = expandedOrders.includes(order.id)
                           const isItemsExpanded = expandedItems[order.id] || false
                           const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)
-                          const orderColors = getOrderColor(order.id)
+                          const orderColors = getOrderColor(order.originalOrderId || order.id) // Use original order ID for consistent colors
                           const orderNumber = indexOfFirstOrder + index + 1
                           const displayItems = isItemsExpanded ? order.items : order.items.slice(0, 2)
                           const hasMoreItems = order.items.length > 2
+                          const currentItem = order.items[0] // Since we now have only one item per order entry
 
                           return (
                             <Card
@@ -793,13 +838,18 @@ export default function OrdersPage() {
                                       </span>
                                       <h3 className="font-medium">
                                         <span className="text-emerald-800">OrderId </span>
-                                        <span className="font-bold">{order.id}</span>
+                                        <span className="font-bold">{order.originalOrderId || order.id}</span>
                                       </h3>
                                       {getStatusBadge(order.status)}
                                     </div>
                                     <p className="text-sm text-gray-700">
                                       Placed on {format(parseISO(order.date), "MMMM d, yyyy")}
                                     </p>
+                                    {order.originalOrderId && (
+                                      <p className="text-xs text-emerald-700 font-medium">
+                                        Product from order {order.originalOrderId}
+                                      </p>
+                                    )}
                                   </div>
                                   <div className="flex items-center gap-3">
                                     <div className="text-right">
@@ -833,45 +883,28 @@ export default function OrdersPage() {
                                     <div className="bg-white/80 p-4 rounded-lg shadow-sm">
                                       <h4 className="font-medium mb-4 flex items-center gap-2 text-emerald-800">
                                         <Package className="h-4 w-4" />
-                                        Order Details
+                                        Product Details
                                       </h4>
                                       <div className="space-y-4">
-                                        {order.items.slice(0, isItemsExpanded ? order.items.length : 2).map((item) => (
-                                          <div
-                                            key={item.id}
-                                            className="flex gap-4 p-2 hover:bg-gray-50 rounded-md transition-colors"
-                                          >
-                                            <div className="flex-shrink-0">{renderProductImage(item)}</div>
-                                            <div className="flex-grow">
-                                              <h5 className="font-medium text-sm">{item.name}</h5>
-                                              <div className="flex justify-between mt-1">
-                                                <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
-                                                <p className="text-sm font-medium">₹{item.price.toFixed(2)}</p>
-                                              </div>
+                                        <div className="flex gap-4 p-2 hover:bg-gray-50 rounded-md transition-colors">
+                                          <div className="flex-shrink-0">{renderProductImage(currentItem)}</div>
+                                          <div className="flex-grow">
+                                            <h5 className="font-medium text-sm">{currentItem.name}</h5>
+                                            <p className="text-xs text-gray-500 mt-1">Product ID: {currentItem.id}</p>
+                                            <div className="flex justify-between mt-1">
+                                              <p className="text-sm text-gray-600">Qty: {currentItem.quantity}</p>
+                                              <p className="text-sm font-medium">
+                                                ₹{currentItem.price.toFixed(2)} each
+                                              </p>
+                                            </div>
+                                            <div className="flex justify-between mt-1">
+                                              <p className="text-sm text-gray-600">Subtotal:</p>
+                                              <p className="text-sm font-medium">
+                                                ₹{(currentItem.price * currentItem.quantity).toFixed(2)}
+                                              </p>
                                             </div>
                                           </div>
-                                        ))}
-
-                                        {order.items.length > 2 && (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => toggleItemsExpand(order.id)}
-                                            className="w-full text-emerald-800 hover:text-emerald-900 hover:bg-emerald-50 flex items-center justify-center gap-1"
-                                          >
-                                            {isItemsExpanded ? (
-                                              <>
-                                                <Minus className="h-4 w-4" />
-                                                Show Less
-                                              </>
-                                            ) : (
-                                              <>
-                                                <Plus className="h-4 w-4" />
-                                                Show {order.items.length - 2} More Items
-                                              </>
-                                            )}
-                                          </Button>
-                                        )}
+                                        </div>
                                       </div>
                                     </div>
 
@@ -895,10 +928,10 @@ export default function OrdersPage() {
                                     </div>
 
                                     <div className="bg-white/80 p-4 rounded-lg shadow-sm">
-                                      <h4 className="font-medium mb-2 text-emerald-800">Order Summary</h4>
+                                      <h4 className="font-medium mb-2 text-emerald-800">Product Summary</h4>
                                       <div className="space-y-1 text-sm">
                                         <div className="flex justify-between">
-                                          <span>Subtotal:</span>
+                                          <span>Product Total:</span>
                                           <span>₹{order.subtotal.toFixed(2)}</span>
                                         </div>
                                         <div className="flex justify-between">
@@ -906,15 +939,14 @@ export default function OrdersPage() {
                                           <span>₹0.00</span>
                                         </div>
                                         <div className="flex justify-between">
-                                          <span>Tax:</span>
+                                          <span>Tax (proportional):</span>
                                           <span>₹{order.tax.toFixed(2)}</span>
                                         </div>
                                         <Separator className="my-2" />
                                         <div className="flex justify-between font-medium">
-                                          <span>Total:</span>
+                                          <span>Total for this product:</span>
                                           <span className="text-emerald-700">
-                                            ₹{(order.subtotal + order.tax).toFixed(2)}{" "}
-                                            <span className="text-xs text-gray-500"></span>
+                                            ₹{(order.subtotal + order.tax).toFixed(2)}
                                           </span>
                                         </div>
                                       </div>
@@ -931,7 +963,7 @@ export default function OrdersPage() {
                                       <FileText className="h-4 w-4" />
                                       View Invoice
                                     </Button>
-                                    <SendEmailButton orderId={order.id} />
+                                    <SendEmailButton orderId={order.originalOrderId || order.id} />
                                   </div>
 
                                   {/* Review Section - Show either review status or rating banner */}
@@ -988,10 +1020,14 @@ export default function OrdersPage() {
         onClose={() => {
           setIsRatingModalOpen(false)
           setRatingOrderId("")
-          setRatingOrderItems([])
+          setRatingProductId("")
+          setRatingProductName("")
+          setRatingProductImage("")
         }}
         orderId={ratingOrderId}
-        orderItems={ratingOrderItems}
+        productId={ratingProductId}
+        productName={ratingProductName}
+        productImage={ratingProductImage}
         onReviewSubmitted={handleReviewSubmitted}
       />
     </div>
