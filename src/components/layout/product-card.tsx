@@ -21,6 +21,7 @@ interface ProductCardProps {
   hoverImage: string
   href: string
   rating: number
+  reviewCount?: number
   seller_id: number
   units?: string
   stock: number
@@ -37,6 +38,7 @@ export default function ProductCard({
   hoverImage,
   href,
   rating,
+  reviewCount = 0,
   seller_id,
   units,
   stock,
@@ -66,12 +68,34 @@ export default function ProductCard({
   const calculatedPrice = calculateDiscountedPrice(originalPrice, discount)
 
   const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, index) => (
-      <Star
-        key={index}
-        className={`w-4 h-4 ${index < Math.floor(rating) ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-      />
-    ))
+    const stars = []
+    const fullStars = Math.floor(rating)
+    const hasHalfStar = rating % 1 >= 0.5
+
+    // Add full stars
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<Star key={`full-${i}`} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)
+    }
+
+    // Add half star if needed
+    if (hasHalfStar) {
+      stars.push(
+        <div key="half" className="relative">
+          <Star className="w-4 h-4 text-gray-300" />
+          <div className="absolute inset-0 overflow-hidden w-1/2">
+            <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+          </div>
+        </div>,
+      )
+    }
+
+    // Add empty stars
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(<Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />)
+    }
+
+    return <div className="flex items-center">{stars}</div>
   }
 
   const { addItem: addToCart } = useCartSync()
@@ -157,6 +181,9 @@ export default function ProductCard({
     seller_id,
   ])
 
+  // Debug log to check rating value
+  console.log(`Product: ${title}, Rating: ${rating}, ReviewCount: ${reviewCount}`)
+
   return (
     <div
       className="group transform transition-all duration-300 hover:scale-[0.98]"
@@ -189,10 +216,15 @@ export default function ProductCard({
             </h3>
           </Link>
 
-          {/* Star Rating */}
-          <div className="flex items-center">
+          {/* Star Rating with Review Count */}
+          <div className="flex items-center gap-1">
             {renderStars(rating)}
-            <span className="ml-1 text-xs text-gray-600">({rating?.toFixed(1)})</span>
+            <span className="ml-1 text-xs text-gray-600">({rating > 0 ? rating.toFixed(1) : "0.0"})</span>
+            {reviewCount > 0 && (
+              <span className="text-xs text-gray-500">
+                • {reviewCount} review{reviewCount !== 1 ? "s" : ""}
+              </span>
+            )}
           </div>
 
           {/* Company */}

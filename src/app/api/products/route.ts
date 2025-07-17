@@ -8,10 +8,16 @@ export async function GET(request: Request) {
     // Connect to the PROFILE_DB database
     const connection = await connectProfileDB()
     const ProductModel = connection.models.Product
+    const ReviewModel = connection.models.Review
 
     if (!ProductModel) {
       console.error("Product model not found in PROFILE_DB")
       return NextResponse.json({ error: "Product model not found" }, { status: 500 })
+    }
+
+    if (!ReviewModel) {
+      console.error("Review model not found in PROFILE_DB")
+      return NextResponse.json({ error: "Review model not found" }, { status: 500 })
     }
 
     // Parse query parameters
@@ -41,7 +47,7 @@ export async function GET(request: Request) {
       const allCategories = await ProductModel.distinct("category_name", {
         isActive: true,
         is_draft: false,
-        category_name: { $exists: true, $ne: null,  },
+        category_name: { $exists: true, $ne: null },
       })
 
       const isQueryACategory = allCategories.some((cat) => cat && cat.toLowerCase() === query.trim().toLowerCase())
@@ -77,7 +83,7 @@ export async function GET(request: Request) {
 
     console.log("Final MongoDB filter:", JSON.stringify(filter, null, 2))
 
-    // Build query
+    // First, get the products
     let productsQuery = ProductModel.find(filter).lean().select({
       product_id: 1,
       title: 1,
@@ -88,7 +94,6 @@ export async function GET(request: Request) {
       discount: 1,
       SKU: 1,
       seller_id: 1,
-      rating: 1,
       seller_name: 1,
       location: 1,
       category_name: 1,
@@ -118,11 +123,47 @@ export async function GET(request: Request) {
     console.log(`=== QUERY RESULTS ===`)
     console.log(`Found ${products.length} products (query time: ${queryTime}ms)`)
 
+    // Now fetch ratings for all products
+    const productIds = products.map((p) => p.product_id?.toString()).filter(Boolean)
+    console.log(`Fetching ratings for ${productIds.length} products`)
+
+    // Get ratings aggregation for all products
+    const ratingsAggregation = await ReviewModel.aggregate([
+      {
+        $match: {
+          product_id: { $in: productIds },
+          status: "approved",
+        },
+      },
+      {
+        $group: {
+          _id: "$product_id",
+          averageRating: { $avg: "$rating" },
+          reviewCount: { $sum: 1 },
+          ratings: { $push: "$rating" },
+        },
+      },
+    ])
+
+    console.log(`Found ratings for ${ratingsAggregation.length} products`)
+
+    // Create a map for quick lookup
+    const ratingsMap = new Map()
+    ratingsAggregation.forEach((rating) => {
+      ratingsMap.set(rating._id, {
+        averageRating: Math.round(rating.averageRating * 10) / 10, // Round to 1 decimal
+        reviewCount: rating.reviewCount,
+      })
+    })
+
     // Log sample results for debugging
     if (products.length > 0) {
       console.log("Sample products found:")
       products.slice(0, 5).forEach((p, i) => {
-        console.log(`  ${i + 1}. "${p.title}" (Category: "${p.category_name}", Brand: "${p.brand}")`)
+        const ratingData = ratingsMap.get(p.product_id?.toString())
+        console.log(
+          `  ${i + 1}. "${p.title}" (Product ID: ${p.product_id}, Rating: ${ratingData?.averageRating || 0}, Reviews: ${ratingData?.reviewCount || 0})`,
+        )
       })
     } else {
       console.log("❌ NO PRODUCTS FOUND!")
@@ -152,30 +193,35 @@ export async function GET(request: Request) {
       console.log(`Debug: Total active products in DB: ${totalActiveProducts}`)
     }
 
-    // Transform products to ensure consistent format
-    const transformedProducts = products.map((product) => ({
-      product_id: product.product_id || product._id?.toString(),
-      title: product.title || "",
-      description: product.description || "",
-      image_link: product.image_link || "/placeholder.svg?height=200&width=200",
-      stock: product.stock || 0,
-      price: product.price || 0,
-      discount: product.discount || 0,
-      SKU: product.SKU || "",
-      seller_id: product.seller_id || 0,
-      rating: product.rating || 0,
-      seller_name: product.seller_name || "",
-      location: product.location || "Delhi",
-      category_name: product.category_name || "",
-      sub_category_name: product.sub_category_name || "",
-      brand: product.brand || "",
-      original_price: product.original_price || product.price || 0,
-      units: product.units || "",
-      delivery_option: product.delivery_option || "Free Delivery Available",
-      created_at: product.created_at,
-    }))
+    // Transform products to ensure consistent format and include ratings
+    const transformedProducts = products.map((product) => {
+      const ratingData = ratingsMap.get(product.product_id?.toString())
 
-    console.log(`=== RETURNING ${transformedProducts.length} TRANSFORMED PRODUCTS ===`)
+      return {
+        product_id: product.product_id || product._id?.toString(),
+        title: product.title || "",
+        description: product.description || "",
+        image_link: product.image_link || "/placeholder.svg?height=200&width=200",
+        stock: product.stock || 0,
+        price: product.price || 0,
+        discount: product.discount || 0,
+        SKU: product.SKU || "",
+        seller_id: product.seller_id || 0,
+        rating: ratingData?.averageRating || 0,
+        reviewCount: ratingData?.reviewCount || 0,
+        seller_name: product.seller_name || "",
+        location: product.location || "Delhi",
+        category_name: product.category_name || "",
+        sub_category_name: product.sub_category_name || "",
+        brand: product.brand || "",
+        original_price: product.original_price || product.price || 0,
+        units: product.units || "",
+        delivery_option: product.delivery_option || "Free Delivery Available",
+        created_at: product.created_at,
+      }
+    })
+
+    console.log(`=== RETURNING ${transformedProducts.length} TRANSFORMED PRODUCTS WITH RATINGS ===`)
 
     // Add cache headers
     const response = NextResponse.json(transformedProducts, { status: 200 })

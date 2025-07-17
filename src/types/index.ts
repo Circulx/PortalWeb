@@ -2,6 +2,14 @@ export interface Product {
   image_link: string
   title: string
   rating: number
+  reviewCount?: number
+  totalRatings?: {
+    1: number
+    2: number
+    3: number
+    4: number
+    5: number
+  }
   _id: string
   id: string
   name: string
@@ -29,7 +37,6 @@ export interface Product {
   originalPrice: number
   seller_id: number
   units: string
-  reviewCount: number
 }
 
 export type CategoryType = "All" | "Electronics" | "Clothing" | "Home & Kitchen" | "Books" | string
