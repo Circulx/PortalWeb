@@ -71,8 +71,9 @@ export default function ProductCard({
     const stars = []
     const fullStars = Math.floor(rating)
     const hasHalfStar = rating % 1 >= 0.5
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
 
-    // Add full stars
+    // Add full stars (yellow filled)
     for (let i = 0; i < fullStars; i++) {
       stars.push(<Star key={`full-${i}`} className="w-4 h-4 text-yellow-400 fill-yellow-400" />)
     }
@@ -80,22 +81,21 @@ export default function ProductCard({
     // Add half star if needed
     if (hasHalfStar) {
       stars.push(
-        <div key="half" className="relative">
-          <Star className="w-4 h-4 text-gray-300" />
-          <div className="absolute inset-0 overflow-hidden w-1/2">
+        <div key="half" className="relative inline-block">
+          <Star className="w-4 h-4 text-gray-300 fill-gray-300" />
+          <div className="absolute inset-0 overflow-hidden" style={{ width: "50%" }}>
             <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
           </div>
         </div>,
       )
     }
 
-    // Add empty stars
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0)
+    // Add empty stars (gray)
     for (let i = 0; i < emptyStars; i++) {
-      stars.push(<Star key={`empty-${i}`} className="w-4 h-4 text-gray-300" />)
+      stars.push(<Star key={`empty-${i}`} className="w-4 h-4 text-gray-300 fill-gray-300" />)
     }
 
-    return <div className="flex items-center">{stars}</div>
+    return <div className="flex items-center gap-0.5">{stars}</div>
   }
 
   const { addItem: addToCart } = useCartSync()
@@ -181,8 +181,8 @@ export default function ProductCard({
     seller_id,
   ])
 
-  // Debug log to check rating value
-  console.log(`Product: ${title}, Rating: ${rating}, ReviewCount: ${reviewCount}`)
+  // Debug log to verify rating is being received
+  console.log(`Product Card - Title: ${title}, Rating: ${rating}, ReviewCount: ${reviewCount}`)
 
   return (
     <div
@@ -211,7 +211,7 @@ export default function ProductCard({
         <div className="p-2 space-y-1.5">
           {/* Product Title with href */}
           <Link href={`/products/${productId}`} className="block hover:text-green-900 transition-colors duration-300">
-            <h3 className="text-white-800 font-medium text-sm line-clamp-2 min-h-[2.4rem] hover:text-gray-800">
+            <h3 className="text-gray-800 font-medium text-sm line-clamp-2 min-h-[2.4rem] hover:text-gray-800">
               {title}
             </h3>
           </Link>
@@ -219,7 +219,7 @@ export default function ProductCard({
           {/* Star Rating with Review Count */}
           <div className="flex items-center gap-1">
             {renderStars(rating)}
-            <span className="ml-1 text-xs text-gray-600">({rating > 0 ? rating.toFixed(1) : "0.0"})</span>
+            <span className="ml-1 text-xs text-gray-600 font-medium">({rating > 0 ? rating.toFixed(1) : "0.0"})</span>
             {reviewCount > 0 && (
               <span className="text-xs text-gray-500">
                 • {reviewCount} review{reviewCount !== 1 ? "s" : ""}

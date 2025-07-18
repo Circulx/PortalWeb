@@ -123,21 +123,82 @@ export async function GET(request: Request) {
     console.log(`=== QUERY RESULTS ===`)
     console.log(`Found ${products.length} products (query time: ${queryTime}ms)`)
 
-    // Now fetch ratings for all products
-    const productIds = products.map((p) => p.product_id?.toString()).filter(Boolean)
-    console.log(`Fetching ratings for ${productIds.length} products`)
+    // Function to extract numerical product ID
+    const extractProductId = (productId: string | number): string => {
+      if (!productId) return ""
+
+      const productIdStr = productId.toString()
+
+      // If it contains "/product/" or "/products/", extract the number after it
+      if (productIdStr.includes("/product/")) {
+        const parts = productIdStr.split("/product/")
+        return parts[parts.length - 1] || ""
+      }
+
+      if (productIdStr.includes("/products/")) {
+        const parts = productIdStr.split("/products/")
+        return parts[parts.length - 1] || ""
+      }
+
+      // If it starts with "/" and contains numbers, extract the number
+      if (productIdStr.startsWith("/") && /\d+/.test(productIdStr)) {
+        const match = productIdStr.match(/\d+/)
+        return match ? match[0] : ""
+      }
+
+      // If it's already a number or clean string, return as is
+      return productIdStr
+    }
+
+    // Extract clean product IDs for rating lookup
+    const productIdMappings = new Map()
+    const cleanProductIds: string[] = []
+
+    products.forEach((product) => {
+      const originalId = product.product_id
+      const cleanId = extractProductId(originalId)
+      if (cleanId) {
+        productIdMappings.set(cleanId, originalId)
+        cleanProductIds.push(cleanId)
+      }
+    })
+
+    console.log(`Extracted clean product IDs: ${cleanProductIds.slice(0, 5).join(", ")}...`)
+
+    // Get all possible variations of product IDs that might exist in reviews
+    const allPossibleIds: string[] = []
+    cleanProductIds.forEach((id) => {
+      allPossibleIds.push(id) // Just the number
+      allPossibleIds.push(`/product/${id}`) // With /product/ prefix
+      allPossibleIds.push(`/products/${id}`) // With /products/ prefix
+    })
+
+    console.log(`Searching reviews with all possible ID formats...`)
 
     // Get ratings aggregation for all products
     const ratingsAggregation = await ReviewModel.aggregate([
       {
         $match: {
-          product_id: { $in: productIds },
+          product_id: { $in: allPossibleIds },
           status: "approved",
         },
       },
       {
+        $addFields: {
+          cleanProductId: {
+            $cond: {
+              if: { $regexMatch: { input: { $toString: "$product_id" }, regex: "^/products?/" } },
+              then: {
+                $arrayElemAt: [{ $split: [{ $toString: "$product_id" }, "/"] }, -1],
+              },
+              else: { $toString: "$product_id" },
+            },
+          },
+        },
+      },
+      {
         $group: {
-          _id: "$product_id",
+          _id: "$cleanProductId",
           averageRating: { $avg: "$rating" },
           reviewCount: { $sum: 1 },
           ratings: { $push: "$rating" },
@@ -147,10 +208,11 @@ export async function GET(request: Request) {
 
     console.log(`Found ratings for ${ratingsAggregation.length} products`)
 
-    // Create a map for quick lookup
+    // Create a map for quick lookup using clean product IDs
     const ratingsMap = new Map()
     ratingsAggregation.forEach((rating) => {
-      ratingsMap.set(rating._id, {
+      const cleanId = rating._id
+      ratingsMap.set(cleanId, {
         averageRating: Math.round(rating.averageRating * 10) / 10, // Round to 1 decimal
         reviewCount: rating.reviewCount,
       })
@@ -158,11 +220,12 @@ export async function GET(request: Request) {
 
     // Log sample results for debugging
     if (products.length > 0) {
-      console.log("Sample products found:")
+      console.log("Sample products with ratings:")
       products.slice(0, 5).forEach((p, i) => {
-        const ratingData = ratingsMap.get(p.product_id?.toString())
+        const cleanProductId = extractProductId(p.product_id)
+        const ratingData = ratingsMap.get(cleanProductId)
         console.log(
-          `  ${i + 1}. "${p.title}" (Product ID: ${p.product_id}, Rating: ${ratingData?.averageRating || 0}, Reviews: ${ratingData?.reviewCount || 0})`,
+          `  ${i + 1}. "${p.title}" (Original ID: ${p.product_id}, Clean ID: ${cleanProductId}, Rating: ${ratingData?.averageRating || 0}, Reviews: ${ratingData?.reviewCount || 0})`,
         )
       })
     } else {
@@ -195,7 +258,8 @@ export async function GET(request: Request) {
 
     // Transform products to ensure consistent format and include ratings
     const transformedProducts = products.map((product) => {
-      const ratingData = ratingsMap.get(product.product_id?.toString())
+      const cleanProductId = extractProductId(product.product_id)
+      const ratingData = ratingsMap.get(cleanProductId)
 
       return {
         product_id: product.product_id || product._id?.toString(),

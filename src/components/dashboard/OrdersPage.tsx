@@ -18,11 +18,6 @@ import {
   ImageIcon,
   ChevronLeft,
   ChevronRight,
-  MapPin,
-  Mail,
-  User,
-  Home,
-  Globe,
   Hash,
   FileText,
 } from "lucide-react"
@@ -31,10 +26,8 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { InvoiceModal } from "./InvoiceModal"
 import { RatingModal } from "./RatingModal"
-// Import the SendEmailButton component
 import { SendEmailButton } from "./SendEmailButton"
 
-// Export these interfaces so they can be imported in InvoiceModal
 export interface OrderItem {
   image_link: string
   id: string
@@ -42,6 +35,7 @@ export interface OrderItem {
   image: string
   price: number
   quantity: number
+  actualProductId?: string
 }
 
 export interface ShippingDetails {
@@ -64,7 +58,7 @@ export interface LogisticsInfo {
 
 export interface Order {
   id: string
-  originalOrderId?: string // Add this new field
+  originalOrderId?: string
   date: string
   total: number
   subtotal: number
@@ -96,33 +90,44 @@ export default function OrdersPage() {
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>({})
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [debug, setDebug] = useState<any>(null)
-
-  // Add state for review status tracking (now per product_id)
   const [reviewStatuses, setReviewStatuses] = useState<Record<string, ReviewStatus>>({})
-
-  // Add state for invoice modal
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false)
-
-  // Add state for rating modal
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false)
   const [ratingOrderId, setRatingOrderId] = useState<string>("")
   const [ratingProductId, setRatingProductId] = useState<string>("")
   const [ratingProductName, setRatingProductName] = useState<string>("")
   const [ratingProductImage, setRatingProductImage] = useState<string>("")
-
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const ordersPerPage = 3
 
-  // Function to check review status for products by product_id
+  // Simple function to extract product ID - just get the actual product_id from database
+  const getActualProductId = (product: any): string => {
+    console.log("Raw product data:", product)
+
+    // First try product_id field (this is the main field in database)
+    if (product.product_id) {
+      console.log("Found product_id:", product.product_id)
+      return product.product_id.toString()
+    }
+
+    // Then try productId field as fallback
+    if (product.productId) {
+      console.log("Found productId:", product.productId)
+      return product.productId.toString()
+    }
+
+    // If neither exists, return empty string
+    console.log("No product ID found")
+    return ""
+  }
+
   const checkReviewStatuses = async (productIds: string[]) => {
     try {
       console.log("Checking review statuses for product IDs:", productIds)
 
       const reviewPromises = productIds.map(async (productId) => {
         try {
-          // Check if current user has reviewed this product_id
           const response = await fetch(`/api/reviews?productId=${productId}&userId=current`)
           if (response.ok) {
             const data = await response.json()
@@ -169,7 +174,6 @@ export default function OrdersPage() {
     }
   }
 
-  // Fetch orders from the API
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -186,36 +190,36 @@ export default function OrdersPage() {
         }
 
         const data = await response.json()
-
-        // Store raw data for debugging
         setDebug(data)
-
         console.log("Raw order data:", data)
 
-        // Map the API response to the Order interface
         const mappedOrders: Order[] = data.map((order: any) => {
           console.log("Processing order:", order._id || order.orderId)
+          console.log("Order products:", order.products)
 
-          // Extract products and map them to OrderItems
           const items =
-            order.products?.map((product: any) => {
-              console.log("Product:", product)
+            order.products?.map((product: any, index: number) => {
+              console.log(`\n=== Processing Product ${index} ===`)
+              console.log("Full product object:", product)
 
-              // Try to get the image URL from various possible fields
+              // Get the actual product ID directly from the database fields
+              const actualProductId = getActualProductId(product)
+              console.log(`Final product ID for product ${index}:`, actualProductId)
+
               const imageUrl = extractImageUrl(product)
-              console.log("Extracted image URL:", imageUrl)
+              const uniqueReactId = `${actualProductId || "unknown"}-${index}-${order._id || order.orderId}-${Date.now()}`
 
               return {
-                id: product.productId || product.product_id || "N/A",
-                name: product.title || "Product",
+                id: uniqueReactId,
+                actualProductId: actualProductId,
+                name: product.title || `Product ${index + 1}`,
                 image: imageUrl,
-                image_link: imageUrl, // Add this for rating modal
+                image_link: imageUrl,
                 price: product.price || 0,
                 quantity: product.quantity || 1,
               }
             }) || []
 
-          // Extract shipping details
           const shippingDetails: ShippingDetails = {
             firstName: order.billingDetails?.firstName || "",
             lastName: order.billingDetails?.lastName || "",
@@ -227,7 +231,6 @@ export default function OrdersPage() {
             country: order.billingDetails?.country || "",
           }
 
-          // Extract logistics information
           const logistics: LogisticsInfo = {
             warehouseId: order.warehouseId === null ? "null" : order.warehouseId || "null",
             logisticsId: order.logisticsId === null ? "null" : order.logisticsId || "null",
@@ -235,7 +238,6 @@ export default function OrdersPage() {
             estimatedDelivery: order.estimatedDelivery || "",
           }
 
-          // Extract subtotal and tax
           const subtotal = order.subTotal || 0
           const tax = order.tax || 0
           const total = order.totalAmount || subtotal + tax
@@ -259,17 +261,17 @@ export default function OrdersPage() {
 
         setOrders(mappedOrders)
 
-        // Collect all unique product IDs for review status checking
+        // Collect all unique actual product IDs for review status checking
         const allProductIds: string[] = []
         mappedOrders.forEach((order) => {
           order.items.forEach((item) => {
-            if (item.id && item.id !== "N/A" && !allProductIds.includes(item.id)) {
-              allProductIds.push(item.id)
+            if (item.actualProductId && item.actualProductId !== "" && !allProductIds.includes(item.actualProductId)) {
+              allProductIds.push(item.actualProductId)
             }
           })
         })
 
-        console.log("All product IDs to check for reviews:", allProductIds)
+        console.log("All unique product IDs to check for reviews:", allProductIds)
 
         if (allProductIds.length > 0) {
           await checkReviewStatuses(allProductIds)
@@ -284,13 +286,11 @@ export default function OrdersPage() {
     fetchOrders()
   }, [])
 
-  // Function to handle opening the invoice modal
   const handleViewInvoice = (order: Order) => {
     setSelectedOrder(order)
     setIsInvoiceModalOpen(true)
   }
 
-  // Update the handleRateOrder function to handle individual products
   const handleRateOrder = (order: Order, productId: string, productName: string, productImage: string) => {
     setRatingOrderId(order.originalOrderId || order.id)
     setRatingProductId(productId)
@@ -299,9 +299,7 @@ export default function OrdersPage() {
     setIsRatingModalOpen(true)
   }
 
-  // Function to handle successful review submission
   const handleReviewSubmitted = (orderId: string, productId: string, reviewData: any) => {
-    // Update the review status for this specific product_id
     setReviewStatuses((prev) => ({
       ...prev,
       [productId]: {
@@ -314,13 +312,10 @@ export default function OrdersPage() {
       },
     }))
 
-    // Hide the rating banner for this specific product
     setHiddenRatingBanners((prev) => [...prev, productId])
   }
 
-  // Function to extract image URL from product data
   const extractImageUrl = (product: any): string => {
-    // Try different possible field names for the image
     const possibleFields = ["image_link", "image", "imageUrl", "img", "thumbnail", "photo"]
 
     for (const field of possibleFields) {
@@ -329,7 +324,6 @@ export default function OrdersPage() {
       }
     }
 
-    // If no image field is found, check if there's an images array
     if (product.images && Array.isArray(product.images) && product.images.length > 0) {
       return formatImageUrl(product.images[0])
     }
@@ -337,21 +331,17 @@ export default function OrdersPage() {
     return "/placeholder.svg"
   }
 
-  // Function to format image URLs correctly
   const formatImageUrl = (url: string | undefined): string => {
     if (!url) return "/placeholder.svg"
 
-    // If URL is already absolute (starts with http or https), return as is
     if (url.startsWith("http://") || url.startsWith("https://")) {
       return url
     }
 
-    // If URL starts with a slash, it's a relative URL from the root
     if (url.startsWith("/")) {
       return url
     }
 
-    // Otherwise, ensure it has a leading slash
     return `/${url}`
   }
 
@@ -366,12 +356,11 @@ export default function OrdersPage() {
   const filteredOrders = useMemo(() => {
     let baseOrders = orders
 
-    // If filter is "all", return all orders sorted by date
     if (timeFilter === "all") {
       baseOrders = orders
         .filter((order) => {
           const orderDate = parseISO(order.date)
-          return !isNaN(orderDate.getTime()) // Only filter out invalid dates
+          return !isNaN(orderDate.getTime())
         })
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     } else {
@@ -387,7 +376,6 @@ export default function OrdersPage() {
             return orderDate.getFullYear() === year
           }
 
-          // For past3Months and past6Months
           const months = timeFilter === "past3Months" ? 3 : 6
           const filterDate = new Date()
           filterDate.setMonth(filterDate.getMonth() - months)
@@ -397,21 +385,18 @@ export default function OrdersPage() {
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     }
 
-    // Transform orders to show each product as a separate entry
     const expandedOrders: Order[] = []
 
     baseOrders.forEach((order) => {
       order.items.forEach((item, itemIndex) => {
-        // Calculate individual item total (price * quantity)
         const itemTotal = item.price * item.quantity
-        // Calculate proportional tax for this item
         const itemTax = (order.tax * itemTotal) / order.subtotal || 0
 
         expandedOrders.push({
           ...order,
-          id: `${order.id}-item-${itemIndex}`, // Unique ID for each product entry
-          originalOrderId: order.id, // Keep reference to original order ID
-          items: [item], // Only this one item
+          id: `${order.id}-item-${itemIndex}`,
+          originalOrderId: order.id,
+          items: [item],
           subtotal: itemTotal,
           tax: itemTax,
           total: itemTotal + itemTax,
@@ -423,13 +408,11 @@ export default function OrdersPage() {
     return expandedOrders
   }, [timeFilter, orders])
 
-  // Pagination calculations
   const totalPages = Math.ceil(filteredOrders.length / ordersPerPage)
   const indexOfLastOrder = currentPage * ordersPerPage
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage
   const currentOrders = filteredOrders.slice(indexOfFirstOrder, indexOfLastOrder)
 
-  // Reset to first page when filter changes
   useEffect(() => {
     setCurrentPage(1)
   }, [timeFilter, activeTab])
@@ -493,37 +476,31 @@ export default function OrdersPage() {
     return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">{status}</Badge>
   }
 
-  // Function to generate a green or orange color based on order ID
   const getOrderColor = (orderId: string): { header: string; border: string; content: string } => {
-    // Generate a hash from the order ID string
     let hash = 0
     for (let i = 0; i < orderId.length; i++) {
       hash = orderId.charCodeAt(i) + ((hash << 5) - hash)
     }
 
-    // Determine if we use green or orange theme based on the hash
     const isGreen = hash % 2 === 0
 
     if (isGreen) {
-      // Green theme variations
-      const intensity = 50 + (hash % 30) // Vary the intensity
+      const intensity = 50 + (hash % 30)
       return {
-        header: `rgba(0, 128, 0, 0.${intensity})`, // Green with varying opacity
-        border: `rgba(0, 100, 0, 0.8)`, // Darker green for border
-        content: `rgba(240, 255, 240, 0.6)`, // Very light green for content
+        header: `rgba(0, 128, 0, 0.${intensity})`,
+        border: `rgba(0, 100, 0, 0.8)`,
+        content: `rgba(240, 255, 240, 0.6)`,
       }
     } else {
-      // Orange theme variations
-      const intensity = 50 + (hash % 30) // Vary the intensity
+      const intensity = 50 + (hash % 30)
       return {
-        header: `rgba(255, 165, 0, 0.${intensity})`, // Orange with varying opacity
-        border: `rgba(220, 120, 0, 0.8)`, // Darker orange for border
-        content: `rgba(255, 248, 240, 0.6)`, // Very light orange for content
+        header: `rgba(255, 165, 0, 0.${intensity})`,
+        border: `rgba(220, 120, 0, 0.8)`,
+        content: `rgba(255, 248, 240, 0.6)`,
       }
     }
   }
 
-  // Function to render product image with fallback
   const renderProductImage = (item: OrderItem) => {
     if (imageErrors[item.id]) {
       return (
@@ -548,70 +525,6 @@ export default function OrdersPage() {
     )
   }
 
-  // Function to render shipping details in compact form
-  const renderCompactShippingDetails = (details: ShippingDetails, logistics: LogisticsInfo) => {
-    return (
-      <div className="mt-4 bg-white/90 rounded-md p-3 text-sm space-y-3">
-        <div>
-          <h5 className="font-medium text-emerald-800 mb-2">Shipping Information</h5>
-          <div className="grid grid-cols-1 gap-1">
-            <div className="flex items-center gap-2">
-              <User className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-              <span>
-                {details.firstName} {details.lastName}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-              <span className="truncate">{details.email}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Home className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-              <span>{details.address}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <MapPin className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-              <span>
-                {details.city}, {details.state} {details.zipCode}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Globe className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-              <span>{details.country}</span>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h5 className="font-medium text-emerald-800 mb-2">Delivery IDs</h5>
-          <div className="grid grid-cols-1 gap-1">
-            <div className="flex items-center gap-2">
-              <Hash className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-              <span>
-                <span className="font-medium">Warehouse ID:</span> {logistics.warehouseId}
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Hash className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-              <span>
-                <span className="font-medium">Logistics ID:</span> {logistics.logisticsId}
-              </span>
-            </div>
-            {logistics.trackingId && logistics.trackingId !== "Not available" && (
-              <div className="flex items-center gap-2">
-                <Package className="h-3.5 w-3.5 text-emerald-700 flex-shrink-0" />
-                <span>
-                  <span className="font-medium">Tracking:</span> {logistics.trackingId}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Function to render pagination controls
   const renderPagination = () => {
     if (filteredOrders.length <= ordersPerPage) return null
 
@@ -663,7 +576,6 @@ export default function OrdersPage() {
     )
   }
 
-  // Function to render shipping details
   const renderShippingDetails = (details: ShippingDetails) => (
     <div className="space-y-1 text-sm">
       <div>
@@ -679,7 +591,6 @@ export default function OrdersPage() {
     </div>
   )
 
-  // Function to render logistics information
   const renderLogisticsInfo = (logistics: LogisticsInfo) => (
     <div className="space-y-1 text-sm">
       <div className="flex items-center gap-2">
@@ -701,15 +612,13 @@ export default function OrdersPage() {
     </div>
   )
 
-  // Update the renderReviewSection function to use product_id-based review status
   const renderReviewSection = (order: Order) => {
-    const currentItem = order.items[0] // Since we now have only one item per order entry
-    const reviewStatus = reviewStatuses[currentItem.id] // Use product_id directly
+    const currentItem = order.items[0]
+    const reviewStatus = reviewStatuses[currentItem.actualProductId || ""]
 
-    console.log(`Review status for product ${currentItem.id}:`, reviewStatus)
+    console.log(`Review status for product ${currentItem.actualProductId}:`, reviewStatus)
 
     if (reviewStatus?.hasReview) {
-      // Show "Product already reviewed" message
       return (
         <div className="mt-6 p-4 bg-green-50 rounded-md border border-green-200">
           <div className="flex items-center justify-between">
@@ -734,19 +643,19 @@ export default function OrdersPage() {
       )
     }
 
-    // Show rating banner if no review exists and banner is not hidden
-    if (!hiddenRatingBanners.includes(currentItem.id)) {
+    const productIdForBanner = currentItem.actualProductId || ""
+    if (productIdForBanner && !hiddenRatingBanners.includes(productIdForBanner)) {
       return (
         <div className="mt-6 p-4 bg-yellow-50 rounded-md border border-yellow-200">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => handleRateOrder(order, currentItem.id, currentItem.name, currentItem.image)}
+              onClick={() => handleRateOrder(order, productIdForBanner, currentItem.name, currentItem.image)}
               className="flex items-center gap-2 text-sm md:text-base hover:text-yellow-700 transition-colors"
             >
               <Star className="h-5 w-5 text-yellow-400 fill-current" />
               <span>How was your experience with this product? Rate it now</span>
             </button>
-            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => hideRatingBanner(currentItem.id)}>
+            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => hideRatingBanner(productIdForBanner)}>
               ×
             </Button>
           </div>
@@ -815,13 +724,10 @@ export default function OrdersPage() {
                       <div className="space-y-6">
                         {currentOrders.map((order, index) => {
                           const isExpanded = expandedOrders.includes(order.id)
-                          const isItemsExpanded = expandedItems[order.id] || false
                           const totalItems = order.items.reduce((sum, item) => sum + item.quantity, 0)
-                          const orderColors = getOrderColor(order.originalOrderId || order.id) // Use original order ID for consistent colors
+                          const orderColors = getOrderColor(order.originalOrderId || order.id)
                           const orderNumber = indexOfFirstOrder + index + 1
-                          const displayItems = isItemsExpanded ? order.items : order.items.slice(0, 2)
-                          const hasMoreItems = order.items.length > 2
-                          const currentItem = order.items[0] // Since we now have only one item per order entry
+                          const currentItem = order.items[0]
 
                           return (
                             <Card
@@ -890,7 +796,9 @@ export default function OrdersPage() {
                                           <div className="flex-shrink-0">{renderProductImage(currentItem)}</div>
                                           <div className="flex-grow">
                                             <h5 className="font-medium text-sm">{currentItem.name}</h5>
-                                            <p className="text-xs text-gray-500 mt-1">Product ID: {currentItem.id}</p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                              Product ID: {currentItem.actualProductId || "Not Available"}
+                                            </p>
                                             <div className="flex justify-between mt-1">
                                               <p className="text-sm text-gray-600">Qty: {currentItem.quantity}</p>
                                               <p className="text-sm font-medium">
@@ -919,7 +827,6 @@ export default function OrdersPage() {
                                     </div>
                                   </div>
 
-                                  {/* Payment Method and Order Summary in a single row */}
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                                     <div className="bg-white/80 p-4 rounded-lg shadow-sm">
                                       <h4 className="font-medium mb-2 text-emerald-800">Payment Method</h4>
@@ -966,7 +873,6 @@ export default function OrdersPage() {
                                     <SendEmailButton orderId={order.originalOrderId || order.id} />
                                   </div>
 
-                                  {/* Review Section - Show either review status or rating banner */}
                                   {renderReviewSection(order)}
                                 </CardContent>
                               )}
@@ -975,7 +881,6 @@ export default function OrdersPage() {
                         })}
                       </div>
 
-                      {/* Pagination controls */}
                       {renderPagination()}
                     </>
                   ) : (
@@ -1011,10 +916,8 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Invoice Modal */}
       <InvoiceModal order={selectedOrder} isOpen={isInvoiceModalOpen} onClose={() => setIsInvoiceModalOpen(false)} />
 
-      {/* Rating Modal */}
       <RatingModal
         isOpen={isRatingModalOpen}
         onClose={() => {
