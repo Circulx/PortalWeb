@@ -3,7 +3,9 @@ import { notFound } from "next/navigation"
 import mongoose from "mongoose"
 import ProductDescription from "./product-description"
 import ProductActions from "./product-actions"
+import ProductReviews from "./product-reviews"
 import { Toaster } from "react-hot-toast"
+import getReviewModel from "@/models/profile/review"
 
 // Define the product interface
 interface Product {
@@ -27,10 +29,78 @@ interface Product {
   units?: string
 }
 
+// Define the review interface
+interface Review {
+  _id: string
+  userId: string
+  orderId: string
+  product_id: string
+  title: string
+  rating: number
+  review: string
+  status: string
+  isVerifiedPurchase: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Function to calculate the discounted price
 const calculateDiscountedPrice = (originalPrice: number, discountPercentage: number | undefined): number => {
   const discount = discountPercentage || 0
   return originalPrice - (originalPrice * discount) / 100
+}
+
+// Fetch product reviews from MongoDB PROFILE_DB
+async function getProductReviews(
+  productId: string,
+): Promise<{ reviews: Review[]; averageRating: number; totalReviews: number }> {
+  let connection
+  try {
+    connection = await connectProfileDB()
+    console.log(`Fetching reviews for product ID: ${productId}`)
+
+    const ReviewModel = getReviewModel(connection)
+
+    // Fetch approved reviews for this product
+    const reviews = await ReviewModel.find({
+      product_id: productId,
+      status: "approved",
+    })
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec()
+
+    const totalReviews = reviews.length
+    let averageRating = 0
+
+    if (totalReviews > 0) {
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
+      averageRating = Math.round((totalRating / totalReviews) * 10) / 10 // Round to 1 decimal place
+    }
+
+    console.log(`Found ${totalReviews} reviews with average rating: ${averageRating}`)
+
+    return {
+      reviews: reviews.map((review) => ({
+        _id: review._id.toString(),
+        userId: review.userId,
+        orderId: review.orderId,
+        product_id: review.product_id,
+        title: review.title,
+        rating: review.rating,
+        review: review.review,
+        status: review.status,
+        isVerifiedPurchase: review.isVerifiedPurchase,
+        createdAt: review.createdAt,
+        updatedAt: review.updatedAt,
+      })),
+      averageRating,
+      totalReviews,
+    }
+  } catch (error) {
+    console.error("Error fetching product reviews:", error)
+    return { reviews: [], averageRating: 0, totalReviews: 0 }
+  }
 }
 
 // Fetch product data from MongoDB PROFILE_DB
@@ -136,8 +206,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       return notFound()
     }
 
-    // Fetch the product data
-    const product = await getProductById(id)
+    // Fetch the product data and reviews
+    const [product, reviewData] = await Promise.all([getProductById(id), getProductReviews(id)])
 
     // If product not found, show 404 page
     if (!product) {
@@ -239,14 +309,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
             {/* Product Title */}
             <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
 
-            {/* Ratings */}
+            {/* Ratings - Now showing real data from database */}
             <div className="flex items-center gap-2 mb-2">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <svg
                     key={star}
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-yellow-400"
+                    className={`h-5 w-5 ${star <= Math.floor(reviewData.averageRating) ? "text-yellow-400" : "text-gray-300"}`}
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -255,7 +325,8 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 ))}
               </div>
               <span className="text-sm text-gray-600">
-                {product.rating || 0} Ratings & {product.reviewCount} Reviews
+                {reviewData.averageRating > 0 ? reviewData.averageRating : 0} Ratings & {reviewData.totalReviews}{" "}
+                Reviews
               </span>
             </div>
 
@@ -399,14 +470,21 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 <div className="flex">
                   <span className="font-medium w-28">Ratings:</span>
                   <div className="flex items-center">
-                    <span className="mr-1">(4.5/5</span>
-                    <span className="text-sm">based on 120 reviews)</span>
+                    <span className="mr-1">({reviewData.averageRating}/5</span>
+                    <span className="text-sm">based on {reviewData.totalReviews} reviews)</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Product Reviews Section */}
+        <ProductReviews
+          reviews={reviewData.reviews}
+          averageRating={reviewData.averageRating}
+          totalReviews={reviewData.totalReviews}
+        />
       </div>
     )
   } catch (error) {
