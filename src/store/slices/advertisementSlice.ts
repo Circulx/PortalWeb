@@ -21,6 +21,7 @@ interface AdvertisementState {
   error: string | null
   lastFetched: number | null
   deviceType: string | null
+  isInitialized: boolean
 }
 
 // Initial state
@@ -30,29 +31,51 @@ const initialState: AdvertisementState = {
   error: null,
   lastFetched: null,
   deviceType: null,
+  isInitialized: false,
 }
 
-// Fetch active advertisements
+// Fetch active advertisements with improved caching
 export const fetchAdvertisements = createAsyncThunk(
   "advertisements/fetchAdvertisements",
   async (deviceType: string, { getState, rejectWithValue }) => {
     const state = getState() as { advertisements: AdvertisementState }
 
-    // If advertisements are already loaded and it's been less than 30 minutes, don't fetch again
-    const thirtyMinutesInMs = 30 * 60 * 1000
+    // Extended cache duration - 15 minutes
+    const cacheValidityDuration = 15 * 60 * 1000
+    const now = Date.now()
+
+    // Check if we have valid cached data
     if (
+      state.advertisements.isInitialized &&
       state.advertisements.advertisements.length > 0 &&
       state.advertisements.lastFetched &&
-      Date.now() - state.advertisements.lastFetched < thirtyMinutesInMs &&
-      state.advertisements.deviceType === deviceType
+      now - state.advertisements.lastFetched < cacheValidityDuration &&
+      state.advertisements.deviceType === deviceType &&
+      state.advertisements.status === "succeeded"
     ) {
-      console.log("Using cached advertisements (less than 30 minutes old)")
-      return { advertisements: state.advertisements.advertisements, fromCache: true }
+      console.log("Using cached advertisements (valid cache found)")
+      return {
+        advertisements: state.advertisements.advertisements,
+        fromCache: true,
+        deviceType,
+      }
     }
 
     try {
-      console.log(`Fetching advertisements for device type: ${deviceType}`)
-      const response = await fetch(`/api/advertisements/active?deviceType=${deviceType}`)
+      console.log(`Fetching fresh advertisements for device type: ${deviceType}`)
+
+      // Add timeout to prevent long loading times
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+
+      const response = await fetch(`/api/advertisements/active?deviceType=${deviceType}`, {
+        signal: controller.signal,
+        headers: {
+          "Cache-Control": "no-cache",
+        },
+      })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
@@ -64,12 +87,19 @@ export const fetchAdvertisements = createAsyncThunk(
         throw new Error(result.error || "Failed to fetch advertisements")
       }
 
+      console.log(`Successfully fetched ${result.data?.length || 0} advertisements`)
+
       return {
         advertisements: result.data || [],
         fromCache: false,
         deviceType,
       }
     } catch (error) {
+      if (error instanceof Error && error.name === "AbortError") {
+        console.error("Advertisement fetch timeout")
+        return rejectWithValue("Request timeout - advertisements took too long to load")
+      }
+
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
       console.error("Error fetching advertisements:", errorMessage)
       return rejectWithValue(errorMessage)
@@ -87,12 +117,20 @@ const advertisementSlice = createSlice({
       state.status = "idle"
       state.lastFetched = null
       state.deviceType = null
+      state.isInitialized = false
+    },
+    // Add action to mark as initialized without fetching
+    markAsInitialized: (state) => {
+      state.isInitialized = true
     },
   },
   extraReducers: (builder) => {
     builder
       .addCase(fetchAdvertisements.pending, (state) => {
-        state.status = "loading"
+        // Only set loading if we don't have cached data
+        if (!state.isInitialized || state.advertisements.length === 0) {
+          state.status = "loading"
+        }
         state.error = null
       })
       .addCase(
@@ -107,6 +145,7 @@ const advertisementSlice = createSlice({
         ) => {
           state.status = "succeeded"
           state.advertisements = action.payload.advertisements
+          state.isInitialized = true
 
           // Only update lastFetched if this wasn't from cache
           if (!action.payload.fromCache) {
@@ -118,11 +157,15 @@ const advertisementSlice = createSlice({
         },
       )
       .addCase(fetchAdvertisements.rejected, (state, action) => {
-        state.status = "failed"
+        // Don't change status to failed if we have cached data
+        if (state.advertisements.length === 0) {
+          state.status = "failed"
+        }
         state.error = action.payload as string
+        state.isInitialized = true
       })
   },
 })
 
-export const { clearAdvertisements } = advertisementSlice.actions
+export const { clearAdvertisements, markAsInitialized } = advertisementSlice.actions
 export default advertisementSlice.reducer

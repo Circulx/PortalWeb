@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
-import { fetchAdvertisements, type Advertisement } from "@/store/slices/advertisementSlice"
+import { fetchAdvertisements, markAsInitialized, type Advertisement } from "@/store/slices/advertisementSlice"
 import type { AppDispatch, RootState } from "@/store"
 
 // Default sample advertisements to show when no active ads are available
@@ -40,51 +40,30 @@ export default function SimpleSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [deviceType, setDeviceType] = useState<string>("desktop")
+  const [hasInitialized, setHasInitialized] = useState(false)
 
   const dispatch = useDispatch<AppDispatch>()
-  const { advertisements, status, error } = useSelector((state: RootState) => state.advertisements)
+  const { advertisements, status, error, isInitialized } = useSelector((state: RootState) => state.advertisements)
 
-  // Get device type for responsive ads
-  const getDeviceType = () => {
+  // Memoized device type detection
+  const getDeviceType = useCallback(() => {
     if (typeof window === "undefined") return "desktop"
-
     const width = window.innerWidth
     if (width < 768) return "mobile"
     if (width < 1024) return "tablet"
     return "desktop"
-  }
+  }, [])
 
-  useEffect(() => {
-    // Set initial device type
-    const initialDeviceType = getDeviceType()
-    setDeviceType(initialDeviceType)
-
-    // Fetch advertisements with device type
-    dispatch(fetchAdvertisements(initialDeviceType))
-
-    // Refetch on window resize to get appropriate device type
-    const handleResize = () => {
-      const newDeviceType = getDeviceType()
-      if (newDeviceType !== deviceType) {
-        setDeviceType(newDeviceType)
-        dispatch(fetchAdvertisements(newDeviceType))
-      }
-    }
-
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [dispatch, deviceType])
-
-  // Get image source - prioritize imageData (base64) over imageUrl
-  const getImageSource = (ad: Advertisement) => {
+  // Memoized image source getter
+  const getImageSource = useCallback((ad: Advertisement) => {
     if (ad.imageData) return ad.imageData
     if (ad.imageUrl) return ad.imageUrl
     return "/placeholder.svg?height=400&width=1200"
-  }
+  }, [])
 
-  // Create slides from advertisements or use default slides if no active ads
-  const slides =
-    advertisements.length > 0
+  // Memoized slides creation
+  const slides = useMemo(() => {
+    return advertisements.length > 0
       ? advertisements.map((ad) => ({
           id: ad._id,
           title: ad.title,
@@ -94,9 +73,55 @@ export default function SimpleSlider() {
           linkUrl: ad.linkUrl,
         }))
       : defaultSlides
+  }, [advertisements, getImageSource])
 
+  // Initialize device type and fetch advertisements only once
   useEffect(() => {
-    if (slides.length === 0) return
+    if (hasInitialized) return
+
+    const initialDeviceType = getDeviceType()
+    setDeviceType(initialDeviceType)
+    setHasInitialized(true)
+
+    // Only fetch if not already initialized or if we don't have data
+    if (!isInitialized || advertisements.length === 0) {
+      console.log("Initializing advertisements for device type:", initialDeviceType)
+      dispatch(fetchAdvertisements(initialDeviceType))
+    } else {
+      console.log("Using existing advertisement data")
+      dispatch(markAsInitialized())
+    }
+  }, [dispatch, getDeviceType, hasInitialized, isInitialized, advertisements.length])
+
+  // Handle device type changes (resize) with debouncing
+  useEffect(() => {
+    let resizeTimeout: NodeJS.Timeout
+
+    const handleResize = () => {
+      clearTimeout(resizeTimeout)
+      resizeTimeout = setTimeout(() => {
+        const newDeviceType = getDeviceType()
+        if (newDeviceType !== deviceType) {
+          console.log("Device type changed from", deviceType, "to", newDeviceType)
+          setDeviceType(newDeviceType)
+          // Only fetch if device type actually changed and we don't have recent data
+          dispatch(fetchAdvertisements(newDeviceType))
+        }
+      }, 250) // Debounce resize events
+    }
+
+    if (hasInitialized) {
+      window.addEventListener("resize", handleResize)
+      return () => {
+        window.removeEventListener("resize", handleResize)
+        clearTimeout(resizeTimeout)
+      }
+    }
+  }, [dispatch, deviceType, getDeviceType, hasInitialized])
+
+  // Auto-slide functionality
+  useEffect(() => {
+    if (slides.length <= 1) return
 
     const timer = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
@@ -105,30 +130,35 @@ export default function SimpleSlider() {
     return () => clearInterval(timer)
   }, [slides.length])
 
-  const handleImageError = (slideId: string) => {
+  const handleImageError = useCallback((slideId: string) => {
     setImageErrors((prev) => ({ ...prev, [slideId]: true }))
     console.error(`Image error for slide ${slideId}`)
-  }
+  }, [])
 
-  const goToSlide = (index: number) => {
+  const goToSlide = useCallback((index: number) => {
     setCurrentSlide(index)
-  }
+  }, [])
 
   // Check if a slide has content (title, subtitle, or description)
-  const hasContent = (slide: (typeof slides)[0]) => {
+  const hasContent = useCallback((slide: (typeof slides)[0]) => {
     return slide.title || slide.subtitle || slide.description
-  }
+  }, [])
 
-  // Show loading state only for initial load
-  if (status === "loading" && advertisements.length === 0) {
+  // Show loading state only for initial load and when no cached data exists
+  if (status === "loading" && !isInitialized && advertisements.length === 0) {
     return (
-      <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gray-100 animate-pulse">
-        
+      <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <p className="text-blue-600 font-medium"></p>
+          </div>
+        </div>
       </div>
     )
   }
 
-  // Show error state with fallback to default slides
+  // Show error state with fallback to default slides only if no cached data
   if (status === "failed" && advertisements.length === 0) {
     console.warn("Failed to load advertisements, using default slides:", error)
   }
@@ -139,7 +169,7 @@ export default function SimpleSlider() {
       {/* Show indicator if using default slides */}
       {advertisements.length === 0 && status !== "loading" && (
         <div className="absolute top-2 right-2 z-30 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-          
+          Demo Mode
         </div>
       )}
 
@@ -164,6 +194,7 @@ export default function SimpleSlider() {
                     alt={slide.title || "Advertisement"}
                     className="w-full h-full object-cover"
                     onError={() => handleImageError(slide.id)}
+                    loading={index === 0 ? "eager" : "lazy"}
                   />
                 ) : (
                   <Image

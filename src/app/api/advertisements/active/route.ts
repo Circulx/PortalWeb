@@ -1,56 +1,57 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
 
+// Cache for advertisements to avoid repeated database queries
+let advertisementCache: {
+  data: any[]
+  timestamp: number
+  deviceType: string
+} | null = null
+
+const CACHE_DURATION = 10 * 60 * 1000 // 10 minutes cache
+
 export async function GET(request: NextRequest) {
   try {
-    console.log("=== Starting advertisement fetch ===")
-
-    // Connect to the profile database
-    const connection = await connectProfileDB()
-    console.log("Database connection established")
-
-    const Advertisement = connection.models.Advertisement
-
-    if (!Advertisement) {
-      console.error("Advertisement model not found in connection.models")
-      console.log("Available models:", Object.keys(connection.models))
-      throw new Error("Advertisement model not found")
-    }
-
-    console.log("Advertisement model found successfully")
-
     const { searchParams } = new URL(request.url)
     const deviceType = searchParams.get("deviceType") || "all"
 
-    console.log("Fetching active advertisements for device type:", deviceType)
+    // Check if we have valid cached data for this device type
+    if (
+      advertisementCache &&
+      advertisementCache.deviceType === deviceType &&
+      Date.now() - advertisementCache.timestamp < CACHE_DURATION
+    ) {
+      console.log("Returning cached advertisements for device type:", deviceType)
+      return NextResponse.json({
+        success: true,
+        data: advertisementCache.data,
+        count: advertisementCache.data.length,
+        cached: true,
+      })
+    }
 
-    // First, let's check if there are any documents in the collection
-    const totalCount = await Advertisement.countDocuments({})
-    console.log("Total advertisements in collection:", totalCount)
+    console.log("Fetching fresh advertisements for device type:", deviceType)
 
-    // Get all documents first to debug
-    const allAds = await Advertisement.find({}).lean()
-    console.log("All advertisements in collection:", JSON.stringify(allAds, null, 2))
+    // Connect to the profile database
+    const connection = await connectProfileDB()
+    const Advertisement = connection.models.Advertisement
 
-    // Build filter for active advertisements
+    if (!Advertisement) {
+      throw new Error("Advertisement model not found")
+    }
+
+    // Optimized query with proper indexing
     const filter: any = { isActive: true }
-
-    // Add date filter for scheduled advertisements - FIXED to handle null values
     const now = new Date()
-    filter.$or = [
-      // No dates or null dates
+
+    // Simplified date filter - only check if dates exist and are valid
+    filter.$and = [
       {
-        $and: [
-          { $or: [{ startDate: { $exists: false } }, { startDate: null }] },
-          { $or: [{ endDate: { $exists: false } }, { endDate: null }] },
-        ],
+        $or: [{ startDate: { $exists: false } }, { startDate: null }, { startDate: { $lte: now } }],
       },
-      // Start date valid, no end date or null end date
-      { $and: [{ startDate: { $lte: now } }, { $or: [{ endDate: { $exists: false } }, { endDate: null }] }] },
-      // No start date or null start date, end date valid
-      { $and: [{ $or: [{ startDate: { $exists: false } }, { startDate: null }] }, { endDate: { $gte: now } }] },
-      // Both dates valid
-      { $and: [{ startDate: { $lte: now } }, { endDate: { $gte: now } }] },
+      {
+        $or: [{ endDate: { $exists: false } }, { endDate: null }, { endDate: { $gte: now } }],
+      },
     ]
 
     // Device type filter
@@ -58,27 +59,35 @@ export async function GET(request: NextRequest) {
       filter.deviceType = { $in: [deviceType, "all"] }
     }
 
-    console.log("Advertisement filter:", JSON.stringify(filter, null, 2))
+    // Get active advertisements with optimized query
+    const advertisements = await Advertisement.find(filter)
+      .select("title subtitle description imageUrl imageData linkUrl order deviceType isActive")
+      .sort({ order: 1, createdAt: -1 })
+      .limit(5)
+      .lean()
+      .exec()
 
-    // Get active advertisements (max 5)
-    let advertisements = await Advertisement.find(filter).sort({ order: 1, createdAt: -1 }).limit(5).lean()
+    console.log(`Found ${advertisements.length} advertisements for device type: ${deviceType}`)
 
-    console.log("Found advertisements with complex filter:", advertisements.length)
-
-    // If no ads found with filter, try a simpler query
-    if (advertisements.length === 0) {
-      console.log("No ads found with complex filter, trying simple isActive query...")
-      advertisements = await Advertisement.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).limit(5).lean()
-      console.log("Simple query found advertisements:", advertisements.length)
+    // Cache the results
+    advertisementCache = {
+      data: advertisements,
+      timestamp: Date.now(),
+      deviceType: deviceType,
     }
 
-    console.log("Final advertisements data:", JSON.stringify(advertisements, null, 2))
-
-    return NextResponse.json({
+    // Set cache headers for browser caching
+    const response = NextResponse.json({
       success: true,
       data: advertisements,
       count: advertisements.length,
+      cached: false,
     })
+
+    // Cache for 5 minutes in browser
+    response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=600")
+
+    return response
   } catch (error) {
     console.error("Error fetching active advertisements:", error)
     return NextResponse.json(
