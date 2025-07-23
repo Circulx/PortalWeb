@@ -1,4 +1,4 @@
-import mongoose, { type Connection } from "mongoose"
+import mongoose from "mongoose"
 import type { IBusinessDetails } from "@/models/profile/business"
 import type { IContactDetails } from "@/models/profile/contact"
 import type { IAddress } from "@/models/profile/address"
@@ -6,9 +6,12 @@ import type { IBank } from "@/models/profile/bank"
 import type { IDocument } from "@/models/profile/document"
 import type { IProfileProgress } from "@/models/profile/progress"
 
-const PROFILE_DB =
+const PROFILE_DB_URI =
   process.env.PROFILE_DB ||
-  "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+  "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/test?retryWrites=true&w=majority&appName=Cluster0"
+
+// Global connection cache
+let isConnected = false
 
 // Define the interface locally to avoid import issues
 interface ICategoryBrand {
@@ -36,72 +39,76 @@ interface IAdvertisement {
 interface IReview {
   orderId: string
   userId: string
-  product_id:string
+  product_id: string
   rating: number
   review: string
-  
   status: "pending" | "approved" | "rejected"
   isVerifiedPurchase: boolean
   createdAt: Date
   updatedAt: Date
 }
 
-// Cache the database connection
-let cachedConnection: Connection | null = null
-let connectionPromise: Promise<Connection> | null = null
+// Buyer Address interface
+interface IBuyerAddress {
+  userId: string
+  firstName: string
+  lastName: string
+  companyName?: string
+  address: string
+  country: string
+  state: string
+  city: string
+  zipCode: string
+  email: string
+  phoneNumber: string
+  isDefault: boolean
+  createdAt: Date
+  updatedAt: Date
+}
 
-export async function connectProfileDB(): Promise<Connection> {
-  // If we already have a connection, return it
-  if (cachedConnection) {
-    console.log("Using existing profile database connection")
-    return cachedConnection
+export async function connectProfileDB() {
+  if (isConnected) {
+    console.log("Using existing database connection")
+    return mongoose
   }
 
-  // If we're already connecting, return the promise
-  if (connectionPromise) {
-    console.log("Reusing profile database connection promise")
-    return connectionPromise
+  try {
+    console.log("Creating new database connection...")
+
+    // Disconnect any existing connections
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect()
+    }
+
+    const connection = await mongoose.connect(PROFILE_DB_URI, {
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      family: 4,
+      retryWrites: true,
+      retryReads: true,
+    })
+
+    isConnected = true
+    console.log("Database connected successfully")
+
+    // Register all models
+    registerModels()
+
+    return connection
+  } catch (error) {
+    console.error("Database connection failed:", error)
+    isConnected = false
+    throw error
   }
-
-  console.log("Creating new profile database connection")
-  console.log("Connecting to PROFILE_DB:", PROFILE_DB)
-
-  // Create a new connection promise with increased timeouts
-  connectionPromise = mongoose
-    .createConnection(PROFILE_DB, {
-      serverSelectionTimeoutMS: 60000,
-      socketTimeoutMS: 90000,
-      connectTimeoutMS: 60000,
-      dbName: "test", // Explicitly specify the database name
-    })
-    .asPromise()
-    .then((conn) => {
-      console.log("Profile database connected successfully")
-      // Add null check for conn.db
-      if (conn.db) {
-        console.log("Connected to database:", conn.db.databaseName)
-      } else {
-        console.log("Database connection established but db instance is undefined")
-      }
-      cachedConnection = conn
-      // Register models with the connection
-      registerModels(conn)
-      console.log("Models registered:", Object.keys(conn.models))
-      return conn
-    })
-    .catch((error) => {
-      console.error("Profile database connection error:", error)
-      connectionPromise = null
-      throw error
-    })
-
-  return connectionPromise
 }
 
 export async function disconnectProfileDB() {
-  if (cachedConnection) {
-    await cachedConnection.close()
-    cachedConnection = null
+  if (isConnected) {
+    await mongoose.disconnect()
+    isConnected = false
   }
 }
 
@@ -246,6 +253,7 @@ const OrderSchema = new mongoose.Schema(
     products: [
       {
         productId: { type: String, required: true },
+        product_id: { type: String, required: true },
         seller_id: { type: String, required: true },
         title: { type: String, required: true },
         quantity: { type: Number, required: true },
@@ -370,10 +378,9 @@ const ReviewSchema = new mongoose.Schema<IReview>(
   {
     orderId: { type: String, required: true, index: true },
     userId: { type: String, required: true, index: true },
-    product_id : { type: String, required: true, index: true },
+    product_id: { type: String, required: true, index: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     review: { type: String, required: true },
-  
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -397,62 +404,139 @@ ReviewSchema.index({ rating: 1 })
 ReviewSchema.index({ status: 1, createdAt: -1 })
 ReviewSchema.index({ orderId: 1, userId: 1 }, { unique: true }) // Prevent duplicate reviews
 
+// Define BuyerAddress schema
+const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(
+  {
+    userId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    firstName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    companyName: {
+      type: String,
+      trim: true,
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    country: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    zipCode: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+    },
+    phoneNumber: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    isDefault: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "buyeraddresses", // Explicitly specify collection name
+  },
+)
+
+// Index for faster queries
+BuyerAddressSchema.index({ userId: 1, createdAt: -1 })
+BuyerAddressSchema.index({ userId: 1, isDefault: 1 })
+
 // Update the registerModels function to include all models
-function registerModels(connection: Connection) {
+function registerModels() {
   console.log("Registering models...")
 
   // Only register models if they don't already exist
-  if (!connection.models.Business) {
-    connection.model("Business", BusinessSchema)
+  if (!mongoose.models.Business) {
+    mongoose.model("Business", BusinessSchema)
     console.log("Registered Business model")
   }
-  if (!connection.models.Contact) {
-    connection.model("Contact", ContactSchema)
+  if (!mongoose.models.Contact) {
+    mongoose.model("Contact", ContactSchema)
     console.log("Registered Contact model")
   }
-  if (!connection.models.CategoryBrand) {
-    connection.model("CategoryBrand", CategoryBrandSchema)
+  if (!mongoose.models.CategoryBrand) {
+    mongoose.model("CategoryBrand", CategoryBrandSchema)
     console.log("Registered CategoryBrand model")
   }
-  if (!connection.models.Address) {
-    connection.model("Address", AddressSchema)
+  if (!mongoose.models.Address) {
+    mongoose.model("Address", AddressSchema)
     console.log("Registered Address model")
   }
-  if (!connection.models.Bank) {
-    connection.model("Bank", BankSchema)
+  if (!mongoose.models.Bank) {
+    mongoose.model("Bank", BankSchema)
     console.log("Registered Bank model")
   }
-  if (!connection.models.Document) {
-    connection.model("Document", DocumentSchema)
+  if (!mongoose.models.Document) {
+    mongoose.model("Document", DocumentSchema)
     console.log("Registered Document model")
   }
-  if (!connection.models.ProfileProgress) {
-    connection.model("ProfileProgress", ProfileProgressSchema)
+  if (!mongoose.models.ProfileProgress) {
+    mongoose.model("ProfileProgress", ProfileProgressSchema)
     console.log("Registered ProfileProgress model")
   }
-  if (!connection.models.Product) {
-    connection.model("Product", ProductSchema)
+  if (!mongoose.models.Product) {
+    mongoose.model("Product", ProductSchema)
     console.log("Registered Product model")
   }
-  if (!connection.models.Order) {
-    connection.model("Order", OrderSchema)
+  if (!mongoose.models.Order) {
+    mongoose.model("Order", OrderSchema)
     console.log("Registered Order model")
   }
-  if (!connection.models.Cart) {
-    connection.model("Cart", CartSchema)
+  if (!mongoose.models.Cart) {
+    mongoose.model("Cart", CartSchema)
     console.log("Registered Cart model")
   }
-  if (!connection.models.Wishlist) {
-    connection.model("Wishlist", WishlistSchema)
+  if (!mongoose.models.Wishlist) {
+    mongoose.model("Wishlist", WishlistSchema)
     console.log("Registered Wishlist model")
   }
-  if (!connection.models.Advertisement) {
-    connection.model("Advertisement", AdvertisementSchema)
+  if (!mongoose.models.Advertisement) {
+    mongoose.model("Advertisement", AdvertisementSchema)
     console.log("Registered Advertisement model")
   }
-  if (!connection.models.Review) {
-    connection.model("Review", ReviewSchema)
+  if (!mongoose.models.Review) {
+    mongoose.model("Review", ReviewSchema)
     console.log("Registered Review model")
+  }
+  if (!mongoose.models.BuyerAddress) {
+    mongoose.model("BuyerAddress", BuyerAddressSchema)
+    console.log("Registered BuyerAddress model")
   }
 
   console.log("All models registered successfully")
@@ -473,4 +557,5 @@ export {
   WishlistSchema,
   AdvertisementSchema,
   ReviewSchema,
+  BuyerAddressSchema,
 }

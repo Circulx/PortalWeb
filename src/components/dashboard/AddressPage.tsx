@@ -1,19 +1,18 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Plus, X } from "lucide-react"
+import { Plus, X, MapPin, Trash2, Edit } from "lucide-react"
 import { Country, State } from "country-state-city"
 import { CountryStateSelect } from "./CountryStateSelect"
+import { toast } from "@/hooks/use-toast"
 
-interface Address {
-  id: string
-  type: "Billing" | "Shipping"
+interface BuyerAddress {
+  _id: string
   firstName: string
   lastName: string
   companyName?: string
@@ -23,454 +22,494 @@ interface Address {
   city: string
   zipCode: string
   email: string
-  phone: string
+  phoneNumber: string
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export default function AddressPage() {
   const [showAddressForm, setShowAddressForm] = useState(false)
-  const [addresses, setAddresses] = useState<Address[]>([])
-  const [countries, setCountries] = useState(Country.getAllCountries())
-  const [states, setStates] = useState<any[]>([])
+  const [addresses, setAddresses] = useState<BuyerAddress[]>([])
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [countries] = useState(Country.getAllCountries())
+
   const [formData, setFormData] = useState({
-    billingFirstName: "",
-    billingLastName: "",
-    billingCompany: "",
-    billingAddress: "",
-    billingCountry: "",
-    billingState: "",
-    billingCity: "",
-    billingZip: "",
-    billingEmail: "",
-    billingPhone: "",
-    shippingFirstName: "",
-    shippingLastName: "",
-    shippingCompany: "",
-    shippingAddress: "",
-    shippingCountry: "",
-    shippingState: "",
-    shippingCity: "",
-    shippingZip: "",
-    shippingEmail: "",
-    shippingPhone: "",
+    firstName: "",
+    lastName: "",
+    companyName: "",
+    address: "",
+    country: "IN", // Default to India
+    state: "",
+    city: "",
+    zipCode: "",
+    email: "",
+    phoneNumber: "",
+    isDefault: false,
   })
 
-  // Fetch saved addresses from the database
+  // Fetch addresses on component mount
   useEffect(() => {
-    const fetchAddresses = async () => {
-      try {
-        const response = await fetch("/api/addresses", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        })
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch addresses")
-        }
-
-        const data = await response.json()
-
-        if (data) {
-          const billingAddress: Address = {
-            id: `billing-${Date.now()}`,
-            type: "Billing",
-            ...data.billingAddress,
-          }
-
-          const shippingAddress: Address = {
-            id: `shipping-${Date.now()}`,
-            type: "Shipping",
-            ...data.shippingAddress,
-          }
-
-          setAddresses([billingAddress, shippingAddress])
-        }
-      } catch (error) {
-        console.error("Error fetching addresses:", error)
-      }
-    }
-
     fetchAddresses()
   }, [])
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const fetchAddresses = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/buyer-addresses", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store",
+      })
 
-  const handleCountryChange = (value: string, type: "billing" | "shipping") => {
-    const selectedCountry = countries.find((country) => country.isoCode === value)
-    setFormData((prev) => ({
-      ...prev,
-      [`${type}Country`]: value,
-      [`${type}State`]: "",
-    }))
-    if (selectedCountry) {
-      setStates(State.getStatesOfCountry(selectedCountry.isoCode))
-    } else {
-      setStates([])
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to fetch addresses")
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        setAddresses(data.addresses || [])
+      }
+    } catch (error: any) {
+      console.error("Error fetching addresses:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch addresses",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
     }
   }
 
-  const handleDelete = (id: string) => {
-    setAddresses((prev) => prev.filter((address) => address.id !== id))
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }))
+  }
+
+  const handleCountryChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      country: value,
+      state: "",
+    }))
+  }
+
+  const handleStateChange = (value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      state: value,
+    }))
+  }
+
+  const validateForm = () => {
+    const requiredFields = [
+      { field: "firstName", label: "First Name" },
+      { field: "lastName", label: "Last Name" },
+      { field: "address", label: "Address" },
+      { field: "country", label: "Country" },
+      { field: "state", label: "State" },
+      { field: "city", label: "City" },
+      { field: "zipCode", label: "Zip Code" },
+      { field: "email", label: "Email" },
+      { field: "phoneNumber", label: "Phone Number" },
+    ]
+
+    for (const { field, label } of requiredFields) {
+      if (!formData[field as keyof typeof formData]) {
+        toast({
+          title: "Validation Error",
+          description: `${label} is required`,
+          variant: "destructive",
+        })
+        return false
+      }
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid email address",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    // Phone validation (basic)
+    if (formData.phoneNumber.length < 10) {
+      toast({
+        title: "Validation Error",
+        description: "Please enter a valid phone number",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    return true
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    // Create new addresses from form data
-
-    const billingAddress: Omit<Address, "id" | "type"> = {
-      firstName: formData.billingFirstName,
-      lastName: formData.billingLastName,
-      companyName: formData.billingCompany,
-      address: formData.billingAddress,
-      country: formData.billingCountry,
-      state: formData.billingState,
-      city: formData.billingCity,
-      zipCode: formData.billingZip,
-      email: formData.billingEmail,
-      phone: formData.billingPhone,
-    }
-    const shippingAddress: Omit<Address, "id" | "type"> = {
-      firstName: formData.shippingFirstName,
-      lastName: formData.shippingLastName,
-      companyName: formData.shippingCompany,
-      address: formData.shippingAddress,
-      country: formData.shippingCountry,
-      state: formData.shippingState,
-      city: formData.shippingCity,
-      zipCode: formData.shippingZip,
-      email: formData.shippingEmail,
-      phone: formData.shippingPhone,
+    if (!validateForm()) {
+      return
     }
 
     try {
-      // Send POST request to the API
-      const response = await fetch("/api/addresses", {
+      setSubmitting(true)
+
+      const response = await fetch("/api/buyer-addresses", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          billingAddress,
-          shippingAddress,
-        }),
+        body: JSON.stringify(formData),
       })
 
+      const data = await response.json()
+
       if (!response.ok) {
-        throw new Error("Failed to save addresses")
+        throw new Error(data.error || "Failed to save address")
       }
 
-      const result = await response.json()
-      const savedId = result.data._id
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Address saved successfully",
+        })
 
-      setAddresses((prev) => [
-        ...prev,
-        { id: `billing-${Date.now()}`, type: "Billing", ...billingAddress },
-        { id: `shipping-${Date.now()}`, type: "Shipping", ...shippingAddress },
-      ])
-    } catch (error) {
-      console.error("Error saving addresses:", error)
+        // Reset form and close modal
+        setFormData({
+          firstName: "",
+          lastName: "",
+          companyName: "",
+          address: "",
+          country: "IN",
+          state: "",
+          city: "",
+          zipCode: "",
+          email: "",
+          phoneNumber: "",
+          isDefault: false,
+        })
+        setShowAddressForm(false)
+
+        // Refresh addresses list
+        await fetchAddresses()
+      }
+    } catch (error: any) {
+      console.error("Error saving address:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save address. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const handleDelete = async (addressId: string) => {
+    if (!confirm("Are you sure you want to delete this address?")) {
+      return
     }
 
-    setShowAddressForm(false)
-    // Reset form data
-    setFormData({
-      billingFirstName: "",
-      billingLastName: "",
-      billingCompany: "",
-      billingAddress: "",
-      billingCountry: "",
-      billingState: "",
-      billingCity: "",
-      billingZip: "",
-      billingEmail: "",
-      billingPhone: "",
-      shippingFirstName: "",
-      shippingLastName: "",
-      shippingCompany: "",
-      shippingAddress: "",
-      shippingCountry: "",
-      shippingState: "",
-      shippingCity: "",
-      shippingZip: "",
-      shippingEmail: "",
-      shippingPhone: "",
-    })
+    try {
+      const response = await fetch(`/api/buyer-addresses?id=${addressId}`, {
+        method: "DELETE",
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to delete address")
+      }
+
+      if (data.success) {
+        toast({
+          title: "Success",
+          description: "Address deleted successfully",
+        })
+        await fetchAddresses()
+      }
+    } catch (error: any) {
+      console.error("Error deleting address:", error)
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete address",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const getCountryName = (countryCode: string) => {
+    return countries.find((c) => c.isoCode === countryCode)?.name || countryCode
+  }
+
+  const getStateName = (countryCode: string, stateCode: string) => {
+    const states = State.getStatesOfCountry(countryCode)
+    return states.find((s) => s.isoCode === stateCode)?.name || stateCode
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-900"></div>
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       <Card className="max-w-7xl mx-auto p-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
           <h1 className="text-2xl font-bold">My Addresses</h1>
-          <Button className="bg-emerald-900 hover:bg-orange-500" onClick={() => setShowAddressForm(true)}>
+          <Button
+            className="bg-emerald-900 hover:bg-emerald-800 text-white w-full sm:w-auto"
+            onClick={() => setShowAddressForm(true)}
+          >
             <Plus className="w-4 h-4 mr-2" />
             Add New Address
           </Button>
         </div>
 
-        {addresses.length > 0 && (
-          <div className="grid gap-4 md:grid-cols-2">
+        {addresses.length > 0 ? (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {addresses.map((address) => (
-              <Card key={address.id} className="p-4">
-                <h3 className="font-semibold mb-2">{address.type}</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  {address.firstName} {address.lastName}
-                  <br />
-                  {address.address}
-                  <br />
-                  {address.city}, {address.state} {address.zipCode}
-                  <br />
-                  {countries.find((c) => c.isoCode === address.country)?.name}
-                </p>
+              <Card key={address._id} className="p-4 relative">
+                {address.isDefault && (
+                  <div className="absolute top-2 right-2 bg-emerald-900 text-white text-xs px-2 py-1 rounded">
+                    Default
+                  </div>
+                )}
+
+                <div className="flex items-start gap-3 mb-3">
+                  <MapPin className="w-5 h-5 text-emerald-900 mt-1 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-gray-900 truncate">
+                      {address.firstName} {address.lastName}
+                    </h3>
+                    {address.companyName && <p className="text-sm text-gray-600 truncate">{address.companyName}</p>}
+                  </div>
+                </div>
+
+                <div className="text-sm text-gray-600 space-y-1 mb-4">
+                  <p className="break-words">{address.address}</p>
+                  <p>
+                    {address.city}, {getStateName(address.country, address.state)} {address.zipCode}
+                  </p>
+                  <p>{getCountryName(address.country)}</p>
+                  <p className="break-all">{address.email}</p>
+                  <p>{address.phoneNumber}</p>
+                </div>
+
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    className="hover:bg-orange-500 hover:text-white"
-                    onClick={() => {
-                      // Handle edit functionality
-                      console.log("Edit address:", address)
-                    }}
+                    size="sm"
+                    className="flex-1 hover:bg-emerald-50 hover:border-emerald-900 bg-transparent"
                   >
+                    <Edit className="w-4 h-4 mr-1" />
                     Edit
                   </Button>
                   <Button
                     variant="outline"
-                    className="hover:bg-orange-500 hover:text-white"
-                    onClick={() => handleDelete(address.id)}
+                    size="sm"
+                    className="hover:bg-red-50 hover:border-red-500 hover:text-red-600 bg-transparent"
+                    onClick={() => handleDelete(address._id)}
                   >
-                    Delete
+                    <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </Card>
             ))}
           </div>
+        ) : (
+          <div className="text-center py-12">
+            <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No addresses found</h3>
+            <p className="text-gray-600 mb-4">Add your first address to get started</p>
+            <Button className="bg-emerald-900 hover:bg-emerald-800 text-white" onClick={() => setShowAddressForm(true)}>
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Address
+            </Button>
+          </div>
         )}
       </Card>
 
+      {/* Address Form Modal */}
       {showAddressForm && (
-        <Card className="max-w-7xl mx-auto p-6">
+        <Card className="max-w-2xl mx-auto p-6">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold">Add New Address</h2>
-            <Button variant="ghost" size="icon" onClick={() => setShowAddressForm(false)}>
+            <Button variant="ghost" size="icon" onClick={() => setShowAddressForm(false)} disabled={submitting}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
-          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-8">
-            {/* Billing Address */}
-            <div className="space-y-4">
-              <div className="bg-emerald-900 text-white px-4 py-2">
-                <h3 className="font-semibold">BILLING ADDRESS</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="billingFirstName">First Name</Label>
-                  <Input
-                    id="billingFirstName"
-                    name="billingFirstName"
-                    value={formData.billingFirstName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="billingLastName">Last Name</Label>
-                  <Input
-                    id="billingLastName"
-                    name="billingLastName"
-                    value={formData.billingLastName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Name Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="billingCompany">Company Name (Optional)</Label>
+                <Label htmlFor="firstName">First Name *</Label>
                 <Input
-                  id="billingCompany"
-                  name="billingCompany"
-                  value={formData.billingCompany}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="billingAddress">Address</Label>
-                <Input
-                  id="billingAddress"
-                  name="billingAddress"
-                  value={formData.billingAddress}
+                  id="firstName"
+                  name="firstName"
+                  value={formData.firstName}
                   onChange={handleInputChange}
                   required
+                  disabled={submitting}
+                  placeholder="Enter first name"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="billingCountry">Country</Label>
-                <CountryStateSelect
-                  selectedCountry={formData.billingCountry}
-                  selectedState={formData.billingState}
-                  onCountryChange={(value) => handleCountryChange(value, "billing")}
-                  onStateChange={(value) => {
-                    setFormData((prev) => ({ ...prev, billingState: value }))
-                  }}
-                  label="country"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="billingCity">City</Label>
-                  <Input
-                    id="billingCity"
-                    name="billingCity"
-                    value={formData.billingCity}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="billingZip">Zip Code</Label>
-                  <Input
-                    id="billingZip"
-                    name="billingZip"
-                    value={formData.billingZip}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="billingEmail">Email</Label>
+                <Label htmlFor="lastName">Last Name *</Label>
                 <Input
-                  id="billingEmail"
-                  name="billingEmail"
-                  type="email"
-                  value={formData.billingEmail}
+                  id="lastName"
+                  name="lastName"
+                  value={formData.lastName}
                   onChange={handleInputChange}
                   required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="billingPhone">Phone Number</Label>
-                <Input
-                  id="billingPhone"
-                  name="billingPhone"
-                  value={formData.billingPhone}
-                  onChange={handleInputChange}
-                  required
+                  disabled={submitting}
+                  placeholder="Enter last name"
                 />
               </div>
             </div>
 
-            {/* Shipping Address */}
+            {/* Company Name */}
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name (Optional)</Label>
+              <Input
+                id="companyName"
+                name="companyName"
+                value={formData.companyName}
+                onChange={handleInputChange}
+                disabled={submitting}
+                placeholder="Enter company name"
+              />
+            </div>
+
+            {/* Address */}
+            <div className="space-y-2">
+              <Label htmlFor="address">Address *</Label>
+              <Input
+                id="address"
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                required
+                disabled={submitting}
+                placeholder="Enter full address"
+              />
+            </div>
+
+            {/* Country and State */}
             <div className="space-y-4">
-              <div className="bg-emerald-900 text-white px-4 py-2">
-                <h3 className="font-semibold">SHIPPING ADDRESS</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shippingFirstName">First Name</Label>
-                  <Input
-                    id="shippingFirstName"
-                    name="shippingFirstName"
-                    value={formData.shippingFirstName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shippingLastName">Last Name</Label>
-                  <Input
-                    id="shippingLastName"
-                    name="shippingLastName"
-                    value={formData.shippingLastName}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
               <div className="space-y-2">
-                <Label htmlFor="shippingCompany">Company Name (Optional)</Label>
-                <Input
-                  id="shippingCompany"
-                  name="shippingCompany"
-                  value={formData.shippingCompany}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shippingAddress">Address</Label>
-                <Input
-                  id="shippingAddress"
-                  name="shippingAddress"
-                  value={formData.shippingAddress}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shippingCountry">Country</Label>
+                <Label>Country *</Label>
                 <CountryStateSelect
-                  selectedCountry={formData.shippingCountry}
-                  selectedState={formData.shippingState}
-                  onCountryChange={(value) => handleCountryChange(value, "shipping")}
-                  onStateChange={(value) => {
-                    setFormData((prev) => ({ ...prev, shippingState: value }))
-                  }}
+                  selectedCountry={formData.country}
+                  selectedState={formData.state}
+                  onCountryChange={handleCountryChange}
+                  onStateChange={handleStateChange}
                   label="country"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="shippingCity">City</Label>
-                  <Input
-                    id="shippingCity"
-                    name="shippingCity"
-                    value={formData.shippingCity}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="shippingZip">Zip Code</Label>
-                  <Input
-                    id="shippingZip"
-                    name="shippingZip"
-                    value={formData.shippingZip}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shippingEmail">Email</Label>
-                <Input
-                  id="shippingEmail"
-                  name="shippingEmail"
-                  type="email"
-                  value={formData.shippingEmail}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shippingPhone">Phone Number</Label>
-                <Input
-                  id="shippingPhone"
-                  name="shippingPhone"
-                  value={formData.shippingPhone}
-                  onChange={handleInputChange}
-                  required
                 />
               </div>
             </div>
 
-            <div className="md:col-span-2 flex justify-end">
-              <Button type="submit" className="bg-orange-500 hover:bg-emerald-900 text-white">
-                Save Changes
+            {/* City and Zip */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="city">City *</Label>
+                <Input
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleInputChange}
+                  required
+                  disabled={submitting}
+                  placeholder="Enter city"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="zipCode">Zip Code *</Label>
+                <Input
+                  id="zipCode"
+                  name="zipCode"
+                  value={formData.zipCode}
+                  onChange={handleInputChange}
+                  required
+                  disabled={submitting}
+                  placeholder="Enter zip code"
+                />
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email *</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={formData.email}
+                onChange={handleInputChange}
+                required
+                disabled={submitting}
+                placeholder="Enter email address"
+              />
+            </div>
+
+            {/* Phone Number */}
+            <div className="space-y-2">
+              <Label htmlFor="phoneNumber">Phone Number *</Label>
+              <Input
+                id="phoneNumber"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handleInputChange}
+                required
+                disabled={submitting}
+                placeholder="Enter phone number"
+              />
+            </div>
+
+            {/* Default Address Checkbox */}
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="isDefault"
+                name="isDefault"
+                checked={formData.isDefault}
+                onChange={handleInputChange}
+                disabled={submitting}
+                className="rounded border-gray-300"
+              />
+              <Label htmlFor="isDefault" className="text-sm">
+                Set as default address
+              </Label>
+            </div>
+
+            {/* Submit Button */}
+            <div className="flex justify-end pt-4">
+              <Button type="submit" className="bg-orange-500 hover:bg-orange-600 text-white px-8" disabled={submitting}>
+                {submitting ? (
+                  <div className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Saving...
+                  </div>
+                ) : (
+                  "Save Changes"
+                )}
               </Button>
             </div>
           </form>
