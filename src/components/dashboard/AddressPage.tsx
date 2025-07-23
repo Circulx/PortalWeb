@@ -34,8 +34,10 @@ export default function AddressPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [countries] = useState(Country.getAllCountries())
+  const [editingAddress, setEditingAddress] = useState<BuyerAddress | null>(null)
 
   const [formData, setFormData] = useState({
+    _id: "",
     firstName: "",
     lastName: "",
     companyName: "",
@@ -157,6 +159,43 @@ export default function AddressPage() {
     return true
   }
 
+  const resetForm = () => {
+    setFormData({
+      _id: "",
+      firstName: "",
+      lastName: "",
+      companyName: "",
+      address: "",
+      country: "IN",
+      state: "",
+      city: "",
+      zipCode: "",
+      email: "",
+      phoneNumber: "",
+      isDefault: false,
+    })
+    setEditingAddress(null)
+  }
+
+  const handleEdit = (address: BuyerAddress) => {
+    setEditingAddress(address)
+    setFormData({
+      _id: address._id,
+      firstName: address.firstName,
+      lastName: address.lastName,
+      companyName: address.companyName || "",
+      address: address.address,
+      country: address.country,
+      state: address.state,
+      city: address.city,
+      zipCode: address.zipCode,
+      email: address.email,
+      phoneNumber: address.phoneNumber,
+      isDefault: address.isDefault,
+    })
+    setShowAddressForm(true)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -167,8 +206,12 @@ export default function AddressPage() {
     try {
       setSubmitting(true)
 
-      const response = await fetch("/api/buyer-addresses", {
-        method: "POST",
+      const isEditing = editingAddress !== null
+      const url = "/api/buyer-addresses"
+      const method = isEditing ? "PUT" : "POST"
+
+      const response = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
         },
@@ -178,29 +221,17 @@ export default function AddressPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.error || "Failed to save address")
+        throw new Error(data.error || `Failed to ${isEditing ? "update" : "save"} address`)
       }
 
       if (data.success) {
         toast({
           title: "Success",
-          description: "Address saved successfully",
+          description: `Address ${isEditing ? "updated" : "saved"} successfully`,
         })
 
         // Reset form and close modal
-        setFormData({
-          firstName: "",
-          lastName: "",
-          companyName: "",
-          address: "",
-          country: "IN",
-          state: "",
-          city: "",
-          zipCode: "",
-          email: "",
-          phoneNumber: "",
-          isDefault: false,
-        })
+        resetForm()
         setShowAddressForm(false)
 
         // Refresh addresses list
@@ -210,7 +241,7 @@ export default function AddressPage() {
       console.error("Error saving address:", error)
       toast({
         title: "Error",
-        description: error.message || "Failed to save address. Please try again.",
+        description: error.message || `Failed to ${editingAddress ? "update" : "save"} address. Please try again.`,
         variant: "destructive",
       })
     } finally {
@@ -249,6 +280,11 @@ export default function AddressPage() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleCloseForm = () => {
+    resetForm()
+    setShowAddressForm(false)
   }
 
   const getCountryName = (countryCode: string) => {
@@ -317,6 +353,7 @@ export default function AddressPage() {
                     variant="outline"
                     size="sm"
                     className="flex-1 hover:bg-emerald-50 hover:border-emerald-900 bg-transparent"
+                    onClick={() => handleEdit(address)}
                   >
                     <Edit className="w-4 h-4 mr-1" />
                     Edit
@@ -350,8 +387,8 @@ export default function AddressPage() {
       {showAddressForm && (
         <Card className="max-w-2xl mx-auto p-6">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold">Add New Address</h2>
-            <Button variant="ghost" size="icon" onClick={() => setShowAddressForm(false)} disabled={submitting}>
+            <h2 className="text-xl font-bold">{editingAddress ? "Edit Address" : "Add New Address"}</h2>
+            <Button variant="ghost" size="icon" onClick={handleCloseForm} disabled={submitting}>
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -505,8 +542,10 @@ export default function AddressPage() {
                 {submitting ? (
                   <div className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Saving...
+                    {editingAddress ? "Updating..." : "Saving..."}
                   </div>
+                ) : editingAddress ? (
+                  "Update Address"
                 ) : (
                   "Save Changes"
                 )}
