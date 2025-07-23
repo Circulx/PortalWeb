@@ -12,10 +12,10 @@ export async function GET() {
     }
 
     console.log("Connecting to database...")
-    await connectProfileDB()
+    const connection = await connectProfileDB()
 
     console.log("Fetching addresses for user:", user.id)
-    const BuyerAddress = mongoose.models.BuyerAddress
+    const BuyerAddress = connection.models.BuyerAddress
 
     if (!BuyerAddress) {
       console.error("BuyerAddress model not found")
@@ -73,9 +73,9 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("Connecting to database...")
-    await connectProfileDB()
+    const connection = await connectProfileDB()
 
-    const BuyerAddress = mongoose.models.BuyerAddress
+    const BuyerAddress = connection.models.BuyerAddress
 
     if (!BuyerAddress) {
       console.error("BuyerAddress model not found")
@@ -182,9 +182,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     console.log("Connecting to database...")
-    await connectProfileDB()
+    const connection = await connectProfileDB()
 
-    const BuyerAddress = mongoose.models.BuyerAddress
+    const BuyerAddress = connection.models.BuyerAddress
 
     if (!BuyerAddress) {
       console.error("BuyerAddress model not found")
