@@ -341,6 +341,19 @@ export async function DELETE(request: NextRequest) {
 
     console.log("Deleting address:", addressId, "for user:", user.id)
 
+    // First, check if the address to be deleted is the default address
+    const addressToDelete = await BuyerAddress.findOne({
+      _id: new mongoose.Types.ObjectId(addressId),
+      userId: user.id,
+    }).maxTimeMS(5000)
+
+    if (!addressToDelete) {
+      return NextResponse.json({ error: "Address not found" }, { status: 404 })
+    }
+
+    const wasDefault = addressToDelete.isDefault
+
+    // Delete the address
     const deletedAddress = await BuyerAddress.findOneAndDelete({
       _id: new mongoose.Types.ObjectId(addressId),
       userId: user.id,
@@ -351,6 +364,28 @@ export async function DELETE(request: NextRequest) {
     }
 
     console.log("Address deleted successfully")
+
+    // If the deleted address was default, make another address default
+    if (wasDefault) {
+      console.log("Deleted address was default, finding another address to make default...")
+      try {
+        const remainingAddress = await BuyerAddress.findOne({
+          userId: user.id,
+        })
+          .sort({ createdAt: -1 }) // Get the most recent address
+          .maxTimeMS(5000)
+
+        if (remainingAddress) {
+          await BuyerAddress.findByIdAndUpdate(remainingAddress._id, { isDefault: true }, { new: true }).maxTimeMS(5000)
+          console.log("Made address default:", remainingAddress._id)
+        } else {
+          console.log("No remaining addresses to make default")
+        }
+      } catch (updateError) {
+        console.warn("Failed to update remaining address to default:", updateError)
+        // Don't fail the entire operation if this update fails
+      }
+    }
 
     return NextResponse.json({
       success: true,
