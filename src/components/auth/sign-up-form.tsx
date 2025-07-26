@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import type React from "react"
+
+import { useState, useEffect } from "react"
 import { signUp } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ContactModal } from "./contact-modal"
+import { useSearchParams } from "next/navigation"
 
 interface SignUpFormProps {
   onSuccess: (message: string) => void
@@ -16,10 +19,60 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
   const [contactType, setContactType] = useState<"support" | "customer-care">("support")
+  const [userType, setUserType] = useState("customer")
+  const [gstError, setGstError] = useState("")
+
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    // Check if user is signing up as seller from URL params
+    const type = searchParams.get("type")
+    const pathname = window.location.pathname
+
+    // Check both URL parameter and pathname for seller signup
+    if (type === "seller" || pathname.includes("/seller")) {
+      setUserType("seller")
+    }
+  }, [searchParams])
+
+  // GST Number validation function
+  const validateGSTNumber = (gstNumber: string): boolean => {
+    // Remove spaces and convert to uppercase
+    const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
+
+    // GST format: 2 digits (state code) + 10 alphanumeric (PAN) + 1 digit (entity number) + 1 alphabet (Z) + 1 alphanumeric (checksum)
+    // Total 15 characters
+    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/
+
+    return gstRegex.test(cleanGST)
+  }
+
+  const handleGSTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setGstError("")
+
+    if (value && !validateGSTNumber(value)) {
+      setGstError("Invalid GST format. Example: 22AAAAA0000A1Z5")
+    }
+  }
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
     setError("")
+    setGstError("")
+
+    // Validate GST number for sellers before submission
+    if (userType === "seller") {
+      const gstNumber = formData.get("gstNumber") as string
+      if (gstNumber && !validateGSTNumber(gstNumber)) {
+        setGstError("Please enter a valid GST number")
+        setIsLoading(false)
+        return
+      }
+    }
+
+    // Add user type to form data
+    formData.append("userType", userType)
 
     const result = await signUp(formData)
 
@@ -37,10 +90,14 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     setShowContactModal(true)
   }
 
+  const isSellerSignup = userType === "seller"
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl px-12 py-0.5 font-semibold text-white">Register Now</h1>
+        <h1 className="text-2xl px-12 py-0.5 font-semibold text-white">
+          {isSellerSignup ? "Register as Seller" : "Register Now"}
+        </h1>
         <p className="text-gray-400 px-14"></p>
       </div>
       <form action={handleSubmit} className="space-y-2">
@@ -70,6 +127,22 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
             className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
           />
         </div>
+        {isSellerSignup && (
+          <div>
+            <p className="text-gray-50 px-1 py-1">GST Number</p>
+            <Input
+              id="gstNumber"
+              name="gstNumber"
+              required
+              placeholder="22AAAAA0000A1Z5"
+              className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
+              onChange={handleGSTChange}
+              maxLength={15}
+            />
+            {gstError && <p className="text-sm text-red-400 mt-1 px-1">{gstError}</p>}
+            <p className="text-xs text-gray-300 mt-1 px-1">Enter 15-character GST number</p>
+          </div>
+        )}
         {error && <p className="text-sm text-red-500">{error}</p>}
         <Button
           type="submit"

@@ -8,6 +8,18 @@ import jwt from "jsonwebtoken"
 
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
+// GST Number validation function
+function isValidGSTNumber(gstNumber: string): boolean {
+  // Remove spaces and convert to uppercase
+  const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
+
+  // GST format: 2 digits (state code) + 10 alphanumeric (PAN) + 1 digit (entity number) + 1 alphabet (Z) + 1 alphanumeric (checksum)
+  // Total 15 characters
+  const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/
+
+  return gstRegex.test(cleanGST)
+}
+
 export async function signIn(formData: FormData) {
   try {
     const UserModel = await getUserModel()
@@ -57,20 +69,40 @@ export async function signUp(formData: FormData) {
     const name = formData.get("name") as string
     const email = formData.get("email") as string
     const password = formData.get("password") as string
+    const userType = (formData.get("userType") as string) || "customer"
+    const gstNumber = formData.get("gstNumber") as string
 
     const existingUser = await UserModel.findOne({ email })
     if (existingUser) {
       return { error: "Email already exists" }
     }
 
+    // Validate GST number for sellers
+    if (userType === "seller") {
+      if (!gstNumber) {
+        return { error: "GST Number is required for sellers" }
+      }
+
+      if (!isValidGSTNumber(gstNumber)) {
+        return { error: "Please enter a valid GST number (15 characters in format: 22AAAAA0000A1Z5)" }
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    const user = await UserModel.create({
+    const userData: any = {
       name,
       email,
       password: hashedPassword,
-      type: "customer", // Default type
-    })
+      type: userType,
+    }
+
+    // Add GST number if provided (clean and uppercase)
+    if (gstNumber) {
+      userData.gstNumber = gstNumber.replace(/\s/g, "").toUpperCase()
+    }
+
+    const user = await UserModel.create(userData)
 
     return {
       success: true,
