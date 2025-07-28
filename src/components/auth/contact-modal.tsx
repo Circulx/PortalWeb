@@ -51,11 +51,11 @@ export function ContactModal({ isOpen, onClose, type }: ContactModalProps) {
             <div
               className="bg-black/20 rounded-lg p-4 border border-gray-600/30 cursor-pointer hover:bg-black/30 transition-colors"
               onClick={() => {
-                navigator.clipboard.writeText("7491922495")
+                navigator.clipboard.writeText("+91 80826 22781")
                 // You can add a toast notification here if needed
               }}
             >
-              <p className="text-white text-center font-mono text-2xl font-bold tracking-wider">+91 7491922495</p>
+              <p className="text-white text-center font-mono text-2xl font-bold tracking-wider">+91 80826 22781</p>
               <p className="text-gray-400 text-center text-xs mt-1">Tap to copy or call manually</p>
             </div>
           </div>
