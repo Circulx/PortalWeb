@@ -8,6 +8,7 @@ import Providers from "./providers"
 import GoogleAnalytics from "@/components/analytics/GoogleAnalytics"
 import PageViewTracker from "@/components/analytics/PageViewTracker"
 import { Suspense } from "react"
+import Clarity from "@/components/analytics/Clarity"
 
 export const metadata: Metadata = {
   title: "IND2B",
@@ -54,6 +55,7 @@ export default async function RootLayout({
       </head>
       <body className="bg-gray-100">
         <GoogleAnalytics />
+        <Clarity />
         <Providers>
           <Header user={user} />
           <Suspense fallback={null}>
