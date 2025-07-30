@@ -9,7 +9,7 @@ import GoogleAnalytics from "@/components/analytics/GoogleAnalytics"
 import PageViewTracker from "@/components/analytics/PageViewTracker"
 import { Suspense } from "react"
 import Clarity from "@/components/analytics/Clarity"
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
 export const metadata: Metadata = {
   title: "IND2B",
   description: "Your one-stop shop for all your needs",
