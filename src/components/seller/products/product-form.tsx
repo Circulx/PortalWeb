@@ -3,13 +3,13 @@
 import type React from "react"
 
 import { useState, useEffect, useCallback } from "react"
-import { Plus, Upload, X, Save, AlertCircle } from "lucide-react"
+import { Plus, Upload, X, Save, AlertCircle, Calculator } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { useForm } from "react-hook-form"
@@ -20,7 +20,7 @@ import { Toaster } from "@/components/ui/toaster"
 import debounce from "lodash/debounce"
 import { useRouter } from "next/navigation"
 
-// Define the product schema based on the entity structure
+// Define the product schema based on the entity structure with GST
 const productSchema = z.object({
   title: z.string().min(1, "Product title is required"),
   model: z.string().optional(),
@@ -39,6 +39,7 @@ const productSchema = z.object({
   image_link: z.string().optional(),
   stock: z.number().min(1, "Stock is required"),
   price: z.number().min(1, "Price is required"),
+  gst: z.number().min(0, "GST must be 0 or greater").max(100, "GST cannot exceed 100%"),
   discount: z.number().optional(),
   SKU: z.string().min(1, "SKU is required"),
   seller_name: z.string().min(1, "Seller name is required"),
@@ -108,6 +109,7 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
       image_link: undefined,
       stock: undefined,
       price: undefined,
+      gst: undefined,
       discount: undefined,
       SKU: "",
       seller_name: "",
@@ -120,6 +122,27 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
 
   const selectedCategoryId = watch("category_id")
   const selectedCategoryName = watch("category_name")
+  const price = watch("price") || 0
+  const gst = watch("gst") || 0
+  const discount = watch("discount") || 0
+
+  // Calculate total price with GST and discount
+  const calculateTotalPrice = () => {
+    const basePrice = price || 0
+    const gstAmount = (basePrice * (gst || 0)) / 100
+    const priceWithGst = basePrice + gstAmount
+    const discountAmount = (priceWithGst * (discount || 0)) / 100
+    const totalPrice = priceWithGst - discountAmount
+    return {
+      basePrice,
+      gstAmount,
+      priceWithGst,
+      discountAmount,
+      totalPrice,
+    }
+  }
+
+  const priceCalculation = calculateTotalPrice()
 
   // Fetch categories on component mount
   const fetchCategories = async () => {
@@ -246,11 +269,20 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
       // Debug: Log the form data
       console.log("Form data before submission:", data)
 
-      // Make sure emailId is included in the form data
+      // Make sure emailId and GST are included in the form data
       if (!data.emailId) {
         toast({
           title: "Error",
           description: "Seller email is required. Please enter your email address.",
+        })
+        setIsLoading(false)
+        return
+      }
+
+      if (data.gst === undefined || data.gst === null) {
+        toast({
+          title: "Error",
+          description: "GST percentage is required. Please enter the GST rate.",
         })
         setIsLoading(false)
         return
@@ -261,13 +293,15 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
         ...data,
         image_link: images.length > 0 ? images[0] : undefined,
         is_draft: isDraft,
-        // Explicitly include emailId to ensure it's sent to the server
+        // Explicitly include emailId and GST to ensure they're sent to the server
         emailId: data.emailId,
+        gst: data.gst,
       }
 
       // Debug: Log the final form data
       console.log("Final form data to submit:", formData)
       console.log("Email ID being submitted:", formData.emailId)
+      console.log("GST being submitted:", formData.gst)
 
       // Submit the form data
       await onSubmit(formData, isDraft)
@@ -597,17 +631,17 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
 
           <Card>
             <CardContent className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Pricing & Inventory</h3>
+              <h3 className="text-lg font-semibold mb-4">Pricing & Tax</h3>
               <div className="space-y-4">
                 <div className="grid gap-1.5">
                   <Label htmlFor="price" className="text-base">
-                    Price*
+                    Base Price*
                   </Label>
                   <Input
                     {...register("price", { valueAsNumber: true })}
                     id="price"
                     type="number"
-                    placeholder="Enter price"
+                    placeholder="Enter base price"
                     className="bg-white h-10"
                     min="0"
                     step="0.01"
@@ -616,18 +650,20 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label htmlFor="stock" className="text-base">
-                    Stock*
+                  <Label htmlFor="gst" className="text-base">
+                    GST (%)*
                   </Label>
                   <Input
-                    {...register("stock", { valueAsNumber: true })}
-                    id="stock"
+                    {...register("gst", { valueAsNumber: true })}
+                    id="gst"
                     type="number"
-                    placeholder="Enter available quantity"
+                    placeholder="Enter GST percentage"
                     className="bg-white h-10"
                     min="0"
+                    max="100"
+                    step="0.01"
                   />
-                  {errors.stock && <p className="text-red-500 text-sm">{errors.stock.message}</p>}
+                  {errors.gst && <p className="text-red-500 text-sm">{errors.gst.message}</p>}
                 </div>
 
                 <div className="grid gap-1.5">
@@ -643,6 +679,66 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
                     min="0"
                     max="100"
                   />
+                </div>
+
+                {/* Price Calculation Display */}
+                {(price > 0 || gst > 0) && (
+                  <Card className="bg-gray-50">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <Calculator className="w-4 h-4" />
+                        Price Calculation
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Base Price:</span>
+                          <span>₹{priceCalculation.basePrice.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>GST ({gst}%):</span>
+                          <span>₹{priceCalculation.gstAmount.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Price with GST:</span>
+                          <span>₹{priceCalculation.priceWithGst.toFixed(2)}</span>
+                        </div>
+                        {discount > 0 && (
+                          <div className="flex justify-between text-red-600">
+                            <span>Discount ({discount}%):</span>
+                            <span>-₹{priceCalculation.discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-semibold border-t pt-2">
+                          <span>Final Price:</span>
+                          <span>₹{priceCalculation.totalPrice.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <h3 className="text-lg font-semibold mb-4">Inventory & Units</h3>
+              <div className="space-y-4">
+                <div className="grid gap-1.5">
+                  <Label htmlFor="stock" className="text-base">
+                    Stock*
+                  </Label>
+                  <Input
+                    {...register("stock", { valueAsNumber: true })}
+                    id="stock"
+                    type="number"
+                    placeholder="Enter available quantity"
+                    className="bg-white h-10"
+                    min="0"
+                  />
+                  {errors.stock && <p className="text-red-500 text-sm">{errors.stock.message}</p>}
                 </div>
 
                 <div className="grid gap-1.5">
@@ -816,7 +912,7 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-10"
+                        className="h-10 bg-transparent"
                         onClick={() => setIsAddCategoryOpen(true)}
                         disabled={isLoadingCategories}
                       >
@@ -865,7 +961,7 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-10"
+                        className="h-10 bg-transparent"
                         onClick={() => setIsAddSubCategoryOpen(true)}
                         disabled={!selectedCategoryId}
                       >

@@ -19,6 +19,7 @@ export interface Product {
   skuCode: string
   stock: number
   price: number
+  gst: number // GST percentage
   status: boolean
   image?: string
   weight: string
@@ -57,6 +58,7 @@ export interface ProductFormData {
   image_link?: string
   stock: number
   price: number
+  gst: number // GST percentage
   discount?: number
   SKU: string
   seller_name: string

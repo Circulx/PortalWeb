@@ -229,6 +229,7 @@ const ProductSchema = new mongoose.Schema({
   stock: { type: Number, required: true },
   price: { type: Number, required: true },
   discount: Number,
+  gst: Number,
   SKU: { type: String, required: true },
   seller_id: String,
   emailId: { type: String, required: true },

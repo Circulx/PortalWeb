@@ -17,6 +17,7 @@ interface Product {
   price: number
   originalPrice: number
   discount?: number
+  gst?: number
   stock: number
   SKU: string
   image_link?: string
@@ -44,10 +45,23 @@ interface Review {
   updatedAt: Date
 }
 
-// Function to calculate the discounted price
-const calculateDiscountedPrice = (originalPrice: number, discountPercentage: number | undefined): number => {
-  const discount = discountPercentage || 0
-  return originalPrice - (originalPrice * discount) / 100
+// Function to calculate the final selling price with GST and discount
+const calculateFinalPrice = (basePrice: number, gst = 0, discount = 0) => {
+  // Step 1: Add GST to base price
+  const gstAmount = (basePrice * gst) / 100
+  const priceWithGST = basePrice + gstAmount
+
+  // Step 2: Apply discount to price with GST
+  const discountAmount = (priceWithGST * discount) / 100
+  const finalPrice = priceWithGST - discountAmount
+
+  return {
+    basePrice,
+    gstAmount,
+    priceWithGST,
+    discountAmount,
+    finalPrice,
+  }
 }
 
 // Fetch product reviews from MongoDB PROFILE_DB
@@ -121,6 +135,7 @@ async function getProductById(id: string): Promise<Product | null> {
           price: Number,
           originalPrice: Number,
           discount: Number,
+          gst: Number,
           stock: Number,
           SKU: String,
           image_link: String,
@@ -173,7 +188,8 @@ async function getProductById(id: string): Promise<Product | null> {
       description: doc.description || "",
       price: doc.price || 0,
       originalPrice: doc.originalPrice || doc.price,
-      discount: doc.discount,
+      discount: doc.discount || 0,
+      gst: doc.gst || 0,
       stock: doc.stock || 0,
       SKU: doc.SKU || "",
       image_link: doc.image_link,
@@ -215,6 +231,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       return notFound()
     }
 
+    // Calculate the final price with GST and discount
+    const priceCalculation = calculateFinalPrice(product.price, product.gst, product.discount)
+
     // Collect all available product images
     const productImages: string[] = []
 
@@ -232,9 +251,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
     if (productImages.length === 0) {
       productImages.push("/placeholder.svg?height=600&width=600")
     }
-
-    // Calculate the discounted price
-    const calculatedPrice = calculateDiscountedPrice(product.originalPrice, product.discount)
 
     // Default description if none provided
     const defaultDesc =
@@ -274,7 +290,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 <ProductActions
                   productId={id}
                   title={product.title}
-                  price={calculatedPrice}
+                  price={priceCalculation.finalPrice}
                   imageUrl={product.image_link || "/placeholder.svg"}
                   discount={product.discount}
                   sellerId={product.product_id}
@@ -330,19 +346,21 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               </span>
             </div>
 
-            {/* Price */}
+            {/* Price - Clean display without calculation breakdown */}
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl font-bold">₹{calculatedPrice.toLocaleString()}</span>
-              {product.discount && (
+              <span className="text-2xl font-bold text-green-900">₹{priceCalculation.finalPrice.toFixed(2)}</span>
+              {product.discount && product.discount > 0 && (
                 <>
-                  <span className="text-lg text-gray-500 line-through">₹{product.originalPrice.toLocaleString()}</span>
+                  <span className="text-lg text-gray-500 line-through">
+                    ₹{priceCalculation.priceWithGST.toFixed(2)}
+                  </span>
                   <span className="text-lg text-green-500">{product.discount}% off</span>
                 </>
               )}
             </div>
 
             {/* Availability */}
-            <p className="text-gray-500">
+            <p className="text-gray-500 mb-6">
               Available: {product.stock} {product.units}
             </p>
 

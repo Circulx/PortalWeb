@@ -13,6 +13,7 @@ interface Product {
   image_link?: string
   stock: number
   price: number
+  gst: number // GST percentage
   discount?: number
   SKU: string
   seller_id?: number
@@ -43,6 +44,7 @@ const productSchema = new mongoose.Schema({
   image_link: String,
   stock: { type: Number, required: true },
   price: { type: Number, required: true },
+  gst: { type: Number, required: true }, // GST percentage
   discount: Number,
   SKU: { type: String, required: true },
   seller_id: Number,

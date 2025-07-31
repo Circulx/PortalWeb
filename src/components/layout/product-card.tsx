@@ -17,6 +17,7 @@ interface ProductCardProps {
   price: number
   originalPrice: number
   discount: number
+  gst?: number
   image_link: string
   hoverImage: string
   href: string
@@ -34,6 +35,7 @@ export default function ProductCard({
   price,
   originalPrice,
   discount,
+  gst = 0,
   image_link,
   hoverImage,
   href,
@@ -59,13 +61,27 @@ export default function ProductCard({
     setIsWishlisted(itemInWishlist)
   }, [wishlistItems, href])
 
-  // Calculate the discounted price
-  const calculateDiscountedPrice = (originalPrice: number, discountPercentage: number): number => {
-    return originalPrice - (originalPrice * discountPercentage) / 100
+  // Function to calculate the final selling price with GST and discount
+  const calculateFinalPrice = (basePrice: number, gstRate = 0, discountRate = 0) => {
+    // Step 1: Add GST to base price
+    const gstAmount = (basePrice * gstRate) / 100
+    const priceWithGST = basePrice + gstAmount
+
+    // Step 2: Apply discount to price with GST
+    const discountAmount = (priceWithGST * discountRate) / 100
+    const finalPrice = priceWithGST - discountAmount
+
+    return {
+      basePrice,
+      gstAmount,
+      priceWithGST,
+      discountAmount,
+      finalPrice,
+    }
   }
 
-  // Calculate the actual discounted price
-  const calculatedPrice = calculateDiscountedPrice(originalPrice, discount)
+  // Calculate the actual final price with GST and discount
+  const priceCalculation = calculateFinalPrice(price, gst, discount)
 
   const renderStars = (rating: number) => {
     const stars = []
@@ -107,7 +123,7 @@ export default function ProductCard({
         id: href,
         title,
         image_link,
-        price: calculatedPrice, // Use the calculated price
+        price: priceCalculation.finalPrice, // Use the calculated final price
         discount,
         seller_id,
         units,
@@ -121,7 +137,7 @@ export default function ProductCard({
       duration: 2000,
       position: "bottom-center",
     })
-  }, [addToCart, href, title, image_link, calculatedPrice, discount, seller_id, units, stock])
+  }, [addToCart, href, title, image_link, priceCalculation.finalPrice, discount, seller_id, units, stock])
 
   // Handle toggling the wishlist status
   const handleToggleWishlist = useCallback(async () => {
@@ -144,7 +160,7 @@ export default function ProductCard({
           id: href,
           title,
           image_link,
-          price: calculatedPrice,
+          price: priceCalculation.finalPrice,
           discount,
           seller_id,
           units: undefined,
@@ -176,13 +192,10 @@ export default function ProductCard({
     addToWishlist,
     title,
     image_link,
-    calculatedPrice,
+    priceCalculation.finalPrice,
     discount,
     seller_id,
   ])
-
-  // Debug log to verify rating is being received
-  console.log(`Product Card - Title: ${title}, Rating: ${rating}, ReviewCount: ${reviewCount}`)
 
   return (
     <div
@@ -233,16 +246,22 @@ export default function ProductCard({
             <span className="text-xs">{company}</span>
           </div>
 
-          {/* Pricing */}
+          {/* Pricing - Clean display without technical terms */}
           <div className="flex items-center justify-between">
             <div className="text-left">
-              <span className="text-sm font-bold text-green-900">₹{calculatedPrice.toFixed(2)}</span>
-              <span className="block text-xs text-gray-500 line-through">₹{originalPrice.toLocaleString()}</span>
+              <span className="text-sm font-bold text-green-900">₹{priceCalculation.finalPrice.toFixed(2)}</span>
+              {discount > 0 && (
+                <span className="block text-xs text-gray-500 line-through">
+                  ₹{priceCalculation.priceWithGST.toFixed(2)}
+                </span>
+              )}
             </div>
-            <span className="bg-rose-600 text-white text-xs font-bold px-2 py-0.5 rounded">{discount}% off</span>
+            {discount > 0 && (
+              <span className="bg-rose-600 text-white text-xs font-bold px-2 py-0.5 rounded">{discount}% off</span>
+            )}
           </div>
 
-          {/* Bottom row with location, discount and actions - evenly spaced */}
+          {/* Bottom row with location and actions */}
           <div className="flex items-center justify-between pt-1.5 mt-1.5 border-t border-gray-100">
             {/* Location info with icon */}
             <div className="flex items-center gap-1 text-gray-600">

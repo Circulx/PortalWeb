@@ -58,7 +58,7 @@ export default function DeliveryPoster() {
       {
       <div className="relative w-full">
         <Image
-          src="/banner.jpg"
+          src="/Delivery Banner-2.png"
           alt="On Time Delivery - Professional delivery service"
           width={1200}
           height={224}
