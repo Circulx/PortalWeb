@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import { ProductCard } from "@/components/layout/product-card"
+import  ProductCard  from "@/components/layout/product-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 
@@ -121,9 +121,7 @@ export default function BrandProductsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
-            <ProductCard key={product.product_id} product={product} />
-          ))}
+          
         </div>
       )}
     </div>

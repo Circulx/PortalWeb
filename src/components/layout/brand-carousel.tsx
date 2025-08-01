@@ -11,7 +11,7 @@ interface Brand {
   avgPrice: number
   totalStock: number
   avgRating: number
-  sampleImage: string
+  sampleImage: string | null
   categories: string[]
   href: string
 }
@@ -45,9 +45,9 @@ function BrandCard({ brand }: { brand: Brand }) {
       <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 mb-3 overflow-hidden rounded-full bg-white shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105 border-2 border-gray-200 group-hover:border-blue-300">
         <Image
           src={
-            imageError
+            imageError || !brand.sampleImage
               ? "/placeholder.svg?height=120&width=120&query=brand+logo"
-              : brand.sampleImage || "/placeholder.svg?height=120&width=120&query=brand+logo"
+              : brand.sampleImage
           }
           alt={`${brand.name} logo`}
           fill
@@ -70,6 +70,9 @@ function BrandCard({ brand }: { brand: Brand }) {
             <span className="text-xs text-gray-500 ml-1">{brand.avgRating}</span>
           </div>
         )}
+        {brand.categories.length > 0 && (
+          <p className="text-xs text-blue-600 mt-1 truncate max-w-24">{brand.categories[0]}</p>
+        )}
       </div>
     </Link>
   )
@@ -81,7 +84,8 @@ function BrandCardSkeleton() {
       <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 mb-3 rounded-full bg-gray-200" />
       <div className="text-center">
         <div className="h-4 bg-gray-200 rounded w-16 mb-1" />
-        <div className="h-3 bg-gray-200 rounded w-12" />
+        <div className="h-3 bg-gray-200 rounded w-12 mb-1" />
+        <div className="h-3 bg-gray-200 rounded w-14" />
       </div>
     </div>
   )
@@ -99,11 +103,13 @@ export function BrandCarousel() {
     const fetchBrands = async () => {
       try {
         setLoading(true)
+        console.log("Fetching authorized brands from CategoryBrand model...")
         const response = await fetch("/api/brands?limit=20")
         if (!response.ok) {
           throw new Error("Failed to fetch brands")
         }
         const brandsData = await response.json()
+        console.log("Received brands data:", brandsData)
         setBrands(brandsData)
         setVisibleBrands(brandsData.slice(0, 6))
         setError(null)
@@ -142,7 +148,7 @@ export function BrandCarousel() {
           <div className="text-center mb-4 sm:mb-6">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Trending Brands</h2>
             <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
-              Discover products from the most trusted and popular brands in the market
+              Discover products from authorized brands on our platform
             </p>
           </div>
           <ScrollArea className="w-full whitespace-nowrap rounded-lg">
@@ -179,7 +185,7 @@ export function BrandCarousel() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-4 sm:mb-6">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Trending Brands</h2>
-            <p className="text-gray-600 text-sm sm:text-base">No brands found</p>
+            <p className="text-gray-600 text-sm sm:text-base">No authorized brands found</p>
           </div>
         </div>
       </section>
@@ -193,7 +199,7 @@ export function BrandCarousel() {
         <div className="text-center mb-4 sm:mb-6">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">Trending Brands</h2>
           <p className="text-gray-600 text-sm sm:text-base max-w-2xl mx-auto">
-            Discover products from the most trusted and popular brands in the market
+            Discover products from authorized brands on our platform
           </p>
         </div>
 
@@ -208,6 +214,13 @@ export function BrandCarousel() {
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+
+        {/* Brand Count Info */}
+        <div className="text-center mt-4">
+          <p className="text-sm text-gray-500">
+            Showing {Math.min(visibleBrands.length, 6)} of {brands.length} authorized brands
+          </p>
+        </div>
       </div>
     </section>
   )
