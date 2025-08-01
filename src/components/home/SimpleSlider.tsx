@@ -10,24 +10,9 @@ import type { AppDispatch, RootState } from "@/store"
 
 // Default sample advertisements to show when no active ads are available
 const defaultSlides = [
+  
   {
     id: "default-1",
-    title: "Delivery Within",
-    subtitle: "24 HOURS",
-    description: "At No Extra Cost",
-    image: "/placeholder.svg?height=400&width=1200",
-    linkUrl: "/products",
-  },
-  {
-    id: "default-2",
-    title: "Special Offers",
-    subtitle: "UP TO 50% OFF",
-    description: "Limited Time Only",
-    image: "/placeholder.svg?height=400&width=1200",
-    linkUrl: "/products",
-  },
-  {
-    id: "default-3",
     title: "New Arrivals",
     subtitle: "SHOP NOW",
     description: "Fresh Stock Available",
@@ -166,12 +151,7 @@ export default function SimpleSlider() {
   // Always show slides (either from database or default)
   return (
     <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
-      {/* Show indicator if using default slides */}
-      {advertisements.length === 0 && status !== "loading" && (
-        <div className="absolute top-2 right-2 z-30 bg-yellow-100 text-yellow-800 px-2 py-1 rounded text-xs">
-          Demo Mode
-        </div>
-      )}
+     
 
       {slides.map((slide, index) => {
         const hasSlideContent = hasContent(slide)
