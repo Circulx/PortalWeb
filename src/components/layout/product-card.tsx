@@ -62,13 +62,14 @@ export default function ProductCard({
   }, [wishlistItems, href])
 
   // Function to calculate the final selling price with GST and discount
-  const calculateFinalPrice = (basePrice: number, gstRate = 0, discountRate = 0) => {
+  // This matches exactly the calculation from the product description page
+  const calculateFinalPrice = (basePrice: number, gst = 0, discount = 0) => {
     // Step 1: Add GST to base price
-    const gstAmount = (basePrice * gstRate) / 100
+    const gstAmount = (basePrice * gst) / 100
     const priceWithGST = basePrice + gstAmount
 
     // Step 2: Apply discount to price with GST
-    const discountAmount = (priceWithGST * discountRate) / 100
+    const discountAmount = (priceWithGST * discount) / 100
     const finalPrice = priceWithGST - discountAmount
 
     return {
@@ -80,7 +81,7 @@ export default function ProductCard({
     }
   }
 
-  // Calculate the actual final price with GST and discount
+  // Calculate the actual final price with GST and discount using the same logic as product description page
   const priceCalculation = calculateFinalPrice(price, gst, discount)
 
   const renderStars = (rating: number) => {
@@ -246,17 +247,19 @@ export default function ProductCard({
             <span className="text-xs">{company}</span>
           </div>
 
-          {/* Pricing - Clean display without technical terms */}
+          {/* Pricing - Matching exactly the product description page display */}
           <div className="flex items-center justify-between">
             <div className="text-left">
               <span className="text-sm font-bold text-green-900">₹{priceCalculation.finalPrice.toFixed(2)}</span>
-              {discount > 0 && (
-                <span className="block text-xs text-gray-500 line-through">
-                  ₹{priceCalculation.priceWithGST.toFixed(2)}
-                </span>
+              {discount && discount > 0 && (
+                <>
+                  <span className="block text-xs text-gray-500 line-through">
+                    ₹{priceCalculation.priceWithGST.toFixed(2)}
+                  </span>
+                </>
               )}
             </div>
-            {discount > 0 && (
+            {discount && discount > 0 && (
               <span className="bg-rose-600 text-white text-xs font-bold px-2 py-0.5 rounded">{discount}% off</span>
             )}
           </div>

@@ -584,26 +584,14 @@ export default function Cart() {
           <div className="flex flex-col">
             <div className="bg-white p-4 border border-[#9E9E9E] rounded shadow-xl">
               <h2 className="font-semibold border-b text-lg sm:text-xl pb-2">Cart Totals</h2>
-              <div className="flex justify-between py-2">
+              <div className="flex justify-between py-2 font-bold">
                 <span>Sub-total</span>
                 <span>₹{calculateCartSubTotal().toFixed(2)}</span>
               </div>
-              <div className="flex justify-between py-2">
-                <span>Shipping</span>
-                <span>Free</span>
-              </div>
-              <div className="flex justify-between py-2">
-                <span>Discount</span>
-                <span>₹24.00</span>
-              </div>
-              <div className="flex justify-between border-b py-2">
-                <span>Tax</span>
-                <span>₹61.99</span>
-              </div>
-              <div className="flex justify-between py-2 font-bold">
-                <span>Total</span>
-                <span>₹{calculateTotal().toFixed(2)}</span>
-              </div>
+              
+              
+              
+              
 
               <button
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg mt-4 transition-colors"

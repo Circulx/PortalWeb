@@ -77,7 +77,10 @@ async function getSellerEmail(connection: mongoose.Connection) {
       return null
     }
 
-    return contactDetails.emailId
+    return {
+      emailId: contactDetails.emailId,
+      userId: user.id,
+    }
   } catch (error) {
     console.error("Error fetching seller email:", error)
     return null
@@ -98,22 +101,48 @@ export async function GET(req: NextRequest) {
     // Get the Product model from this connection
     Product = connection.models.Product
 
-    // Get seller email from contacts
-    const sellerEmail = await getSellerEmail(connection)
+    // Get seller details from contacts
+    const sellerDetails = await getSellerEmail(connection)
 
-    if (!sellerEmail) {
+    if (!sellerDetails) {
       return NextResponse.json(
         {
-          error: "Seller email not found. Please complete your profile first.",
+          error: "Seller details not found. Please complete your profile first.",
         },
         { status: 400 },
       )
     }
 
-    // Get products filtered by seller email
-    const products = await Product.find({ emailId: sellerEmail }).sort({ created_at: -1 })
+    console.log("Fetching products for seller:", sellerDetails)
 
-    console.log(`Fetched ${products.length} products for seller email: ${sellerEmail}`)
+    // Get products filtered by both seller_id and emailId for maximum accuracy
+    const products = await Product.find({
+      $or: [
+        { seller_id: sellerDetails.userId },
+        { emailId: sellerDetails.emailId },
+        {
+          $and: [{ seller_id: sellerDetails.userId }, { emailId: sellerDetails.emailId }],
+        },
+      ],
+    }).sort({ created_at: -1 })
+
+    console.log(`Fetched ${products.length} products for seller:`, {
+      userId: sellerDetails.userId,
+      emailId: sellerDetails.emailId,
+    })
+
+    // Log first few products for debugging
+    if (products.length > 0) {
+      console.log(
+        "Sample products:",
+        products.slice(0, 2).map((p) => ({
+          product_id: p.product_id,
+          title: p.title,
+          seller_id: p.seller_id,
+          emailId: p.emailId,
+        })),
+      )
+    }
 
     return NextResponse.json({ products })
   } catch (error: any) {
@@ -138,17 +167,6 @@ export async function POST(req: NextRequest) {
 
     const data = await req.json()
     console.log("Received product data:", data)
-    console.log("Email ID from request:", data.emailId)
-
-    // Validate emailId
-    if (!data.emailId) {
-      return NextResponse.json(
-        {
-          error: "Seller email is required",
-        },
-        { status: 400 },
-      )
-    }
 
     // Get current user to associate with the product
     const user = await getCurrentUser()
@@ -161,6 +179,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
+    // Get seller details
+    const sellerDetails = await getSellerEmail(connection)
+    if (!sellerDetails) {
+      return NextResponse.json(
+        {
+          error: "Seller email not found. Please complete your profile first.",
+        },
+        { status: 400 },
+      )
+    }
+
+    // Validate emailId
+    if (!data.emailId) {
+      data.emailId = sellerDetails.emailId
+    }
+
     // Add seller_id to the product data
     data.seller_id = user.id
 
@@ -168,13 +202,14 @@ export async function POST(req: NextRequest) {
     const highestProduct = await Product.findOne().sort({ product_id: -1 })
     const nextProductId = highestProduct ? highestProduct.product_id + 1 : 1
 
-    // Create a new product with explicit emailId
+    // Create a new product with explicit emailId and seller_id
     const productData = {
       ...data,
       product_id: nextProductId,
+      seller_id: user.id,
+      emailId: sellerDetails.emailId,
       created_at: new Date(),
       updated_at: new Date(),
-      emailId: data.emailId, // Explicitly set emailId
     }
 
     console.log("Final product data to save:", productData)
@@ -225,6 +260,17 @@ export async function PUT(req: NextRequest) {
       )
     }
 
+    // Get seller details
+    const sellerDetails = await getSellerEmail(connection)
+    if (!sellerDetails) {
+      return NextResponse.json(
+        {
+          error: "Seller details not found",
+        },
+        { status: 400 },
+      )
+    }
+
     // Find the product first to check ownership
     const existingProduct = await Product.findOne({ product_id: Number.parseInt(id) })
 
@@ -232,7 +278,10 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    if (existingProduct.seller_id !== user.id) {
+    // Check ownership using both seller_id and emailId
+    const isOwner = existingProduct.seller_id === user.id || existingProduct.emailId === sellerDetails.emailId
+
+    if (!isOwner) {
       return NextResponse.json(
         {
           error: "You don't have permission to update this product",
@@ -292,6 +341,17 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
+    // Get seller details
+    const sellerDetails = await getSellerEmail(connection)
+    if (!sellerDetails) {
+      return NextResponse.json(
+        {
+          error: "Seller details not found",
+        },
+        { status: 400 },
+      )
+    }
+
     // Find the product first to check ownership
     const existingProduct = await Product.findOne({ product_id: Number.parseInt(id) })
 
@@ -299,7 +359,10 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    if (existingProduct.seller_id !== user.id) {
+    // Check ownership using both seller_id and emailId
+    const isOwner = existingProduct.seller_id === user.id || existingProduct.emailId === sellerDetails.emailId
+
+    if (!isOwner) {
       return NextResponse.json(
         {
           error: "You don't have permission to update this product",
@@ -357,6 +420,17 @@ export async function DELETE(req: NextRequest) {
       )
     }
 
+    // Get seller details
+    const sellerDetails = await getSellerEmail(connection)
+    if (!sellerDetails) {
+      return NextResponse.json(
+        {
+          error: "Seller details not found",
+        },
+        { status: 400 },
+      )
+    }
+
     // Find the product first to check ownership
     const existingProduct = await Product.findOne({ product_id: Number.parseInt(id) })
 
@@ -364,7 +438,10 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    if (existingProduct.seller_id !== user.id) {
+    // Check ownership using both seller_id and emailId
+    const isOwner = existingProduct.seller_id === user.id || existingProduct.emailId === sellerDetails.emailId
+
+    if (!isOwner) {
       return NextResponse.json(
         {
           error: "You don't have permission to delete this product",

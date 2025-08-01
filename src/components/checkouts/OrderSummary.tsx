@@ -47,7 +47,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
       <div className="p-6">
-        <h2 className="text-lg font-medium mb-4">Order Summary</h2>
+        <h2 className="text-lg font-bold mb-4 text-center">Order Summary</h2>
 
         {/* Order Items */}
         <div className="space-y-3 mb-6">
@@ -70,15 +70,12 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
         {/* Price Breakdown */}
         <div className="space-y-2 mb-6">
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Subtotal</span>
+            <span className="text-gray-600">Sub-total</span>
             <span>₹{subTotal.toFixed(2)}</span>
           </div>
+          
           <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Discount</span>
-            <span className="text-green-600">-₹{discount.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-600">Tax (18%)</span>
+            <span className="text-gray-600">GST (18%)</span>
             <span>₹{tax.toFixed(2)}</span>
           </div>
         </div>

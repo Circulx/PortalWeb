@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
-import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, AlertCircle } from "lucide-react"
+import { ChevronLeft, ChevronRight, Pencil, Plus, Trash2, AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Toaster } from "@/components/ui/toaster"
@@ -55,6 +55,7 @@ export default function ProductTable() {
   const [error, setError] = useState<string | null>(null)
   const [sellerEmail, setSellerEmail] = useState<string | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -76,50 +77,74 @@ export default function ProductTable() {
     }
   }, [])
 
-  // Fetch products on component mount
-  useEffect(() => {
-    const fetchData = async () => {
-      const email = await getSellerEmail()
-      if (email) {
-        fetchProducts()
-      } else {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [getSellerEmail])
-
-  const fetchProducts = async () => {
+  // Fetch products function
+  const fetchProducts = useCallback(async (showRefreshIndicator = false) => {
     try {
-      setLoading(true)
+      if (showRefreshIndicator) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
       setError(null)
 
-      const response = await fetch("/api/seller/products")
+      console.log("Fetching products from API...")
+      const response = await fetch("/api/seller/products", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        cache: "no-store", // Ensure fresh data
+      })
+
+      console.log("API Response status:", response.status)
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.message || "Failed to fetch products")
+        console.error("API Error:", errorData)
+        throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch products`)
       }
 
       const data = await response.json()
       console.log("Fetched products data:", data)
 
       if (data && Array.isArray(data.products)) {
+        console.log(`Successfully loaded ${data.products.length} products`)
         setProducts(data.products)
+
+        if (data.products.length === 0) {
+          console.log("No products found for this seller")
+        }
       } else if (Array.isArray(data)) {
+        console.log(`Successfully loaded ${data.length} products (direct array)`)
         setProducts(data)
       } else {
         console.error("Unexpected response format:", data)
         setProducts([])
+        throw new Error("Invalid response format from server")
       }
     } catch (err: any) {
       console.error("Error fetching products:", err)
       setError(err.message || "Failed to load products. Please try again.")
+      setProducts([]) // Clear products on error
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
-  }
+  }, [])
+
+  // Fetch products on component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      const email = await getSellerEmail()
+      if (email) {
+        await fetchProducts()
+      } else {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [getSellerEmail, fetchProducts])
 
   const handleSubmitProduct = async (formData: any, isDraft: boolean) => {
     try {
@@ -170,6 +195,7 @@ export default function ProductTable() {
       toast({
         title: "Error",
         description: error.message || "Failed to save product. Please try again.",
+        
       })
     }
   }
@@ -185,7 +211,8 @@ export default function ProductTable() {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to delete product")
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to delete product")
       }
 
       // Remove the product from the local state
@@ -195,11 +222,12 @@ export default function ProductTable() {
         title: "Product deleted",
         description: "The product has been successfully deleted.",
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error deleting product:", err)
       toast({
         title: "Error",
-        description: "Failed to delete product. Please try again.",
+        description: err.message || "Failed to delete product. Please try again.",
+        
       })
     }
   }
@@ -215,7 +243,8 @@ export default function ProductTable() {
       })
 
       if (!response.ok) {
-        throw new Error("Failed to update product status")
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to update product status")
       }
 
       // Update the local state
@@ -227,11 +256,12 @@ export default function ProductTable() {
           ? "Product is now visible on the landing page"
           : "Product is now hidden from the landing page",
       })
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error updating product status:", err)
       toast({
         title: "Error",
-        description: "Failed to update product status. Please try again.",
+        description: err.message || "Failed to update product status. Please try again.",
+       
       })
     }
   }
@@ -239,6 +269,10 @@ export default function ProductTable() {
   const handleEditProduct = (product: Product) => {
     setEditingProduct(product)
     setShowAddForm(true)
+  }
+
+  const handleRefresh = () => {
+    fetchProducts(true)
   }
 
   // Reset category filter
@@ -281,16 +315,35 @@ export default function ProductTable() {
   }
 
   if (loading) {
-    return <div className="text-center py-10">Loading products...</div>
+    return (
+      <div className="w-full p-4 sm:p-6">
+        <div className="text-center py-10">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <div>Loading your products...</div>
+        </div>
+      </div>
+    )
   }
 
   if (error) {
     return (
-      <div className="text-center py-10">
-        <div className="text-red-500 mb-4">{error}</div>
-        <Button onClick={fetchProducts} className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-          Retry
-        </Button>
+      <div className="w-full p-4 sm:p-6">
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Products</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => fetchProducts()}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+          >
+            Retry
+          </Button>
+          <Button onClick={() => router.push("/seller/profile")} variant="outline">
+            Check Profile
+          </Button>
+        </div>
       </div>
     )
   }
@@ -310,7 +363,7 @@ export default function ProductTable() {
       ) : (
         <>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-            <h2 className="text-2xl font-semibold">Product Stock</h2>
+            <h2 className="text-2xl font-semibold">Product Stock ({products.length} products)</h2>
             <div className="flex flex-col sm:flex-row items-center gap-2">
               <div className="w-full sm:w-64">
                 <select
@@ -328,6 +381,15 @@ export default function ProductTable() {
                   ))}
                 </select>
               </div>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                disabled={refreshing}
+                className="w-full sm:w-auto bg-transparent"
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+                Refresh
+              </Button>
               <Button onClick={() => setShowAddForm(true)} className="bg-black hover:bg-black/90 w-full sm:w-auto">
                 <Plus className="w-4 h-4 mr-2" />
                 Add Product
@@ -364,10 +426,19 @@ export default function ProductTable() {
               <tbody>
                 {currentProducts.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
-                      {products.length === 0
-                        ? "No products found. Add your first product!"
-                        : "No products found in this category."}
+                    <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                      {products.length === 0 ? (
+                        <div>
+                          <div className="text-lg mb-2">No products found</div>
+                          <div className="text-sm">
+                            {sellerEmail
+                              ? "You haven't added any products yet. Click 'Add Product' to get started!"
+                              : "Please complete your profile to start adding products."}
+                          </div>
+                        </div>
+                      ) : (
+                        "No products found in this category."
+                      )}
                     </td>
                   </tr>
                 ) : (
@@ -385,12 +456,17 @@ export default function ProductTable() {
                       </td>
                       <td className="px-4 py-3">{product.category_name}</td>
                       <td className="px-4 py-3">
-                        {product.title}
-                        {product.is_draft && (
-                          <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                            Draft
-                          </span>
-                        )}
+                        <div>
+                          {product.title}
+                          {product.is_draft && (
+                            <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
+                              Draft
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          ID: {product.product_id} | SKU: {product.SKU}
+                        </div>
                       </td>
                       <td className="px-4 py-3">{product.stock}</td>
                       <td className="px-4 py-3">₹{product.price.toLocaleString()}</td>
