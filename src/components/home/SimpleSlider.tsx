@@ -16,7 +16,7 @@ const defaultSlides = [
     title: "New Arrivals",
     subtitle: "SHOP NOW",
     description: "Fresh Stock Available",
-    image: "/placeholder.svg?height=400&width=1200",
+    image: "/OIP.jpg",
     linkUrl: "/products",
   },
 ]
