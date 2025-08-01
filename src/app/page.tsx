@@ -8,7 +8,7 @@ import { LazyPromotionSection } from "@/components/layout/lazy-promotion-section
 import  PromotionalBanner  from "@/components/layout/promotional-banner"
 import CategoryGrid from "@/components/categories/category-grid"
 import DeliveryPoster from "@/components/layout/delivery-poster"
-
+import { SpeedInsights } from "@vercel/speed-insights/next"
 export default function Home() {
   return (
     <main className="min-h-screen">
