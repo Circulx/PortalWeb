@@ -8,7 +8,7 @@ const IS_PRODUCTION = process.env.NODE_ENV === "production"
 const FROM_EMAIL = IS_PRODUCTION
   ? "Your Company <contact@yourdomain.com>" // Replace with your verified domain
   : "Acme <onboarding@resend.dev>"
-const TO_EMAIL = IS_PRODUCTION ? "Ranjeshroy97099@gmail.com" : "21cs3039@rgipt.ac.in" // Your Resend account email
+const TO_EMAIL = "ranjeshroy97099@gmail.com" // Always use your verified email for now
 
 export async function sendContactEmail(formData: FormData) {
   if (!process.env.RESEND_API_KEY) {
@@ -31,7 +31,7 @@ export async function sendContactEmail(formData: FormData) {
       from: FROM_EMAIL,
       to: [TO_EMAIL],
       replyTo: email, // Changed from 'reply_to' to 'replyTo'
-      subject: `IND2B Contact Submisssion - ${queryType || "General Query"}`,
+      subject: `IND2B Contact Submission - ${queryType || "General Query"}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
           <h2 style="color: #FF5C00;">New Contact Form Submission</h2>
