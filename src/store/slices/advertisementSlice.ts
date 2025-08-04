@@ -34,14 +34,14 @@ const initialState: AdvertisementState = {
   isInitialized: false,
 }
 
-// Fetch active advertisements with improved caching
+// Optimized fetch with aggressive caching and faster timeout
 export const fetchAdvertisements = createAsyncThunk(
   "advertisements/fetchAdvertisements",
   async (deviceType: string, { getState, rejectWithValue }) => {
     const state = getState() as { advertisements: AdvertisementState }
 
-    // Extended cache duration - 15 minutes
-    const cacheValidityDuration = 15 * 60 * 1000
+    // Extended cache duration - 30 minutes for better performance
+    const cacheValidityDuration = 30 * 60 * 1000
     const now = Date.now()
 
     // Check if we have valid cached data
@@ -53,7 +53,7 @@ export const fetchAdvertisements = createAsyncThunk(
       state.advertisements.deviceType === deviceType &&
       state.advertisements.status === "succeeded"
     ) {
-      console.log("Using cached advertisements (valid cache found)")
+      // Return cached data immediately
       return {
         advertisements: state.advertisements.advertisements,
         fromCache: true,
@@ -62,16 +62,15 @@ export const fetchAdvertisements = createAsyncThunk(
     }
 
     try {
-      console.log(`Fetching fresh advertisements for device type: ${deviceType}`)
-
-      // Add timeout to prevent long loading times
+      // Reduced timeout for faster failure detection
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 2000) // 2 second timeout
 
       const response = await fetch(`/api/advertisements/active?deviceType=${deviceType}`, {
         signal: controller.signal,
         headers: {
-          "Cache-Control": "no-cache",
+          "Cache-Control": "public, max-age=1800", // 30 minutes browser cache
+          Accept: "application/json",
         },
       })
 
@@ -87,8 +86,6 @@ export const fetchAdvertisements = createAsyncThunk(
         throw new Error(result.error || "Failed to fetch advertisements")
       }
 
-      console.log(`Successfully fetched ${result.data?.length || 0} advertisements`)
-
       return {
         advertisements: result.data || [],
         fromCache: false,
@@ -96,12 +93,15 @@ export const fetchAdvertisements = createAsyncThunk(
       }
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
-        console.error("Advertisement fetch timeout")
-        return rejectWithValue("Request timeout - advertisements took too long to load")
+        // Return empty array on timeout instead of failing
+        return {
+          advertisements: [],
+          fromCache: false,
+          deviceType,
+        }
       }
 
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
-      console.error("Error fetching advertisements:", errorMessage)
       return rejectWithValue(errorMessage)
     }
   },
@@ -119,9 +119,15 @@ const advertisementSlice = createSlice({
       state.deviceType = null
       state.isInitialized = false
     },
-    // Add action to mark as initialized without fetching
     markAsInitialized: (state) => {
       state.isInitialized = true
+    },
+    // Add preload action for better performance
+    preloadAdvertisements: (state, action: PayloadAction<Advertisement[]>) => {
+      state.advertisements = action.payload
+      state.status = "succeeded"
+      state.isInitialized = true
+      state.lastFetched = Date.now()
     },
   },
   extraReducers: (builder) => {
@@ -167,5 +173,5 @@ const advertisementSlice = createSlice({
   },
 })
 
-export const { clearAdvertisements, markAsInitialized } = advertisementSlice.actions
+export const { clearAdvertisements, markAsInitialized, preloadAdvertisements } = advertisementSlice.actions
 export default advertisementSlice.reducer

@@ -17,7 +17,7 @@ export function LazySection({
   fallback,
   delay = 0,
   threshold = 0.1,
-  rootMargin = "100px",
+  rootMargin = "50px",
   className = "",
 }: LazySectionProps) {
   const { elementRef, shouldLoad, isLoading } = useLazyLoad({

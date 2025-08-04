@@ -46,6 +46,19 @@ interface IReview {
   updatedAt: Date
 }
 
+// Feedback interface
+interface IFeedback {
+  name: string
+  email: string
+  category: string
+  message: string
+  emoji: number
+  vibeLabel: string
+  vibeValue: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Cache the database connection
 let cachedConnection: Connection | null = null
 let connectionPromise: Promise<Connection> | null = null
@@ -229,7 +242,7 @@ const ProductSchema = new mongoose.Schema({
   stock: { type: Number, required: true },
   price: { type: Number, required: true },
   discount: Number,
-  
+
   SKU: { type: String, required: true },
   seller_id: String,
   emailId: { type: String, required: true },
@@ -489,6 +502,62 @@ const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(
 BuyerAddressSchema.index({ userId: 1, createdAt: -1 })
 BuyerAddressSchema.index({ userId: 1, isDefault: 1 })
 
+// Define Feedback schema
+const FeedbackSchema = new mongoose.Schema<IFeedback>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      maxlength: 255,
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: ["General Feedback", "Bug Report", "Feature Request", "Design/UI", "Performance", "Other"],
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 300,
+    },
+    emoji: {
+      type: Number,
+      required: true,
+      min: 0,
+      max: 5,
+    },
+    vibeLabel: {
+      type: String,
+      required: true,
+      enum: ["Sad", "Meh", "Happy", "Lit", "Slay", "Shook"],
+    },
+    vibeValue: {
+      type: String,
+      required: true,
+      enum: ["Low", "Mid", "Good", "High", "Fire", "Surprised"],
+    },
+  },
+  {
+    timestamps: true,
+    collection: "feedbacks",
+  },
+)
+
+// Add indexes for Feedback
+FeedbackSchema.index({ createdAt: -1 })
+FeedbackSchema.index({ category: 1 })
+FeedbackSchema.index({ emoji: 1 })
+FeedbackSchema.index({ email: 1, createdAt: -1 })
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -550,6 +619,10 @@ function registerModels(connection: Connection) {
     connection.model("BuyerAddress", BuyerAddressSchema)
     console.log("Registered BuyerAddress model")
   }
+  if (!connection.models.Feedback) {
+    connection.model("Feedback", FeedbackSchema)
+    console.log("Registered Feedback model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -570,4 +643,5 @@ export {
   AdvertisementSchema,
   ReviewSchema,
   BuyerAddressSchema,
+  FeedbackSchema,
 }

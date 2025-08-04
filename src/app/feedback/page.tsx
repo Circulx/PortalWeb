@@ -1,17 +1,17 @@
 "use client"
-import React, { useState } from "react"
+import type React from "react"
+import { useState } from "react"
 import {
   FaRegSmileBeam,
-  FaRegLightbulb,
   FaRegLaughBeam,
   FaRegGrinStars,
-  FaRegGrinHearts,
   FaRegSadTear,
   FaRegMehRollingEyes,
   FaRegSurprise,
   FaPaperPlane,
   FaCheckCircle,
 } from "react-icons/fa"
+import { submitFeedback } from "@/actions/feedback"
 
 const emojiOptions = [
   { icon: <FaRegSadTear className="text-3xl" />, label: "Sad", vibe: "Low" },
@@ -22,14 +22,7 @@ const emojiOptions = [
   { icon: <FaRegSurprise className="text-3xl" />, label: "Shook", vibe: "Surprised" },
 ]
 
-const categories = [
-  "General Feedback",
-  "Bug Report",
-  "Feature Request",
-  "Design/UI",
-  "Performance",
-  "Other",
-]
+const categories = ["General Feedback", "Bug Report", "Feature Request", "Design/UI", "Performance", "Other"]
 
 const MAX_CHARS = 300
 
@@ -43,23 +36,49 @@ const FeedbackPage: React.FC = () => {
   const [error, setError] = useState("")
   const [emoji, setEmoji] = useState<number | null>(null)
   const [emojiHover, setEmojiHover] = useState<number | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setSubmitted(false)
+    setIsSubmitting(true)
 
     if (!name || !email || !message || emoji === null) {
       setError("Please fill in all fields and select your vibe!")
+      setIsSubmitting(false)
       return
     }
 
-    setSubmitted(true)
-    setName("")
-    setEmail("")
-    setMessage("")
-    setEmoji(null)
-    setCategory(categories[0])
+    try {
+      const formData = new FormData()
+      formData.append("name", name)
+      formData.append("email", email)
+      formData.append("category", category)
+      formData.append("message", message)
+      formData.append("emoji", emoji.toString())
+      formData.append("vibeLabel", emojiOptions[emoji].label)
+      formData.append("vibeValue", emojiOptions[emoji].vibe)
+
+      const result = await submitFeedback(formData)
+
+      if (result.success) {
+        setSubmitted(true)
+        setName("")
+        setEmail("")
+        setMessage("")
+        setEmoji(null)
+        setCategory(categories[0])
+        setError("")
+      } else {
+        setError(result.error || "Failed to submit feedback")
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error)
+      setError("An unexpected error occurred. Please try again.")
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   // Emoji animation classes
@@ -78,9 +97,7 @@ const FeedbackPage: React.FC = () => {
         <h1 className="text-3xl font-bold mb-2 text-orange-700 flex items-center gap-2">
           <FaRegSmileBeam className="text-orange-400 animate-wiggle" /> Feedback
         </h1>
-        <p className="text-gray-600 mb-6">
-          Drop your thoughts, vibes, or rants. We love hearing from you!
-        </p>
+        <p className="text-gray-600 mb-6">Drop your thoughts, vibes, or rants. We love hearing from you!</p>
 
         {/* Emoji Selection */}
         <div className="mb-8 flex flex-col items-center">
@@ -100,6 +117,7 @@ const FeedbackPage: React.FC = () => {
                 onClick={() => setEmoji(idx)}
                 onMouseEnter={() => setEmojiHover(idx)}
                 onMouseLeave={() => setEmojiHover(null)}
+                disabled={isSubmitting}
               >
                 {option.icon}
                 <span className="block text-xs mt-1 text-orange-700">{option.label}</span>
@@ -111,9 +129,7 @@ const FeedbackPage: React.FC = () => {
               Vibe: {emojiOptions[emoji].vibe}
             </div>
           )}
-          {emoji === null && (
-            <div className="text-xs text-gray-400 mt-1">Pick an emoji that matches your mood!</div>
-          )}
+          {emoji === null && <div className="text-xs text-gray-400 mt-1">Pick an emoji that matches your mood!</div>}
         </div>
 
         {/* Vibe Bar */}
@@ -138,11 +154,7 @@ const FeedbackPage: React.FC = () => {
           {/* Emoji markers (empty for spacing) */}
           <div className="relative flex w-full z-10">
             {emojiOptions.map((opt, idx) => (
-              <div
-                key={opt.label}
-                className="flex-1 flex flex-col items-center"
-                style={{ position: "relative" }}
-              />
+              <div key={opt.label} className="flex-1 flex flex-col items-center" style={{ position: "relative" }} />
             ))}
           </div>
           {/* Percent label */}
@@ -165,10 +177,11 @@ const FeedbackPage: React.FC = () => {
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
               type="text"
               value={name}
-              onChange={e => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value)}
               placeholder="Your name"
               required
               autoComplete="off"
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -180,10 +193,11 @@ const FeedbackPage: React.FC = () => {
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
               type="email"
               value={email}
-              onChange={e => setEmail(e.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               required
               autoComplete="off"
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -194,10 +208,13 @@ const FeedbackPage: React.FC = () => {
               id="category"
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 transition"
               value={category}
-              onChange={e => setCategory(e.target.value)}
+              onChange={(e) => setCategory(e.target.value)}
+              disabled={isSubmitting}
             >
               {categories.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
               ))}
             </select>
           </div>
@@ -211,18 +228,31 @@ const FeedbackPage: React.FC = () => {
               rows={5}
               maxLength={MAX_CHARS}
               value={message}
-              onChange={e => setMessage(e.target.value)}
+              onChange={(e) => setMessage(e.target.value)}
               placeholder="Type your feedback here... (spill the tea, drop the fire, or just say hi!)"
               required
+              disabled={isSubmitting}
             />
-            <div className="text-xs text-gray-400 text-right mt-1">{message.length}/{MAX_CHARS} chars</div>
+            <div className="text-xs text-gray-400 text-right mt-1">
+              {message.length}/{MAX_CHARS} chars
+            </div>
           </div>
-          {error && <div className="text-red-500">{error}</div>}
+          {error && <div className="text-red-500 text-sm">{error}</div>}
           <button
             type="submit"
-            className="w-full bg-orange-500 text-white font-semibold py-2 rounded-lg hover:bg-orange-600 transition shadow-lg tracking-wider flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="w-full bg-orange-500 text-white font-semibold py-2 rounded-lg hover:bg-orange-600 transition shadow-lg tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FaPaperPlane /> Send Vibes
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Sending...
+              </>
+            ) : (
+              <>
+                <FaPaperPlane /> Send Vibes
+              </>
+            )}
           </button>
         </form>
 

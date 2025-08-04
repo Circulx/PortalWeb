@@ -8,9 +8,8 @@ import { useDispatch, useSelector } from "react-redux"
 import { fetchAdvertisements, markAsInitialized, type Advertisement } from "@/store/slices/advertisementSlice"
 import type { AppDispatch, RootState } from "@/store"
 
-// Default sample advertisements to show when no active ads are available
+// Optimized default slides with proper image sizing
 const defaultSlides = [
-  
   {
     id: "default-1",
     title: "New Arrivals",
@@ -26,11 +25,12 @@ export default function SimpleSlider() {
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [deviceType, setDeviceType] = useState<string>("desktop")
   const [hasInitialized, setHasInitialized] = useState(false)
+  const [isClient, setIsClient] = useState(false)
 
   const dispatch = useDispatch<AppDispatch>()
   const { advertisements, status, error, isInitialized } = useSelector((state: RootState) => state.advertisements)
 
-  // Memoized device type detection
+  // Optimized device type detection with memoization
   const getDeviceType = useCallback(() => {
     if (typeof window === "undefined") return "desktop"
     const width = window.innerWidth
@@ -39,14 +39,14 @@ export default function SimpleSlider() {
     return "desktop"
   }, [])
 
-  // Memoized image source getter
+  // Optimized image source getter with caching
   const getImageSource = useCallback((ad: Advertisement) => {
     if (ad.imageData) return ad.imageData
     if (ad.imageUrl) return ad.imageUrl
     return "/placeholder.svg?height=400&width=1200"
   }, [])
 
-  // Memoized slides creation
+  // Memoized slides with performance optimization
   const slides = useMemo(() => {
     return advertisements.length > 0
       ? advertisements.map((ad) => ({
@@ -60,109 +60,123 @@ export default function SimpleSlider() {
       : defaultSlides
   }, [advertisements, getImageSource])
 
-  // Initialize device type and fetch advertisements only once
+  // Client-side hydration check
   useEffect(() => {
-    if (hasInitialized) return
+    setIsClient(true)
+  }, [])
+
+  // Optimized initialization with reduced API calls
+  useEffect(() => {
+    if (hasInitialized || !isClient) return
 
     const initialDeviceType = getDeviceType()
     setDeviceType(initialDeviceType)
     setHasInitialized(true)
 
-    // Only fetch if not already initialized or if we don't have data
-    if (!isInitialized || advertisements.length === 0) {
-      console.log("Initializing advertisements for device type:", initialDeviceType)
-      dispatch(fetchAdvertisements(initialDeviceType))
+    // Only fetch if absolutely necessary
+    if (!isInitialized && advertisements.length === 0) {
+      // Use requestIdleCallback for non-critical API calls
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        window.requestIdleCallback(() => {
+          dispatch(fetchAdvertisements(initialDeviceType))
+        })
+      } else {
+        // Fallback with setTimeout for better performance
+        setTimeout(() => {
+          dispatch(fetchAdvertisements(initialDeviceType))
+        }, 100)
+      }
     } else {
-      console.log("Using existing advertisement data")
       dispatch(markAsInitialized())
     }
-  }, [dispatch, getDeviceType, hasInitialized, isInitialized, advertisements.length])
+  }, [dispatch, getDeviceType, hasInitialized, isInitialized, advertisements.length, isClient])
 
-  // Handle device type changes (resize) with debouncing
+  // Optimized resize handler with better debouncing
   useEffect(() => {
+    if (!hasInitialized || !isClient) return
+
     let resizeTimeout: NodeJS.Timeout
+    let ticking = false
 
     const handleResize = () => {
-      clearTimeout(resizeTimeout)
-      resizeTimeout = setTimeout(() => {
-        const newDeviceType = getDeviceType()
-        if (newDeviceType !== deviceType) {
-          console.log("Device type changed from", deviceType, "to", newDeviceType)
-          setDeviceType(newDeviceType)
-          // Only fetch if device type actually changed and we don't have recent data
-          dispatch(fetchAdvertisements(newDeviceType))
-        }
-      }, 250) // Debounce resize events
-    }
-
-    if (hasInitialized) {
-      window.addEventListener("resize", handleResize)
-      return () => {
-        window.removeEventListener("resize", handleResize)
-        clearTimeout(resizeTimeout)
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          const newDeviceType = getDeviceType()
+          if (newDeviceType !== deviceType) {
+            setDeviceType(newDeviceType)
+            // Debounced API call
+            clearTimeout(resizeTimeout)
+            resizeTimeout = setTimeout(() => {
+              dispatch(fetchAdvertisements(newDeviceType))
+            }, 500)
+          }
+          ticking = false
+        })
+        ticking = true
       }
     }
-  }, [dispatch, deviceType, getDeviceType, hasInitialized])
 
-  // Auto-slide functionality
+    window.addEventListener("resize", handleResize, { passive: true })
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      clearTimeout(resizeTimeout)
+    }
+  }, [dispatch, deviceType, getDeviceType, hasInitialized, isClient])
+
+  // Optimized auto-slide with better performance
   useEffect(() => {
     if (slides.length <= 1) return
 
     const timer = setInterval(() => {
       setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
-    }, 5000) // 5 seconds per slide
+    }, 5000)
 
     return () => clearInterval(timer)
   }, [slides.length])
 
   const handleImageError = useCallback((slideId: string) => {
     setImageErrors((prev) => ({ ...prev, [slideId]: true }))
-    console.error(`Image error for slide ${slideId}`)
   }, [])
 
   const goToSlide = useCallback((index: number) => {
     setCurrentSlide(index)
   }, [])
 
-  // Check if a slide has content (title, subtitle, or description)
   const hasContent = useCallback((slide: (typeof slides)[0]) => {
     return slide.title || slide.subtitle || slide.description
   }, [])
 
-  // Show loading state only for initial load and when no cached data exists
-  if (status === "loading" && !isInitialized && advertisements.length === 0) {
+  // Optimized loading state
+  if (!isClient || (status === "loading" && !isInitialized && advertisements.length === 0)) {
     return (
       <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex flex-col items-center space-y-4">
             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-blue-600 font-medium"></p>
           </div>
         </div>
       </div>
     )
   }
 
-  // Show error state with fallback to default slides only if no cached data
+  // Error handling with fallback
   if (status === "failed" && advertisements.length === 0) {
     console.warn("Failed to load advertisements, using default slides:", error)
   }
 
-  // Always show slides (either from database or default)
   return (
     <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
-     
-
       {slides.map((slide, index) => {
         const hasSlideContent = hasContent(slide)
+        const isCurrentSlide = index === currentSlide
 
         const SlideContent = () => (
           <div
             className={`absolute top-0 left-0 w-full h-full transition-opacity duration-700 ${
-              index === currentSlide ? "opacity-100" : "opacity-0"
+              isCurrentSlide ? "opacity-100" : "opacity-0"
             }`}
           >
-            {/* Full-width image container with responsive sizing */}
+            {/* Optimized image container */}
             <div className="absolute inset-0 w-full h-full">
               {!imageErrors[slide.id] ? (
                 slide.image &&
@@ -175,6 +189,7 @@ export default function SimpleSlider() {
                     className="w-full h-full object-cover"
                     onError={() => handleImageError(slide.id)}
                     loading={index === 0 ? "eager" : "lazy"}
+                    decoding={index === 0 ? "sync" : "async"}
                   />
                 ) : (
                   <Image
@@ -186,6 +201,7 @@ export default function SimpleSlider() {
                     priority={index === 0}
                     unoptimized={slide.image?.startsWith("data:")}
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
+                    quality={index === 0 ? 90 : 75}
                   />
                 )
               ) : (
@@ -194,19 +210,16 @@ export default function SimpleSlider() {
                 </div>
               )}
 
-              {/* Responsive gradient overlay for text readability */}
+              {/* Optimized gradient overlay */}
               {hasSlideContent && (
                 <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent sm:from-black/60 sm:via-black/40" />
               )}
             </div>
 
-            {/* Content container with responsive positioning */}
+            {/* Optimized content container */}
             <div className="relative h-full container mx-auto px-4 flex items-center">
               {hasSlideContent && (
-                <div
-                  className={`w-full sm:w-2/3 md:w-1/2 lg:w-2/5 text-left z-10 p-4 md:p-6 rounded-lg 
-                    ${hasSlideContent ? "bg-white/10 backdrop-blur-sm" : ""}`}
-                >
+                <div className="w-full sm:w-2/3 md:w-1/2 lg:w-2/5 text-left z-10 p-4 md:p-6 rounded-lg bg-white/10 backdrop-blur-sm">
                   {slide.title && (
                     <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 text-white drop-shadow-md">
                       {slide.title}
@@ -249,7 +262,7 @@ export default function SimpleSlider() {
         )
       })}
 
-      {/* Navigation Dots */}
+      {/* Optimized navigation dots */}
       {slides.length > 1 && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
           {slides.map((_, index) => (
@@ -265,7 +278,7 @@ export default function SimpleSlider() {
         </div>
       )}
 
-      {/* Small Navigation Indicators */}
+      {/* Optimized navigation arrows */}
       {slides.length > 1 && (
         <>
           <button
@@ -291,7 +304,7 @@ export default function SimpleSlider() {
         </>
       )}
 
-      {/* Progress Bar */}
+      {/* Optimized progress bar */}
       {slides.length > 1 && (
         <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20">
           <div

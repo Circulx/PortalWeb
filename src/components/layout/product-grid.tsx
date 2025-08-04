@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, memo } from "react"
 import ProductCard from "./product-card"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
@@ -9,13 +9,15 @@ import { fetchProducts, fetchProductsByCategory } from "@/store/slices/productSl
 import { LazySection } from "./lazy-section"
 import { SectionSkeleton } from "./section-skeleton"
 
-// Loading skeleton component
-const Skeleton = ({ className = "", ...props }: { className?: string; [key: string]: any }) => {
+// Optimized loading skeleton component
+const Skeleton = memo(({ className = "", ...props }: { className?: string; [key: string]: any }) => {
   return <div className={`animate-pulse rounded-md bg-gray-200 ${className}`} {...props} />
-}
+})
 
-// Loading placeholder component
-function ProductCardSkeleton() {
+Skeleton.displayName = "Skeleton"
+
+// Optimized loading placeholder component
+const ProductCardSkeleton = memo(() => {
   return (
     <div className="border rounded-lg p-4 h-[350px] flex flex-col">
       <Skeleton className="w-full h-40 rounded-md mb-4" />
@@ -27,7 +29,9 @@ function ProductCardSkeleton() {
       </div>
     </div>
   )
-}
+})
+
+ProductCardSkeleton.displayName = "ProductCardSkeleton"
 
 interface Product {
   product_id: number
@@ -53,190 +57,199 @@ interface Product {
   sub_category_name: string
 }
 
-function ProductCarousel({
-  products,
-  title,
-  isLoading,
-  category,
-  onLoadMore,
-}: {
-  products: Product[]
-  title: string
-  isLoading: boolean
-  category?: string
-  onLoadMore?: () => void
-}) {
-  const [startIndex, setStartIndex] = useState(0)
-  const [visibleProducts, setVisibleProducts] = useState(6)
+// Memoized product carousel component
+const ProductCarousel = memo(
+  ({
+    products,
+    title,
+    isLoading,
+    category,
+    onLoadMore,
+  }: {
+    products: Product[]
+    title: string
+    isLoading: boolean
+    category?: string
+    onLoadMore?: () => void
+  }) => {
+    const [startIndex, setStartIndex] = useState(0)
+    const [visibleProducts, setVisibleProducts] = useState(6)
 
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1280) {
-        setVisibleProducts(6)
-      } else if (window.innerWidth >= 1024) {
-        setVisibleProducts(4)
-      } else if (window.innerWidth >= 768) {
-        setVisibleProducts(3)
-      } else if (window.innerWidth >= 640) {
-        setVisibleProducts(2)
-      } else {
-        setVisibleProducts(1)
-      }
-    }
+    // Optimized resize handler with debouncing
+    useEffect(() => {
+      let timeoutId: NodeJS.Timeout
 
-    handleResize()
-    window.addEventListener("resize", handleResize)
-    return () => window.removeEventListener("resize", handleResize)
-  }, [])
-
-  // Endless carousel logic
-  const handlePrevious = () => {
-    setStartIndex((prevIndex) => (prevIndex === 0 ? Math.max(0, products.length - visibleProducts) : prevIndex - 1))
-  }
-
-  const handleNext = () => {
-    setStartIndex((prevIndex) => {
-      const nextIndex = prevIndex >= products.length - visibleProducts ? 0 : prevIndex + 1
-
-      // Load more products when reaching near the end
-      if (nextIndex >= products.length - visibleProducts - 2 && onLoadMore) {
-        onLoadMore()
+      const handleResize = () => {
+        clearTimeout(timeoutId)
+        timeoutId = setTimeout(() => {
+          if (window.innerWidth >= 1280) {
+            setVisibleProducts(6)
+          } else if (window.innerWidth >= 1024) {
+            setVisibleProducts(4)
+          } else if (window.innerWidth >= 768) {
+            setVisibleProducts(3)
+          } else if (window.innerWidth >= 640) {
+            setVisibleProducts(2)
+          } else {
+            setVisibleProducts(1)
+          }
+        }, 100)
       }
 
-      return nextIndex
-    })
-  }
+      handleResize()
+      window.addEventListener("resize", handleResize, { passive: true })
+      return () => {
+        window.removeEventListener("resize", handleResize)
+        clearTimeout(timeoutId)
+      }
+    }, [])
 
-  // Ensure we don't go out of bounds
-  const safeStartIndex = Math.min(startIndex, Math.max(0, products.length - visibleProducts))
-  const currentProducts = products.slice(safeStartIndex, safeStartIndex + visibleProducts)
+    // Optimized navigation handlers
+    const handlePrevious = useCallback(() => {
+      setStartIndex((prevIndex) => (prevIndex === 0 ? Math.max(0, products.length - visibleProducts) : prevIndex - 1))
+    }, [products.length, visibleProducts])
 
-  return (
-    <div className="mb-12">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">{title}</h2>
-      <div className="relative">
-        <div className="flex overflow-hidden">
-          {isLoading ? (
-            Array(visibleProducts)
-              .fill(0)
-              .map((_, index) => (
-                <div
-                  key={`skeleton-${index}`}
-                  className={`w-full px-2 ${
-                    visibleProducts === 1
-                      ? "sm:w-full"
-                      : visibleProducts === 2
-                        ? "sm:w-1/2"
-                        : visibleProducts === 3
-                          ? "sm:w-1/2 md:w-1/3"
-                          : visibleProducts === 4
-                            ? "sm:w-1/2 md:w-1/3 lg:w-1/4"
-                            : "sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6"
-                  }`}
-                >
-                  <ProductCardSkeleton />
+    const handleNext = useCallback(() => {
+      setStartIndex((prevIndex) => {
+        const nextIndex = prevIndex >= products.length - visibleProducts ? 0 : prevIndex + 1
+
+        // Load more products when reaching near the end
+        if (nextIndex >= products.length - visibleProducts - 2 && onLoadMore) {
+          requestIdleCallback(() => onLoadMore())
+        }
+
+        return nextIndex
+      })
+    }, [products.length, visibleProducts, onLoadMore])
+
+    // Ensure we don't go out of bounds
+    const safeStartIndex = Math.min(startIndex, Math.max(0, products.length - visibleProducts))
+    const currentProducts = products.slice(safeStartIndex, safeStartIndex + visibleProducts)
+
+    const getResponsiveClass = useCallback((visibleCount: number) => {
+      switch (visibleCount) {
+        case 1:
+          return "sm:w-full"
+        case 2:
+          return "sm:w-1/2"
+        case 3:
+          return "sm:w-1/2 md:w-1/3"
+        case 4:
+          return "sm:w-1/2 md:w-1/3 lg:w-1/4"
+        default:
+          return "sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6"
+      }
+    }, [])
+
+    return (
+      <div className="mb-12">
+        <h2 className="text-2xl font-bold mb-6 text-gray-800">{title}</h2>
+        <div className="relative">
+          <div className="flex overflow-hidden">
+            {isLoading ? (
+              Array(visibleProducts)
+                .fill(0)
+                .map((_, index) => (
+                  <div key={`skeleton-${index}`} className={`w-full px-2 ${getResponsiveClass(visibleProducts)}`}>
+                    <ProductCardSkeleton />
+                  </div>
+                ))
+            ) : products.length > 0 ? (
+              currentProducts.map((product) => (
+                <div key={product.product_id} className={`w-full px-2 ${getResponsiveClass(visibleProducts)}`}>
+                  <ProductCard
+                    title={product.title}
+                    company={product.seller_name}
+                    location={product.location}
+                    price={product.price}
+                    discount={product.discount}
+                    image_link={product.image_link || "/placeholder.svg?height=200&width=200"}
+                    href={`/products/${product.product_id}`}
+                    rating={product.rating}
+                    originalPrice={product.price + product.discount}
+                    hoverImage={product.image_link || "/placeholder.svg?height=200&width=200"}
+                    seller_id={product.seller_id}
+                    stock={product.stock}
+                  />
                 </div>
               ))
-          ) : products.length > 0 ? (
-            currentProducts.map((product) => (
-              <div
-                key={product.product_id}
-                className={`w-full px-2 ${
-                  visibleProducts === 1
-                    ? "sm:w-full"
-                    : visibleProducts === 2
-                      ? "sm:w-1/2"
-                      : visibleProducts === 3
-                        ? "sm:w-1/2 md:w-1/3"
-                        : visibleProducts === 4
-                          ? "sm:w-1/2 md:w-1/3 lg:w-1/4"
-                          : "sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/6"
-                }`}
-              >
-                <ProductCard
-                  title={product.title}
-                  company={product.seller_name}
-                  location={product.location}
-                  price={product.price}
-                  discount={product.discount}
-                  image_link={product.image_link || "/placeholder.svg?height=200&width=200"}
-                  href={`/products/${product.product_id}`}
-                  rating={product.rating}
-                  originalPrice={product.price + product.discount}
-                  hoverImage={product.image_link || "/placeholder.svg?height=200&width=200"}
-                  seller_id={product.seller_id}
-                  stock={product.stock}
-                />
+            ) : (
+              <div className="w-full text-center py-8">
+                <p className="text-gray-500">No products available in this category</p>
               </div>
-            ))
-          ) : (
-            <div className="w-full text-center py-8">
-              <p className="text-gray-500">No products available in this category</p>
-            </div>
+            )}
+          </div>
+          {!isLoading && products.length > visibleProducts && (
+            <>
+              <button
+                onClick={handlePrevious}
+                className="absolute left-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
+                aria-label="Previous product"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
+                aria-label="Next product"
+              >
+                <ChevronRight className="w-6 h-6" />
+              </button>
+            </>
           )}
         </div>
-        {!isLoading && products.length > visibleProducts && (
-          <>
-            <button
-              onClick={handlePrevious}
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
-              aria-label="Previous product"
-            >
-              <ChevronLeft className="w-6 h-6" />
-            </button>
-            <button
-              onClick={handleNext}
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10 bg-white bg-opacity-50 hover:bg-opacity-75 text-gray-800"
-              aria-label="Next product"
-            >
-              <ChevronRight className="w-6 h-6" />
-            </button>
-          </>
-        )}
       </div>
-    </div>
-  )
-}
+    )
+  },
+)
 
-// Lazy loaded category section
-function LazyCategorySection({
-  category,
-  subcategories,
-}: {
-  category: string
-  subcategories: Record<string, Product[]>
-}) {
-  const dispatch = useDispatch<AppDispatch>()
-  const [hasLoadedMore, setHasLoadedMore] = useState(false)
+ProductCarousel.displayName = "ProductCarousel"
 
-  const handleLoadMore = () => {
-    if (!hasLoadedMore) {
-      dispatch(fetchProductsByCategory(category))
-      setHasLoadedMore(true)
-    }
-  }
+// Lazy loaded category section with optimizations
+const LazyCategorySection = memo(
+  ({
+    category,
+    subcategories,
+  }: {
+    category: string
+    subcategories: Record<string, Product[]>
+  }) => {
+    const dispatch = useDispatch<AppDispatch>()
+    const [hasLoadedMore, setHasLoadedMore] = useState(false)
 
-  return (
-    <LazySection delay={200} fallback={<SectionSkeleton type="grid" />} className="mb-12">
-      <div>
-        <h2 className="text-3xl font-bold mb-6 text-gray-800">{category}</h2>
-        {Object.entries(subcategories).map(([subcategory, products]) => (
-          <div key={subcategory} className="mb-8">
-            <ProductCarousel
-              products={products}
-              title={subcategory}
-              isLoading={false}
-              category={category}
-              onLoadMore={handleLoadMore}
-            />
-          </div>
-        ))}
-      </div>
-    </LazySection>
-  )
-}
+    const handleLoadMore = useCallback(() => {
+      if (!hasLoadedMore) {
+        requestIdleCallback(() => {
+          dispatch(fetchProductsByCategory(category))
+          setHasLoadedMore(true)
+        })
+      }
+    }, [dispatch, category, hasLoadedMore])
 
-export default function ProductGrid() {
+    return (
+      <LazySection delay={100} threshold={0.1} fallback={<SectionSkeleton type="grid" />} className="mb-12">
+        <div>
+          <h2 className="text-3xl font-bold mb-6 text-gray-800">{category}</h2>
+          {Object.entries(subcategories).map(([subcategory, products]) => (
+            <div key={subcategory} className="mb-8">
+              <ProductCarousel
+                products={products}
+                title={subcategory}
+                isLoading={false}
+                category={category}
+                onLoadMore={handleLoadMore}
+              />
+            </div>
+          ))}
+        </div>
+      </LazySection>
+    )
+  },
+)
+
+LazyCategorySection.displayName = "LazyCategorySection"
+
+function ProductGrid() {
   const dispatch = useDispatch<AppDispatch>()
   const {
     products: allProducts,
@@ -251,17 +264,19 @@ export default function ProductGrid() {
   useEffect(() => {
     // Only fetch initial products if they haven't been loaded yet
     if (status === "idle") {
-      // @ts-ignore - Using limit parameter for pagination
-      dispatch(fetchProducts({ limit: 30 } as any)).then(() => {
-        setInitialLoadComplete(true)
+      // Use requestIdleCallback for non-critical loading
+      requestIdleCallback(() => {
+        dispatch(fetchProducts({ limit: 30 } as any)).then(() => {
+          setInitialLoadComplete(true)
+        })
       })
     } else if (status === "succeeded") {
       setInitialLoadComplete(true)
     }
   }, [dispatch, status])
 
-  // Render product carousels for each category with lazy loading
-  const renderCategorySubcategoryCarousels = () => {
+  // Optimized category rendering with memoization
+  const renderCategorySubcategoryCarousels = useCallback(() => {
     if (Object.keys(categorySubcategoryProducts).length === 0) {
       if (isLoading || !initialLoadComplete) {
         return (
@@ -310,7 +325,7 @@ export default function ProductGrid() {
         ))}
       </>
     )
-  }
+  }, [categorySubcategoryProducts, isLoading, initialLoadComplete])
 
   return (
     <div className="w-full px-4 py-8">
@@ -325,3 +340,5 @@ export default function ProductGrid() {
     </div>
   )
 }
+
+export default memo(ProductGrid)
