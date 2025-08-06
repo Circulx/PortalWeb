@@ -16,7 +16,6 @@ const sidebarLinks = [
     title: "Users",
     icon: Users,
   },
-
   {
     href: "/admin/order-manager",
     title: "Order Manager",
@@ -24,12 +23,17 @@ const sidebarLinks = [
   },
   {
     href: "/admin/reviews",
-    title: "Reviews",
+    title: "Product Reviews",
     icon: Star,
   },
   {
     href: "/admin/customer-reviews",
     title: "Customer Reviews",
+    icon: MessageSquare,
+  },
+  {
+    href: "/admin/customer-query",
+    title: "Customer Query",
     icon: MessageSquare,
   },
   {
@@ -42,6 +46,12 @@ const sidebarLinks = [
     title: "Advertisements",
     icon: ImageIcon,
   },
+  {
+      title: "Customer Feedbacks",
+      href: "/admin/feedbacks",
+      icon: MessageSquare,
+      description: "View and manage customer feedback"
+    }
 ]
 
 export function Sidebar() {

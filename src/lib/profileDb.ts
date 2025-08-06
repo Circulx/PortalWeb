@@ -39,7 +39,6 @@ interface IReview {
   product_id: string
   rating: number
   review: string
-
   status: "pending" | "approved" | "rejected"
   isVerifiedPurchase: boolean
   createdAt: Date
@@ -55,6 +54,20 @@ interface IFeedback {
   emoji: number
   vibeLabel: string
   vibeValue: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// Message interface for contact form
+interface IMessage {
+  name: string
+  email: string
+  phone?: string
+  queryType: string
+  orderId?: string
+  message: string
+  status: "new" | "in-progress" | "resolved" | "closed"
+  priority: "low" | "medium" | "high" | "urgent"
   createdAt: Date
   updatedAt: Date
 }
@@ -242,7 +255,6 @@ const ProductSchema = new mongoose.Schema({
   stock: { type: Number, required: true },
   price: { type: Number, required: true },
   discount: Number,
-
   SKU: { type: String, required: true },
   seller_id: String,
   emailId: { type: String, required: true },
@@ -387,7 +399,6 @@ const ReviewSchema = new mongoose.Schema<IReview>(
     product_id: { type: String, required: true, index: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     review: { type: String, required: true },
-
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
@@ -558,6 +569,85 @@ FeedbackSchema.index({ category: 1 })
 FeedbackSchema.index({ emoji: 1 })
 FeedbackSchema.index({ email: 1, createdAt: -1 })
 
+// Define Message schema for contact form
+const MessageSchema = new mongoose.Schema<IMessage>(
+  {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      maxlength: 255,
+    },
+    phone: {
+      type: String,
+      trim: true,
+      maxlength: 20,
+    },
+    queryType: {
+      type: String,
+      required: true,
+      enum: [
+        "general",
+        "order",
+        "product",
+        "technical",
+        "billing",
+        "return",
+        "partnership",
+        "other",
+        "general-inquiry",
+        "order-issue",
+        "return-refund",
+        "payment-issue",
+        "seller-support",
+        "technical-support",
+        "feedback",
+      ],
+    },
+    orderId: {
+      type: String,
+      trim: true,
+      maxlength: 50,
+    },
+    message: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    status: {
+      type: String,
+      enum: ["new", "in-progress", "resolved", "closed"],
+      default: "new",
+      index: true,
+    },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high", "urgent"],
+      default: "medium",
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "messages",
+  },
+)
+
+// Add indexes for Message
+MessageSchema.index({ createdAt: -1 })
+MessageSchema.index({ status: 1, createdAt: -1 })
+MessageSchema.index({ queryType: 1 })
+MessageSchema.index({ email: 1, createdAt: -1 })
+MessageSchema.index({ priority: 1, status: 1 })
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -623,25 +713,43 @@ function registerModels(connection: Connection) {
     connection.model("Feedback", FeedbackSchema)
     console.log("Registered Feedback model")
   }
+  if (!connection.models.Message) {
+    connection.model("Message", MessageSchema)
+    console.log("Registered Message model")
+  }
 
   console.log("All models registered successfully")
 }
 
 // Export schemas for use in other files
+// Export schemas for use in other files
 export {
-  BusinessSchema,
-  ContactSchema,
-  CategoryBrandSchema,
-  AddressSchema,
-  BankSchema,
-  DocumentSchema,
-  ProfileProgressSchema,
-  ProductSchema,
-  OrderSchema,
-  CartSchema,
-  WishlistSchema,
-  AdvertisementSchema,
-  ReviewSchema,
-  BuyerAddressSchema,
-  FeedbackSchema,
+    BusinessSchema,
+    ContactSchema,
+    CategoryBrandSchema,
+    AddressSchema,
+    BankSchema,
+    DocumentSchema,
+    ProfileProgressSchema,
+    ProductSchema,
+    OrderSchema,
+    CartSchema,
+    WishlistSchema,
+    AdvertisementSchema,
+    ReviewSchema,
+    BuyerAddressSchema,
+    FeedbackSchema,
+    MessageSchema, PROFILE_DB,
 }
+
+// Create and export the database connection instance
+let PROFILE_DB_CONNECTION: Connection | null = null;
+
+export const PROFILE_DB_CONNECTION_OBJ = {
+  async collection(name: string) {
+    if (!PROFILE_DB_CONNECTION) {
+      PROFILE_DB_CONNECTION = await connectProfileDB();
+    }
+    return PROFILE_DB_CONNECTION.db?.collection(name);
+  }
+};
