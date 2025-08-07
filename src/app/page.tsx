@@ -12,7 +12,7 @@ import DeliveryPoster from "@/components/layout/delivery-poster"
 export default function Home() {
   return (
     <main className="min-h-screen">
-      {/* Hero Section - Load immediately with priority */}
+      {/* Hero Section - Load immediately with highest priority - NO lazy loading for critical content */}
       <LazySimpleSlider />
 
       {/* Brand Carousel - Reduced delay and optimized threshold 
@@ -52,3 +52,4 @@ export default function Home() {
     </main>
   )
 }
+ 
