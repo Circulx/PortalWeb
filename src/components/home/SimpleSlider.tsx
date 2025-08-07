@@ -3,10 +3,22 @@
 import { useState, useEffect, useCallback, useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight } from "lucide-react"
 import { useDispatch, useSelector } from "react-redux"
 import { fetchAdvertisements, markAsInitialized, type Advertisement } from "@/store/slices/advertisementSlice"
 import type { AppDispatch, RootState } from "@/store"
+
+// Optimized default slides with proper image sizing
+const defaultSlides = [
+  {
+    id: "default-1",
+    title: "New Arrivals",
+    subtitle: "SHOP NOW",
+    description: "Fresh Stock Available",
+    image: "/OIP.jpg",
+    linkUrl: "https://circulx.vercel.app/categories/Welding%20%26%20Soldering",
+  },
+]
 
 export default function SimpleSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -34,7 +46,7 @@ export default function SimpleSlider() {
     return "/placeholder.svg?height=400&width=1200"
   }, [])
 
-  // Only use actual advertisements - NO default slides
+  // Memoized slides with performance optimization
   const slides = useMemo(() => {
     return advertisements.length > 0
       ? advertisements.map((ad) => ({
@@ -45,7 +57,7 @@ export default function SimpleSlider() {
           image: getImageSource(ad),
           linkUrl: ad.linkUrl,
         }))
-      : [] // Return empty array instead of default slides
+      : defaultSlides
   }, [advertisements, getImageSource])
 
   // Client-side hydration check
@@ -53,7 +65,7 @@ export default function SimpleSlider() {
     setIsClient(true)
   }, [])
 
-  // Immediate initialization and fetch - no delays
+  // Optimized initialization with reduced API calls
   useEffect(() => {
     if (hasInitialized || !isClient) return
 
@@ -61,10 +73,19 @@ export default function SimpleSlider() {
     setDeviceType(initialDeviceType)
     setHasInitialized(true)
 
-    // Fetch immediately without any delays
-    if (!isInitialized || advertisements.length === 0) {
-      console.log("Fetching advertisements immediately...")
-      dispatch(fetchAdvertisements(initialDeviceType))
+    // Only fetch if absolutely necessary
+    if (!isInitialized && advertisements.length === 0) {
+      // Use requestIdleCallback for non-critical API calls
+      if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+        window.requestIdleCallback(() => {
+          dispatch(fetchAdvertisements(initialDeviceType))
+        })
+      } else {
+        // Fallback with setTimeout for better performance
+        setTimeout(() => {
+          dispatch(fetchAdvertisements(initialDeviceType))
+        }, 100)
+      }
     } else {
       dispatch(markAsInitialized())
     }
@@ -83,11 +104,11 @@ export default function SimpleSlider() {
           const newDeviceType = getDeviceType()
           if (newDeviceType !== deviceType) {
             setDeviceType(newDeviceType)
-            // Immediate API call on device type change
+            // Debounced API call
             clearTimeout(resizeTimeout)
             resizeTimeout = setTimeout(() => {
               dispatch(fetchAdvertisements(newDeviceType))
-            }, 100) // Reduced from 500ms to 100ms
+            }, 500)
           }
           ticking = false
         })
@@ -125,58 +146,22 @@ export default function SimpleSlider() {
     return slide.title || slide.subtitle || slide.description
   }, [])
 
-  // Show loading state while fetching or if no client-side rendering yet
-  if (!isClient || status === "loading" || (!isInitialized && advertisements.length === 0)) {
+  // Optimized loading state
+  if (!isClient || (status === "loading" && !isInitialized && advertisements.length === 0)) {
     return (
       <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex flex-col items-center space-y-4">
             <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-blue-600 font-medium">Loading advertisements...</p>
           </div>
         </div>
       </div>
     )
   }
 
-  // Show error state with retry option if failed and no advertisements
+  // Error handling with fallback
   if (status === "failed" && advertisements.length === 0) {
-    return (
-      <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-red-50 to-red-100">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center space-y-4 text-center p-6">
-            <div className="w-16 h-16 bg-red-200 rounded-full flex items-center justify-center">
-              <span className="text-red-600 text-2xl">!</span>
-            </div>
-            <div>
-              <p className="text-red-600 font-medium mb-2">Unable to load advertisements</p>
-              <button
-                onClick={() => dispatch(fetchAdvertisements(deviceType))}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-              >
-                Retry
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  // Don't render anything if no slides available
-  if (slides.length === 0) {
-    return (
-      <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-gray-50 to-gray-100">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center space-y-4 text-center p-6">
-            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-gray-500 text-xl">📢</span>
-            </div>
-            <p className="text-gray-600 font-medium">No advertisements available</p>
-          </div>
-        </div>
-      </div>
-    )
+    console.warn("Failed to load advertisements, using default slides:", error)
   }
 
   return (
