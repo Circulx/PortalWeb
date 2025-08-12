@@ -348,7 +348,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
             {/* Price - Clean display without calculation breakdown */}
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl font-bold text-green-900">��{priceCalculation.finalPrice.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-green-900">{priceCalculation.finalPrice.toFixed(2)}</span>
               {product.discount && product.discount > 0 && (
                 <>
                   <span className="text-lg text-gray-500 line-through">
