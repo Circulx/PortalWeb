@@ -8,16 +8,14 @@ let advertisementCache: {
   deviceType: string
 } | null = null
 
-// Reduced cache duration for faster updates but still efficient
-const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes cache
+const CACHE_DURATION = 3 * 60 * 1000
 
-// Pre-warm cache on server start
 let isPreWarming = false
 
 async function preWarmCache() {
   if (isPreWarming) return
   isPreWarming = true
-  
+
   try {
     console.log("Pre-warming advertisement cache...")
     const connection = await connectProfileDB()
@@ -43,7 +41,7 @@ async function preWarmCache() {
     const advertisements = await Advertisement.find(filter)
       .select("title subtitle description imageUrl imageData linkUrl order deviceType isActive")
       .sort({ order: 1, createdAt: -1 })
-      .limit(10)
+      .limit(15) // Increased limit for better coverage
       .lean()
       .exec()
 
@@ -62,12 +60,12 @@ async function preWarmCache() {
   }
 }
 
-// Pre-warm cache immediately
 preWarmCache()
+setInterval(preWarmCache, 5 * 60 * 1000) // Refresh every 5 minutes
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-  
+
   try {
     const { searchParams } = new URL(request.url)
     const deviceType = searchParams.get("deviceType") || "all"
@@ -80,15 +78,13 @@ export async function GET(request: NextRequest) {
     ) {
       const responseTime = Date.now() - startTime
       console.log(`Returning cached advertisements for device type: ${deviceType} in ${responseTime}ms`)
-      
+
       // Filter by device type if needed
       let filteredData = advertisementCache.data
       if (deviceType !== "all" && advertisementCache.deviceType === "all") {
-        filteredData = advertisementCache.data.filter(ad => 
-          ad.deviceType === deviceType || ad.deviceType === "all"
-        )
+        filteredData = advertisementCache.data.filter((ad) => ad.deviceType === deviceType || ad.deviceType === "all")
       }
-      
+
       const response = NextResponse.json({
         success: true,
         data: filteredData,
@@ -97,10 +93,9 @@ export async function GET(request: NextRequest) {
         responseTime: responseTime,
       })
 
-      // Aggressive browser caching for better performance
-      response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=900")
+      response.headers.set("Cache-Control", "public, max-age=180, stale-while-revalidate=600")
       response.headers.set("X-Response-Time", `${responseTime}ms`)
-      
+
       return response
     }
 
@@ -137,7 +132,7 @@ export async function GET(request: NextRequest) {
     const advertisements = await Advertisement.find(filter)
       .select("title subtitle description imageUrl imageData linkUrl order deviceType isActive")
       .sort({ order: 1, createdAt: -1 })
-      .limit(10)
+      .limit(15) // Increased limit for better coverage
       .lean()
       .exec()
 
@@ -151,7 +146,6 @@ export async function GET(request: NextRequest) {
       deviceType: deviceType,
     }
 
-    // Set aggressive cache headers for browser caching
     const response = NextResponse.json({
       success: true,
       data: advertisements,
@@ -160,15 +154,14 @@ export async function GET(request: NextRequest) {
       responseTime: responseTime,
     })
 
-    // Cache for 5 minutes in browser, allow stale for 15 minutes
-    response.headers.set("Cache-Control", "public, max-age=300, stale-while-revalidate=900")
+    response.headers.set("Cache-Control", "public, max-age=180, stale-while-revalidate=600")
     response.headers.set("X-Response-Time", `${responseTime}ms`)
 
     return response
   } catch (error) {
     const responseTime = Date.now() - startTime
     console.error("Error fetching active advertisements:", error)
-    
+
     // Return cached data if available, even if stale
     if (advertisementCache && advertisementCache.data.length > 0) {
       console.log("Returning stale cached data due to error")
@@ -183,7 +176,7 @@ export async function GET(request: NextRequest) {
       response.headers.set("X-Response-Time", `${responseTime}ms`)
       return response
     }
-    
+
     return NextResponse.json(
       {
         success: false,

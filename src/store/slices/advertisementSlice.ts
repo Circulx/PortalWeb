@@ -40,8 +40,7 @@ export const fetchAdvertisements = createAsyncThunk(
   async (deviceType: string, { getState, rejectWithValue }) => {
     const state = getState() as { advertisements: AdvertisementState }
 
-    // Very aggressive caching - 15 minutes for maximum performance
-    const cacheValidityDuration = 15 * 60 * 1000
+    const cacheValidityDuration = 10 * 60 * 1000
     const now = Date.now()
 
     // Check if we have valid cached data - return immediately
@@ -65,14 +64,13 @@ export const fetchAdvertisements = createAsyncThunk(
     const startTime = Date.now()
 
     try {
-      // Ultra-fast timeout for immediate response
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 1500) // 1.5 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 1000)
 
       const response = await fetch(`/api/advertisements/active?deviceType=${deviceType}`, {
         signal: controller.signal,
         headers: {
-          "Cache-Control": "public, max-age=300", // 5 minutes browser cache
+          "Cache-Control": "public, max-age=180", // Reduced to 3 minutes
           Accept: "application/json",
         },
         // Add priority hint for faster loading
@@ -105,7 +103,16 @@ export const fetchAdvertisements = createAsyncThunk(
 
       if (error instanceof Error && error.name === "AbortError") {
         console.warn(`Advertisement fetch timeout after ${responseTime}ms`)
-        // Return empty array on timeout instead of failing
+
+        if (state.advertisements.advertisements.length > 0) {
+          return {
+            advertisements: state.advertisements.advertisements,
+            fromCache: true,
+            deviceType,
+            responseTime,
+          }
+        }
+
         return {
           advertisements: [],
           fromCache: false,
@@ -198,5 +205,6 @@ const advertisementSlice = createSlice({
   },
 })
 
-export const { clearAdvertisements, markAsInitialized, preloadAdvertisements, loadFromCache } = advertisementSlice.actions
+export const { clearAdvertisements, markAsInitialized, preloadAdvertisements, loadFromCache } =
+  advertisementSlice.actions
 export default advertisementSlice.reducer
