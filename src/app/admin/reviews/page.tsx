@@ -1,41 +1,48 @@
 import { StatsCard } from "@/components/admin/reviews/stats-card"
 import { ReviewsTable } from "@/components/admin/reviews/reviews-table"
 import { connectProfileDB } from "@/lib/profileDb"
-import mongoose from "mongoose"
 
 async function getProductStats() {
   try {
     // Connect to the profile database
     const connection = await connectProfileDB()
 
-    // Get the products collection
-    let Product
-    try {
-      // Try to get the existing model
-      Product = connection.models.Product
-    } catch (e) {
-      // If model doesn't exist, create a new one with an empty schema
-      // This is just to query the collection
-      // Use mongoose.Schema instead of connection.Schema
-      Product = connection.model("Product", new mongoose.Schema({}))
+    // Get the Product model from the connection
+    const Product = connection.models.Product
+
+    if (!Product) {
+      console.error("Product model not found in connection")
+      return {
+        total: 0,
+        pending: 0,
+        approved: 0,
+        flagged: 0,
+      }
     }
 
-    // Get total count
-    const total = (await Product.countDocuments()) || 0
+    // Get total count and counts by status in parallel
+    const [total, pending, approved, flagged] = await Promise.all([
+      Product.countDocuments(),
+      Product.countDocuments({
+        $or: [{ status: "Pending" }, { status: "pending" }, { status: { $exists: false } }],
+      }),
+      Product.countDocuments({
+        $or: [{ status: "Approved" }, { status: "approved" }],
+      }),
+      Product.countDocuments({
+        $or: [{ status: "Flagged" }, { status: "flagged" }],
+      }),
+    ])
 
-    // Get counts by status
-    const pending = (await Product.countDocuments({ status: "Pending" })) || 0
-    const approved = (await Product.countDocuments({ status: "Approved" })) || 0
-    const flagged = (await Product.countDocuments({ status: "Flagged" })) || 0
+    console.log("Product stats from PROFILE_DB:", { total, pending, approved, flagged })
 
     return {
-      total,
-      pending,
-      approved,
-      flagged,
+      total: total || 0,
+      pending: pending || 0,
+      approved: approved || 0,
+      flagged: flagged || 0,
     }
   } catch (error: unknown) {
-    // Properly handle unknown error type
     console.error("Error fetching product stats:", error instanceof Error ? error.message : "Unknown error")
 
     return {

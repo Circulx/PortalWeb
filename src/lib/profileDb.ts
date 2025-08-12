@@ -263,6 +263,13 @@ const ProductSchema = new mongoose.Schema({
   sub_category_name: String,
   is_draft: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
+  status: {
+    type: String,
+    enum: ["Pending", "Approved", "Flagged"],
+    default: "Pending",
+  },
+  created_at: { type: Date, default: Date.now },
+  updated_at: { type: Date, default: Date.now },
 })
 
 // Define Order schema
@@ -722,34 +729,34 @@ function registerModels(connection: Connection) {
 }
 
 // Export schemas for use in other files
-// Export schemas for use in other files
 export {
-    BusinessSchema,
-    ContactSchema,
-    CategoryBrandSchema,
-    AddressSchema,
-    BankSchema,
-    DocumentSchema,
-    ProfileProgressSchema,
-    ProductSchema,
-    OrderSchema,
-    CartSchema,
-    WishlistSchema,
-    AdvertisementSchema,
-    ReviewSchema,
-    BuyerAddressSchema,
-    FeedbackSchema,
-    MessageSchema, PROFILE_DB,
+  BusinessSchema,
+  ContactSchema,
+  CategoryBrandSchema,
+  AddressSchema,
+  BankSchema,
+  DocumentSchema,
+  ProfileProgressSchema,
+  ProductSchema,
+  OrderSchema,
+  CartSchema,
+  WishlistSchema,
+  AdvertisementSchema,
+  ReviewSchema,
+  BuyerAddressSchema,
+  FeedbackSchema,
+  MessageSchema,
+  PROFILE_DB,
 }
 
 // Create and export the database connection instance
-let PROFILE_DB_CONNECTION: Connection | null = null;
+let PROFILE_DB_CONNECTION: Connection | null = null
 
 export const PROFILE_DB_CONNECTION_OBJ = {
   async collection(name: string) {
     if (!PROFILE_DB_CONNECTION) {
-      PROFILE_DB_CONNECTION = await connectProfileDB();
+      PROFILE_DB_CONNECTION = await connectProfileDB()
     }
-    return PROFILE_DB_CONNECTION.db?.collection(name);
-  }
-};
+    return PROFILE_DB_CONNECTION.db?.collection(name)
+  },
+}

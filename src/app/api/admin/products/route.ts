@@ -1,34 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
-import mongoose, { type Model, type Document } from "mongoose"
-
-// Define a basic interface for the Product document
-interface ProductDocument extends Document {
-  status?: string
-  createdAt?: Date
-  [key: string]: any
-}
 
 export async function GET(request: NextRequest) {
   try {
     // Connect to the profile database
-    const db = await connectProfileDB()
+    const connection = await connectProfileDB()
 
-    // Get the products collection
-    let Product: Model<ProductDocument>
-    try {
-      // Try to get the existing model
-      Product = db.models.Product as Model<ProductDocument>
-    } catch (e) {
-      // If model doesn't exist, create a new one with an empty schema
-      const schema = new mongoose.Schema(
-        {
-          status: String,
-          createdAt: Date,
-        },
-        { strict: false },
-      )
-      Product = db.model<ProductDocument>("Product", schema)
+    const Product = connection.models.Product
+
+    if (!Product) {
+      console.error("Product model not found in profileDb connection")
+      return NextResponse.json({ error: "Product model not available" }, { status: 500 })
     }
 
     // Get query parameters
@@ -40,9 +22,24 @@ export async function GET(request: NextRequest) {
     // Build the query
     const query: Record<string, any> = {}
 
-    // Add status filter if not "all"
     if (status !== "all") {
-      query.status = status
+      if (status.toLowerCase() === "pending") {
+        // For pending filter, include products with explicit "Pending" status OR no status field
+        query.$or = [
+          { status: "Pending" },
+          { status: "pending" },
+          { status: { $exists: false } },
+          { status: null },
+          { status: "" },
+        ]
+      } else {
+        // For other statuses, only look for explicit matches
+        query.$or = [
+          { status: status },
+          { status: status.toLowerCase() },
+          { status: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() },
+        ]
+      }
     }
 
     // Add date filter if month and year are provided
@@ -64,14 +61,20 @@ export async function GET(request: NextRequest) {
     // Get total count for pagination
     const total = await Product.countDocuments(query)
 
-    // Get products
-    const products = await Product.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean()
+    const products = await Product.find(query)
+      .select("product_id title image_link seller_name emailId status created_at")
+      .sort({ created_at: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean()
 
-    // Add default status if not present
-    const productsWithStatus = products.map((product) => ({
+    const productsWithStatus = products.map((product: any) => ({
       ...product,
       status: product.status || "Pending",
+      seller_name: product.seller_name || product.emailId || "Unknown Seller",
     }))
+
+    console.log(`Fetched ${products.length} products from PROFILE_DB with status filter: ${status}`)
 
     return NextResponse.json({
       products: productsWithStatus,
@@ -80,7 +83,7 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / limit),
     })
   } catch (error: unknown) {
-    console.error("Error fetching products:", error instanceof Error ? error.message : "Unknown error")
+    console.error("Error fetching products from PROFILE_DB:", error instanceof Error ? error.message : "Unknown error")
 
     return NextResponse.json(
       { error: "Failed to fetch products", details: error instanceof Error ? error.message : "Unknown error" },
