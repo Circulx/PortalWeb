@@ -14,6 +14,7 @@ interface Product {
   title: string
   image_link?: string
   seller_name: string
+  emailId?: string
   status?: string
   commission?: string
   price?: number
@@ -38,7 +39,7 @@ export function ReviewsTable() {
   const { toast } = useToast()
 
   const productsPerPage = 10
-  const placeholderImage = "/placeholder.svg"
+  const placeholderImage = "/placeholder.svg?height=48&width=48"
 
   useEffect(() => {
     fetchProducts()
@@ -68,15 +69,16 @@ export function ReviewsTable() {
 
       const data = await response.json()
 
-      // Ensure all products have required fields
-      const productsWithStatus = (data.products || []).map((product: Product) => ({
+      // Ensure all products have required fields with proper defaults
+      const productsWithStatus = (data.products || []).map((product: any) => ({
         ...product,
         status: product.status || "Pending",
         commission: product.commission || "No",
-        price: product.price || 0,
+        price: Number(product.price) || 0,
         commission_type: product.commission_type || "percentage",
-        commission_value: product.commission_value || 0,
-        final_price: product.final_price || product.price || 0,
+        commission_value: Number(product.commission_value) || 0,
+        final_price: Number(product.final_price) || Number(product.price) || 0,
+        seller_name: product.emailId || product.seller_name || "Unknown Seller",
       }))
 
       setProducts(productsWithStatus)
@@ -91,10 +93,13 @@ export function ReviewsTable() {
   }
 
   const calculateFinalPrice = (originalPrice: number, commissionType: string, commissionValue: number) => {
+    const price = Number(originalPrice) || 0
+    const value = Number(commissionValue) || 0
+
     if (commissionType === "percentage") {
-      return originalPrice + (originalPrice * commissionValue) / 100
+      return price + (price * value) / 100
     } else {
-      return originalPrice + commissionValue
+      return price + value
     }
   }
 
@@ -136,7 +141,7 @@ export function ReviewsTable() {
       toast({
         title: "Update Failed",
         description: `Failed to update Product ID ${productId} status`,
-       
+        
       })
     } finally {
       setUpdatingStatus(null)
@@ -218,7 +223,8 @@ export function ReviewsTable() {
       const product = products.find((p) => p.product_id === productId)
       if (!product) return
 
-      const finalPrice = calculateFinalPrice(product.price || 0, commissionType, commissionValue)
+      const originalPrice = Number(product.price) || 0
+      const finalPrice = calculateFinalPrice(originalPrice, commissionType, commissionValue)
 
       const response = await fetch("/api/admin/products/update-commission-details", {
         method: "PUT",
@@ -228,7 +234,7 @@ export function ReviewsTable() {
         body: JSON.stringify({
           productId,
           commission_type: commissionType,
-          commission_value: commissionValue,
+          commission_value: Number(commissionValue),
           final_price: finalPrice,
         }),
       })
@@ -244,7 +250,7 @@ export function ReviewsTable() {
           return {
             ...product,
             commission_type: commissionType as "percentage" | "fixed",
-            commission_value: commissionValue,
+            commission_value: Number(commissionValue),
             final_price: finalPrice,
           }
         }
@@ -306,6 +312,14 @@ export function ReviewsTable() {
     const isCommissionActive = product.commission === "Yes"
     const isUpdating = updatingCommissionDetails === product.product_id
 
+    // Ensure we have valid numbers for calculations
+    const originalPrice = Number(product.price) || 0
+    const currentCommissionValue = Number(product.commission_value) || 0
+    const currentFinalPrice = Number(product.final_price) || originalPrice
+
+    // Calculate preview final price for editing mode
+    const previewFinalPrice = calculateFinalPrice(originalPrice, localCommissionType, localCommissionValue)
+
     const handleSave = () => {
       handleCommissionDetailsChange(product.product_id, localCommissionType, localCommissionValue)
       setIsEditing(false)
@@ -342,12 +356,20 @@ export function ReviewsTable() {
             <Input
               type="number"
               value={localCommissionValue}
-              onChange={(e) => setLocalCommissionValue(Number(e.target.value))}
+              onChange={(e) => setLocalCommissionValue(Number(e.target.value) || 0)}
               placeholder={localCommissionType === "percentage" ? "Enter %" : "Enter ₹"}
               className="w-full"
               min="0"
               step={localCommissionType === "percentage" ? "0.1" : "1"}
             />
+
+            <div className="text-xs text-gray-600 space-y-1">
+              <div>Original: ₹{originalPrice.toLocaleString()}</div>
+              <div className="flex items-center gap-1 text-green-600 font-medium">
+                <Calculator className="h-3 w-3" />
+                Preview Final: ₹{previewFinalPrice.toLocaleString()}
+              </div>
+            </div>
 
             <div className="flex gap-1">
               <Button size="sm" onClick={handleSave} disabled={isUpdating} className="flex-1">
@@ -377,15 +399,15 @@ export function ReviewsTable() {
 
             <div className="text-sm font-medium">
               {product.commission_type === "percentage"
-                ? `${product.commission_value}%`
-                : `₹${product.commission_value}`}
+                ? `${currentCommissionValue}%`
+                : `₹${currentCommissionValue.toLocaleString()}`}
             </div>
 
-            <div className="text-xs text-gray-600">Original: ₹{product.price?.toLocaleString()}</div>
+            <div className="text-xs text-gray-600">Original: ₹{originalPrice.toLocaleString()}</div>
 
             <div className="text-sm font-bold text-green-600 flex items-center gap-1">
               <Calculator className="h-3 w-3" />
-              Final: ₹{product.final_price?.toLocaleString()}
+              Final: ₹{currentFinalPrice.toLocaleString()}
             </div>
           </div>
         )}
@@ -508,8 +530,16 @@ export function ReviewsTable() {
                         </div>
                       </td>
                       <td className="p-4 align-middle">{product.product_id}</td>
-                      <td className="p-4 align-middle">{product.title}</td>
-                      <td className="p-4 align-middle">{product.seller_name}</td>
+                      <td className="p-4 align-middle">
+                        <div className="max-w-[200px] truncate" title={product.title}>
+                          {product.title}
+                        </div>
+                      </td>
+                      <td className="p-4 align-middle">
+                        <div className="max-w-[150px] truncate" title={product.seller_name}>
+                          {product.seller_name}
+                        </div>
+                      </td>
                       <td className="p-4 align-middle">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>

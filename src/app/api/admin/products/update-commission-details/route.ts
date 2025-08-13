@@ -3,95 +3,116 @@ import { connectProfileDB } from "@/lib/profileDb"
 
 export async function PUT(request: NextRequest) {
   try {
-    console.log("Updating product commission details in PROFILE_DB...")
+    console.log("Connected to PROFILE_DB")
+
     const { productId, commission_type, commission_value, final_price } = await request.json()
 
-    if (!productId || commission_type === undefined || commission_value === undefined || final_price === undefined) {
+    console.log(
+      `Attempting to update product with product_id: ${productId} commission details: ${commission_type}, ${commission_value}, final_price: ${final_price}`,
+    )
+
+    if (!productId || !commission_type || commission_value === undefined || final_price === undefined) {
       return NextResponse.json(
-        { error: "Product ID, commission type, commission value, and final price are required" },
+        { error: "Missing required fields: productId, commission_type, commission_value, final_price" },
         { status: 400 },
       )
     }
 
-    // Validate commission type
+    // Validate commission_type
     if (!["percentage", "fixed"].includes(commission_type)) {
-      return NextResponse.json({ error: "Invalid commission type. Must be percentage or fixed" }, { status: 400 })
+      return NextResponse.json({ error: "Invalid commission_type. Must be 'percentage' or 'fixed'" }, { status: 400 })
     }
 
-    // Validate commission value
+    // Validate commission_value
     if (commission_value < 0) {
       return NextResponse.json({ error: "Commission value cannot be negative" }, { status: 400 })
     }
 
+    // Validate final_price
+    if (final_price < 0) {
+      return NextResponse.json({ error: "Final price cannot be negative" }, { status: 400 })
+    }
+
     // Connect to the profile database
     const connection = await connectProfileDB()
-    console.log("Connected to PROFILE_DB")
-
     const Product = connection.models.Product
 
     if (!Product) {
-      console.error("Product model not found in profileDb connection")
-      return NextResponse.json({ error: "Product model not available" }, { status: 500 })
+      console.error("Product model not found in connection")
+      return NextResponse.json({ error: "Product model not found" }, { status: 500 })
     }
 
-    const productIdNum = Number.parseInt(productId.toString())
-    console.log(
-      `Attempting to update product with product_id: ${productIdNum} commission details: ${commission_type}, ${commission_value}, final_price: ${final_price}`,
-    )
-
-    // First check if the product exists
-    const existingProduct = await Product.findOne({ product_id: productIdNum }).lean()
-    console.log("Existing product found:", existingProduct ? "Yes" : "No")
+    // Check if product exists and commission is enabled
+    const existingProduct = await Product.findOne({ product_id: productId })
 
     if (!existingProduct) {
-      console.error(`Product with product_id ${productIdNum} not found in PROFILE_DB`)
-      return NextResponse.json({ error: `Product with ID ${productId} not found` }, { status: 404 })
+      return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    const result = await Product.updateOne(
-      { product_id: productIdNum },
+    console.log(`Existing product found: ${existingProduct ? "Yes" : "No"}`)
+
+    // Check if commission is enabled
+    const productCommission = (existingProduct as any).commission || "No"
+    if (productCommission !== "Yes") {
+      return NextResponse.json(
+        { error: "Commission must be enabled before setting commission details" },
+        { status: 400 },
+      )
+    }
+
+    // Update the product with commission details
+    const updateResult = await Product.updateOne(
+      { product_id: productId },
       {
         $set: {
           commission_type: commission_type,
-          commission_value: commission_value,
-          final_price: final_price,
+          commission_value: Number(commission_value),
+          final_price: Number(final_price),
           updated_at: new Date(),
         },
       },
     )
 
-    console.log("Update result:", {
-      acknowledged: result.acknowledged,
-      matchedCount: result.matchedCount,
-      modifiedCount: result.modifiedCount,
-    })
+    console.log("Update result:", updateResult)
 
-    if (!result.acknowledged) {
-      console.error("Update operation was not acknowledged by MongoDB")
-      return NextResponse.json({ error: "Database update failed - operation not acknowledged" }, { status: 500 })
+    if (updateResult.matchedCount === 0) {
+      return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    if (result.matchedCount === 0) {
-      console.error(`Product with ID ${productId} not found during update`)
-      return NextResponse.json({ error: `Product with ID ${productId} not found` }, { status: 404 })
+    if (updateResult.modifiedCount === 0) {
+      return NextResponse.json({ error: "No changes made to the product" }, { status: 400 })
     }
 
-    if (result.modifiedCount === 0) {
-      console.log(`Product ${productId} was found but no changes were made (possibly same commission details)`)
+    // Fetch the updated product to verify the update
+    const updatedProduct = await Product.findOne({ product_id: productId })
+
+    if (updatedProduct) {
+      const safeProduct = updatedProduct as any
+      console.log("Updated product commission details:", {
+        commission: safeProduct.commission || "No",
+        commission_type: safeProduct.commission_type || "percentage",
+        commission_value: safeProduct.commission_value || 0,
+        final_price: safeProduct.final_price || 0,
+        original_price: safeProduct.price || 0,
+      })
     }
 
-    const updatedProduct = await Product.findOne({ product_id: productIdNum }).lean()
     console.log(
       `Product ID ${productId} commission details successfully updated in PROFILE_DB - Type: ${commission_type}, Value: ${commission_value}, Final Price: ${final_price}`,
     )
 
     return NextResponse.json({
       success: true,
-      message: `Product ID ${productId} commission details updated successfully`,
-      product: updatedProduct,
+      message: "Commission details updated successfully",
+      data: {
+        productId,
+        commission_type,
+        commission_value: Number(commission_value),
+        final_price: Number(final_price),
+      },
     })
   } catch (error) {
-    console.error("Error updating product commission details in PROFILE_DB:", error)
-    return NextResponse.json({ error: "Failed to update product commission details" }, { status: 500 })
+    console.error("Error updating commission details:", error)
+    return NextResponse.json({ error: "Internal server error while updating commission details" }, { status: 500 })
   }
 }

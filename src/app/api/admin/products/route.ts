@@ -3,8 +3,17 @@ import { connectProfileDB } from "@/lib/profileDb"
 
 export async function GET(request: NextRequest) {
   try {
+    console.log("Fetching products from PROFILE_DB...")
+    const { searchParams } = new URL(request.url)
+    const page = Number.parseInt(searchParams.get("page") || "1")
+    const limit = Number.parseInt(searchParams.get("limit") || "10")
+    const status = searchParams.get("status")
+    const date = searchParams.get("date")
+    const commission = searchParams.get("commission")
+
     // Connect to the profile database
     const connection = await connectProfileDB()
+    console.log("Connected to PROFILE_DB")
 
     const Product = connection.models.Product
 
@@ -13,88 +22,122 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Product model not available" }, { status: 500 })
     }
 
-    // Get query parameters
-    const url = new URL(request.url)
-    const status = url.searchParams.get("status") || "all"
-    const month = url.searchParams.get("month")
-    const year = url.searchParams.get("year")
+    // Build query filters
+    const query: any = {}
 
-    // Build the query
-    const query: Record<string, any> = {}
-
-    if (status !== "all") {
-      if (status.toLowerCase() === "pending") {
-        // For pending filter, include products with explicit "Pending" status OR no status field
-        query.$or = [
-          { status: "Pending" },
-          { status: "pending" },
-          { status: { $exists: false } },
-          { status: null },
-          { status: "" },
-        ]
-      } else {
-        // For other statuses, only look for explicit matches
-        query.$or = [
-          { status: status },
-          { status: status.toLowerCase() },
-          { status: status.charAt(0).toUpperCase() + status.slice(1).toLowerCase() },
-        ]
-      }
+    if (status && status !== "all") {
+      query.status = { $regex: new RegExp(`^${status}$`, "i") }
     }
 
-    // Add date filter if month and year are provided
-    if (month && year) {
-      const startDate = new Date(Number.parseInt(year), Number.parseInt(month) - 1, 1)
-      const endDate = new Date(Number.parseInt(year), Number.parseInt(month), 0)
+    if (commission && commission !== "all") {
+      query.commission = commission
+    }
 
-      query.createdAt = {
+    if (date) {
+      const startDate = new Date(date)
+      const endDate = new Date(date)
+      endDate.setDate(endDate.getDate() + 1)
+      query.created_at = {
         $gte: startDate,
-        $lte: endDate,
+        $lt: endDate,
       }
     }
 
-    // Get products with pagination
-    const page = Number.parseInt(url.searchParams.get("page") || "1")
-    const limit = Number.parseInt(url.searchParams.get("limit") || "10")
+    console.log("Query filters:", query)
+
+    // Calculate pagination
     const skip = (page - 1) * limit
+
+    // Fetch products with pagination
+    const products = await Product.find(query).sort({ created_at: -1 }).skip(skip).limit(limit).lean()
 
     // Get total count for pagination
     const total = await Product.countDocuments(query)
 
-    const products = await Product.find(query)
-      .select(
-        "product_id title image_link seller_name emailId status commission price commission_type commission_value final_price created_at",
-      )
-      .sort({ created_at: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean()
+    // Transform products to include seller_name and ensure all required fields with proper number conversion
+    const transformedProducts = products.map((product: any) => {
+      const originalPrice = Number(product.price) || 0
+      const commissionValue = Number(product.commission_value) || 0
+      const finalPrice = Number(product.final_price) || originalPrice
 
-    const productsWithStatus = products.map((product: any) => ({
-      ...product,
-      status: product.status || "Pending",
-      commission: product.commission || "No",
-      price: product.price || 0,
-      commission_type: product.commission_type || "percentage",
-      commission_value: product.commission_value || 0,
-      final_price: product.final_price || product.price || 0,
-      seller_name: product.seller_name || product.emailId || "Unknown Seller",
-    }))
+      return {
+        _id: product._id,
+        product_id: product.product_id,
+        title: product.title || "Untitled Product",
+        image_link: product.image_link || null,
+        seller_name: product.emailId || "Unknown Seller",
+        emailId: product.emailId || "Unknown Seller",
+        status: product.status || "Pending",
+        commission: product.commission || "No",
+        price: originalPrice,
+        commission_type: product.commission_type || "percentage",
+        commission_value: commissionValue,
+        final_price: finalPrice,
+        created_at: product.created_at || new Date(),
+        updated_at: product.updated_at || new Date(),
+      }
+    })
 
-    console.log(`Fetched ${products.length} products from PROFILE_DB with status filter: ${status}`)
+    console.log(`Fetched ${transformedProducts.length} products from PROFILE_DB (page ${page}, limit ${limit})`)
 
     return NextResponse.json({
-      products: productsWithStatus,
+      success: true,
+      products: transformedProducts,
       total,
       page,
+      limit,
       totalPages: Math.ceil(total / limit),
     })
-  } catch (error: unknown) {
-    console.error("Error fetching products from PROFILE_DB:", error instanceof Error ? error.message : "Unknown error")
+  } catch (error) {
+    console.error("Error fetching products from PROFILE_DB:", error)
+    return NextResponse.json({ error: "Failed to fetch products" }, { status: 500 })
+  }
+}
 
-    return NextResponse.json(
-      { error: "Failed to fetch products", details: error instanceof Error ? error.message : "Unknown error" },
-      { status: 500 },
-    )
+export async function POST(request: NextRequest) {
+  try {
+    console.log("Creating new product in PROFILE_DB...")
+    const productData = await request.json()
+
+    // Connect to the profile database
+    const connection = await connectProfileDB()
+    console.log("Connected to PROFILE_DB")
+
+    const Product = connection.models.Product
+
+    if (!Product) {
+      console.error("Product model not found in profileDb connection")
+      return NextResponse.json({ error: "Product model not available" }, { status: 500 })
+    }
+
+    // Ensure required fields and set defaults with proper number conversion
+    const originalPrice = Number(productData.price) || 0
+    const commissionValue = Number(productData.commission_value) || 0
+
+    const newProduct = {
+      ...productData,
+      status: productData.status || "Pending",
+      commission: productData.commission || "No",
+      price: originalPrice,
+      commission_type: productData.commission_type || "percentage",
+      commission_value: commissionValue,
+      final_price: Number(productData.final_price) || originalPrice,
+      created_at: new Date(),
+      updated_at: new Date(),
+    }
+
+    const product = new Product(newProduct)
+    const savedProduct = await product.save()
+
+    console.log(`New product created in PROFILE_DB with ID: ${savedProduct.product_id}`)
+
+    return NextResponse.json({
+      success: true,
+      message: "Product created successfully",
+      product: savedProduct,
+    })
+  } catch (error) {
+    console.error("Error creating product in PROFILE_DB:", error)
+    return NextResponse.json({ error: "Failed to create product" }, { status: 500 })
   }
 }

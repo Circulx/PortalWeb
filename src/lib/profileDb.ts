@@ -236,41 +236,77 @@ const ProfileProgressSchema = new mongoose.Schema<IProfileProgress>(
   { timestamps: true },
 )
 
-// Define Product schema
-const ProductSchema = new mongoose.Schema({
-  product_id: { type: Number, required: true, unique: true },
-  title: { type: String, required: true },
-  model: String,
-  description: String,
-  category_id: Number,
-  sub_category_id: Number,
-  units: String,
-  weight: Number,
-  dimensions: {
-    length: Number,
-    width: Number,
-    height: Number,
+// Enhanced Product schema with commission fields - REMOVED MIDDLEWARE
+const ProductSchema = new mongoose.Schema(
+  {
+    product_id: { type: Number, required: true, unique: true },
+    title: { type: String, required: true },
+    model: String,
+    description: String,
+    category_id: Number,
+    sub_category_id: Number,
+    units: String,
+    weight: Number,
+    dimensions: {
+      length: Number,
+      width: Number,
+      height: Number,
+    },
+    image_link: String,
+    stock: { type: Number, required: true },
+    price: { type: Number, required: true },
+    discount: Number,
+    SKU: { type: String, required: true },
+    seller_id: String,
+    emailId: { type: String, required: true },
+    location: { type: String, required: true },
+    category_name: { type: String, required: true },
+    sub_category_name: String,
+    is_draft: { type: Boolean, default: false },
+    isActive: { type: Boolean, default: true },
+    status: {
+      type: String,
+      enum: ["Pending", "Approved", "Flagged"],
+      default: "Pending",
+    },
+    // Commission fields
+    commission: {
+      type: String,
+      enum: ["Yes", "No"],
+      default: "No",
+    },
+    commission_type: {
+      type: String,
+      enum: ["percentage", "fixed"],
+      default: "percentage",
+    },
+    commission_value: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    final_price: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    created_at: { type: Date, default: Date.now },
+    updated_at: { type: Date, default: Date.now },
   },
-  image_link: String,
-  stock: { type: Number, required: true },
-  price: { type: Number, required: true },
-  discount: Number,
-  SKU: { type: String, required: true },
-  seller_id: String,
-  emailId: { type: String, required: true },
-  location: { type: String, required: true },
-  category_name: { type: String, required: true },
-  sub_category_name: String,
-  is_draft: { type: Boolean, default: false },
-  isActive: { type: Boolean, default: true },
-  status: {
-    type: String,
-    enum: ["Pending", "Approved", "Flagged"],
-    default: "Pending",
+  {
+    // Disable automatic middleware to prevent conflicts
+    minimize: false,
+    versionKey: false,
   },
-  created_at: { type: Date, default: Date.now },
-  updated_at: { type: Date, default: Date.now },
-})
+)
+
+// Add indexes for efficient querying
+ProductSchema.index({ product_id: 1 })
+ProductSchema.index({ status: 1 })
+ProductSchema.index({ commission: 1 })
+ProductSchema.index({ emailId: 1 })
+ProductSchema.index({ created_at: -1 })
+ProductSchema.index({ commission: 1, status: 1 })
 
 // Define Order schema
 const OrderSchema = new mongoose.Schema(

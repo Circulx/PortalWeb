@@ -103,16 +103,23 @@ export default async function ReviewsPage() {
   const stats = await getProductStats()
 
   return (
-    <div className="p-4 max-w-[1400px] mx-auto space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatsCard title="Total Products" value={stats.total} type="total" />
-        <StatsCard title="Pending Products" value={stats.pending} type="pending" />
-        <StatsCard title="Approved Products" value={stats.approved} type="approved" />
-        <StatsCard title="Flagged Products" value={stats.flagged} type="flagged" />
-
+    <div className="container mx-auto py-6">
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Product Reviews</h1>
+          <p className="text-muted-foreground">
+            Manage product status, commission settings, and review product details.
+          </p>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatsCard title="Total Products" value={stats.total} type="total" />
+          <StatsCard title="Pending Products" value={stats.pending} type="pending" />
+          <StatsCard title="Approved Products" value={stats.approved} type="approved" />
+          <StatsCard title="Flagged Products" value={stats.flagged} type="flagged" />
+          
+        </div>
+        <ReviewsTable />
       </div>
-
-      <ReviewsTable />
     </div>
   )
 }
