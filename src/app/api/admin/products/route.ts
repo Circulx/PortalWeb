@@ -62,7 +62,9 @@ export async function GET(request: NextRequest) {
     const total = await Product.countDocuments(query)
 
     const products = await Product.find(query)
-      .select("product_id title image_link seller_name emailId status created_at")
+      .select(
+        "product_id title image_link seller_name emailId status commission price commission_type commission_value final_price created_at",
+      )
       .sort({ created_at: -1 })
       .skip(skip)
       .limit(limit)
@@ -71,6 +73,11 @@ export async function GET(request: NextRequest) {
     const productsWithStatus = products.map((product: any) => ({
       ...product,
       status: product.status || "Pending",
+      commission: product.commission || "No",
+      price: product.price || 0,
+      commission_type: product.commission_type || "percentage",
+      commission_value: product.commission_value || 0,
+      final_price: product.final_price || product.price || 0,
       seller_name: product.seller_name || product.emailId || "Unknown Seller",
     }))
 

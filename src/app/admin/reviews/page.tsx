@@ -17,11 +17,24 @@ async function getProductStats() {
         pending: 0,
         approved: 0,
         flagged: 0,
+        totalCommission: 0,
+        pendingCommission: 0,
+        approvedCommission: 0,
+        flaggedCommission: 0,
       }
     }
 
     // Get total count and counts by status in parallel
-    const [total, pending, approved, flagged] = await Promise.all([
+    const [
+      total,
+      pending,
+      approved,
+      flagged,
+      totalCommission,
+      pendingCommission,
+      approvedCommission,
+      flaggedCommission,
+    ] = await Promise.all([
       Product.countDocuments(),
       Product.countDocuments({
         $or: [{ status: "Pending" }, { status: "pending" }, { status: { $exists: false } }],
@@ -32,15 +45,43 @@ async function getProductStats() {
       Product.countDocuments({
         $or: [{ status: "Flagged" }, { status: "flagged" }],
       }),
+      Product.aggregate([{ $match: {} }, { $group: { _id: null, totalCommission: { $sum: "$commission" } } }]).then(
+        (results) => (results.length > 0 ? results[0].totalCommission : 0),
+      ),
+      Product.aggregate([
+        { $match: { $or: [{ status: "Pending" }, { status: "pending" }, { status: { $exists: false } }] } },
+        { $group: { _id: null, pendingCommission: { $sum: "$commission" } } },
+      ]).then((results) => (results.length > 0 ? results[0].pendingCommission : 0)),
+      Product.aggregate([
+        { $match: { $or: [{ status: "Approved" }, { status: "approved" }] } },
+        { $group: { _id: null, approvedCommission: { $sum: "$commission" } } },
+      ]).then((results) => (results.length > 0 ? results[0].approvedCommission : 0)),
+      Product.aggregate([
+        { $match: { $or: [{ status: "Flagged" }, { status: "flagged" }] } },
+        { $group: { _id: null, flaggedCommission: { $sum: "$commission" } } },
+      ]).then((results) => (results.length > 0 ? results[0].flaggedCommission : 0)),
     ])
 
-    console.log("Product stats from PROFILE_DB:", { total, pending, approved, flagged })
+    console.log("Product stats from PROFILE_DB:", {
+      total,
+      pending,
+      approved,
+      flagged,
+      totalCommission,
+      pendingCommission,
+      approvedCommission,
+      flaggedCommission,
+    })
 
     return {
       total: total || 0,
       pending: pending || 0,
       approved: approved || 0,
       flagged: flagged || 0,
+      totalCommission: totalCommission || 0,
+      pendingCommission: pendingCommission || 0,
+      approvedCommission: approvedCommission || 0,
+      flaggedCommission: flaggedCommission || 0,
     }
   } catch (error: unknown) {
     console.error("Error fetching product stats:", error instanceof Error ? error.message : "Unknown error")
@@ -50,6 +91,10 @@ async function getProductStats() {
       pending: 0,
       approved: 0,
       flagged: 0,
+      totalCommission: 0,
+      pendingCommission: 0,
+      approvedCommission: 0,
+      flaggedCommission: 0,
     }
   }
 }
@@ -64,6 +109,7 @@ export default async function ReviewsPage() {
         <StatsCard title="Pending Products" value={stats.pending} type="pending" />
         <StatsCard title="Approved Products" value={stats.approved} type="approved" />
         <StatsCard title="Flagged Products" value={stats.flagged} type="flagged" />
+
       </div>
 
       <ReviewsTable />
