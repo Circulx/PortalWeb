@@ -141,7 +141,6 @@ export function ReviewsTable() {
       toast({
         title: "Update Failed",
         description: `Failed to update Product ID ${productId} status`,
-        
       })
     } finally {
       setUpdatingStatus(null)
@@ -209,7 +208,6 @@ export function ReviewsTable() {
       toast({
         title: "Update Failed",
         description: `Failed to update Product ID ${productId} commission`,
-        
       })
     } finally {
       setUpdatingCommission(null)
@@ -269,7 +267,6 @@ export function ReviewsTable() {
       toast({
         title: "Update Failed",
         description: `Failed to update Product ID ${productId} commission details`,
-        
       })
     } finally {
       setUpdatingCommissionDetails(null)
@@ -343,7 +340,7 @@ export function ReviewsTable() {
       <div className="space-y-2 min-w-[200px]">
         {isEditing ? (
           <div className="space-y-2">
-            <Select value={localCommissionType} >
+            <Select value={localCommissionType} onValueChange={(value) => setLocalCommissionType(value)}>
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -596,7 +593,7 @@ export function ReviewsTable() {
                                 <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-current"></div>
                               ) : null}
                               {product.commission || "No"}
-                              <ChevronDown className="ml-1 h-3 w-3" />
+                              <ChevronDown className="ml-1 h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
