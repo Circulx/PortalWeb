@@ -231,7 +231,7 @@ export function ReviewsTable() {
         },
         body: JSON.stringify({
           productId,
-          commission_type: commissionType,
+          commission_type: commissionType as "percentage" | "fixed",
           commission_value: Number(commissionValue),
           final_price: finalPrice,
         }),
@@ -340,7 +340,10 @@ export function ReviewsTable() {
       <div className="space-y-2 min-w-[200px]">
         {isEditing ? (
           <div className="space-y-2">
-            <Select value={localCommissionType} onValueChange={(value) => setLocalCommissionType(value)}>
+            <Select
+              value={localCommissionType}
+              onValueChange={(value) => setLocalCommissionType(value as "percentage" | "fixed")}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -585,8 +588,10 @@ export function ReviewsTable() {
                             <Button
                               variant="ghost"
                               className={`${
-                                product.commission === "Yes" ? "bg-blue-100 text-blue-800" : "bg-gray-100 text-gray-800"
-                              } flex items-center gap-1 px-2 py-1 text-xs font-medium`}
+                                product.commission === "Yes"
+                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold"
+                                  : "bg-slate-100 text-slate-700 border border-slate-200 font-bold"
+                              } flex items-center gap-1 px-3 py-2 text-sm rounded-md hover:shadow-sm transition-all duration-200`}
                               disabled={updatingCommission === product.product_id}
                             >
                               {updatingCommission === product.product_id ? (
@@ -596,15 +601,15 @@ export function ReviewsTable() {
                               <ChevronDown className="ml-1 h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
+                          <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
                             <DropdownMenuItem
-                              className="flex items-center gap-2 text-blue-600"
+                              className="flex items-center gap-2 text-emerald-700 font-semibold hover:bg-emerald-50 focus:bg-emerald-50 cursor-pointer"
                               onClick={() => handleCommissionChange(product.product_id, "Yes")}
                             >
                               Yes
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              className="flex items-center gap-2 text-gray-600"
+                              className="flex items-center gap-2 text-slate-600 font-semibold hover:bg-slate-50 focus:bg-slate-50 cursor-pointer"
                               onClick={() => handleCommissionChange(product.product_id, "No")}
                             >
                               No
