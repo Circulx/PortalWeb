@@ -26,7 +26,11 @@ export async function GET(request: NextRequest) {
     const query: any = {}
 
     if (status && status !== "all") {
-      query.status = { $regex: new RegExp(`^${status}$`, "i") }
+      if (status.toLowerCase() === "pending") {
+        query.$or = [{ status: { $regex: new RegExp(`^${status}$`, "i") } }, { status: { $exists: false } }]
+      } else {
+        query.status = { $regex: new RegExp(`^${status}$`, "i") }
+      }
     }
 
     if (commission && commission !== "all") {
