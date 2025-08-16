@@ -135,11 +135,8 @@ export default function SimpleSlider() {
     console.warn("Failed to load advertisements, using default slides:", error)
   }
 
-  
   return (
     <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
-      
-
       {slides.map((slide, index) => {
         const hasSlideContent = hasContent(slide)
         const isCurrentSlide = index === currentSlide
@@ -225,15 +222,18 @@ export default function SimpleSlider() {
           </div>
         )
 
-        return slide.linkUrl ? (
-          <Link key={slide.id} href={slide.linkUrl} className="block h-full">
-            <SlideContent />
-          </Link>
-        ) : (
+        return (
           <div key={slide.id} className="h-full">
-            <SlideContent />
+            {slide.linkUrl ? (
+              <Link href={slide.linkUrl}>
+                <SlideContent />
+              </Link>
+            ) : (
+              <SlideContent />
+            )}
           </div>
         )
+        // Now only the "Explore Now" button inside SlideContent is clickable, which is better UX
       })}
 
       {/* Optimized navigation dots */}
