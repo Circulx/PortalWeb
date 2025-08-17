@@ -73,12 +73,24 @@ export function OrderDetailModal({ order, isOpen, onClose, onStatusUpdate }: Ord
   const [status, setStatus] = useState(order.status || "")
   const [updating, setUpdating] = useState(false)
 
+  console.log("[v0] Order object:", order)
+  console.log("[v0] Billing details:", order.billingDetails)
+  console.log("[v0] Phone field:", order.billingDetails?.phone)
+  console.log("[v0] PhoneNumber field:", order.billingDetails?.phoneNumber)
+
   // Helper function to safely access nested properties
   const getNestedProperty = (obj: any, path: string, defaultValue: any = "") => {
     if (!obj) return defaultValue
     return path.split(".").reduce((prev, curr) => {
       return prev && prev[curr] !== undefined ? prev[curr] : defaultValue
     }, obj)
+  }
+
+  // Helper function to get phone number from either field
+  const getPhoneNumber = (billingDetails: any) => {
+    if (!billingDetails) return "N/A"
+    // Check phoneNumber first, then phone, then fallback to N/A
+    return billingDetails.phoneNumber || billingDetails.phone || "N/A"
   }
 
   // Format date
@@ -244,7 +256,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onStatusUpdate }: Ord
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Phone</p>
-                  <p>{getNestedProperty(order, "billingDetails.phone", "N/A")}</p>
+                  <p>{getNestedProperty(order,"billingDetails.phoneNumber","")}</p>
                 </div>
               </div>
             </div>

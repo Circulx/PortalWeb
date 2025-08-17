@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Check, Flag, Clock, ChevronDown, Filter, Calculator } from "lucide-react"
+import { Check, Flag, Clock, ChevronDown, Filter, Calculator, X } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
 interface Product {
@@ -36,6 +36,7 @@ export function ReviewsTable() {
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null)
   const [updatingCommission, setUpdatingCommission] = useState<number | null>(null)
   const [updatingCommissionDetails, setUpdatingCommissionDetails] = useState<number | null>(null)
+  const [selectedImage, setSelectedImage] = useState<{ src: string; alt: string } | null>(null)
   const { toast } = useToast()
 
   const productsPerPage = 10
@@ -69,7 +70,6 @@ export function ReviewsTable() {
 
       const data = await response.json()
 
-      // Ensure all products have required fields with proper defaults
       const productsWithStatus = (data.products || []).map((product: any) => ({
         ...product,
         status: product.status || "Pending",
@@ -172,7 +172,6 @@ export function ReviewsTable() {
         prevProducts.map((product) => {
           if (product.product_id === productId) {
             const updatedProduct = { ...product, commission: newCommission }
-            // Reset commission details if commission is set to "No"
             if (newCommission === "No") {
               updatedProduct.commission_type = "percentage"
               updatedProduct.commission_value = 0
@@ -301,6 +300,14 @@ export function ReviewsTable() {
     }
   }
 
+  const handleImageClick = (imageSrc: string, imageAlt: string) => {
+    setSelectedImage({ src: imageSrc, alt: imageAlt })
+  }
+
+  const closeImagePopup = () => {
+    setSelectedImage(null)
+  }
+
   const CommissionDetailsCell = ({ product }: { product: Product }) => {
     const [localCommissionType, setLocalCommissionType] = useState(product.commission_type || "percentage")
     const [localCommissionValue, setLocalCommissionValue] = useState(product.commission_value || 0)
@@ -309,12 +316,10 @@ export function ReviewsTable() {
     const isCommissionActive = product.commission === "Yes"
     const isUpdating = updatingCommissionDetails === product.product_id
 
-    // Ensure we have valid numbers for calculations
     const originalPrice = Number(product.price) || 0
     const currentCommissionValue = Number(product.commission_value) || 0
     const currentFinalPrice = Number(product.final_price) || originalPrice
 
-    // Calculate preview final price for editing mode
     const previewFinalPrice = calculateFinalPrice(originalPrice, localCommissionType, localCommissionValue)
 
     const handleSave = () => {
@@ -518,11 +523,14 @@ export function ReviewsTable() {
                   filteredProducts.map((product) => (
                     <tr key={product._id || product.product_id} className="border-b">
                       <td className="p-4 align-middle">
-                        <div className="h-12 w-12 overflow-hidden rounded-md relative">
+                        <div
+                          className="h-12 w-12 overflow-hidden rounded-md relative cursor-pointer hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 transition-all duration-200"
+                          onClick={() => handleImageClick(product.image_link || placeholderImage, product.title)}
+                        >
                           <img
                             src={product.image_link || placeholderImage}
                             alt={product.title}
-                            className="h-full w-full object-cover"
+                            className="h-full w-full object-cover hover:scale-105 transition-transform duration-200"
                             onError={(e) => {
                               ;(e.target as HTMLImageElement).src = placeholderImage
                             }}
@@ -627,7 +635,28 @@ export function ReviewsTable() {
             </table>
           </div>
 
-          {/* Pagination */}
+          {selectedImage && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+              onClick={closeImagePopup}
+            >
+              <div className="relative w-[90vw] h-[90vw] max-w-[400px] max-h-[400px] sm:w-[80vw] sm:h-[80vw] sm:max-w-[500px] sm:max-h-[500px] md:w-[500px] md:h-[500px]">
+                <button
+                  onClick={closeImagePopup}
+                  className="absolute -top-3 -right-3 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors duration-200 z-10"
+                >
+                  <X className="h-6 w-6 text-gray-600" />
+                </button>
+                <img
+                  src={selectedImage.src || "/placeholder.svg"}
+                  alt={selectedImage.alt}
+                  className="w-full h-full object-contain rounded-lg shadow-2xl bg-white"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            </div>
+          )}
+
           {!loading && !error && totalPages > 0 && (
             <div className="flex items-center justify-between px-4 py-4">
               <div className="text-sm text-muted-foreground">
