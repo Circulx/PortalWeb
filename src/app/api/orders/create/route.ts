@@ -3,6 +3,7 @@ import { connectProfileDB } from "@/lib/profileDb"
 import { getCurrentUser } from "@/actions/auth"
 import { sendEmail } from "@/lib/email"
 import { generateOrderConfirmationEmail } from "@/lib/email-templates"
+import { whatsappService } from "@/lib/whatsapp-service"
 import type { Order } from "@/models/profile/order"
 
 // Define interface for product data from database
@@ -186,6 +187,43 @@ export async function POST(request: NextRequest) {
       } catch (emailError) {
         console.error("Error sending order confirmation email:", emailError)
       }
+    }
+
+    if (orderData.billingDetails?.phoneNumber || orderData.billingDetails?.phone) {
+      try {
+        const customerPhone = orderData.billingDetails.phoneNumber || orderData.billingDetails.phone
+        const customerName =
+          `${orderData.billingDetails.firstName || ""} ${orderData.billingDetails.lastName || ""}`.trim() || "Customer"
+
+        const whatsappOrderDetails = {
+          orderId: newOrder._id.toString(),
+          customerName: customerName,
+          customerPhone: customerPhone,
+          products: enhancedProducts.map((product) => ({
+            title: product.title,
+            quantity: product.quantity,
+            price: product.price,
+          })),
+          totalAmount: orderData.totalAmount || 0,
+          paymentMethod: orderData.paymentMethod || "COD",
+          status: orderData.status || "PENDING",
+          createdAt: new Date().toISOString(),
+        }
+
+        console.log("Sending WhatsApp notification to:", customerPhone)
+        const whatsappSent = await whatsappService.sendOrderNotification(whatsappOrderDetails)
+
+        if (whatsappSent) {
+          console.log("WhatsApp notification sent successfully")
+        } else {
+          console.warn("WhatsApp notification failed to send")
+        }
+      } catch (whatsappError) {
+        console.error("Error sending WhatsApp notification:", whatsappError)
+        // Don't fail the order creation if WhatsApp fails
+      }
+    } else {
+      console.warn("No phone number provided for WhatsApp notification")
     }
 
     return NextResponse.json({
