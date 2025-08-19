@@ -13,11 +13,11 @@ export default function SellerLayout({
 }) {
   return (
     <AuthWrapper requiredRole="seller">
-      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50">
+      <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 pt-9 sm:pt-10 lg:pt-11">
         <Sidebar />
         <div className="flex-1 flex flex-col">
           <Header />
-          <main className="flex-1 overflow-y-auto">{children}</main>
+          <main className="flex-1 overflow-y-auto pl-16 md:pl-0">{children}</main>
         </div>
       </div>
     </AuthWrapper>

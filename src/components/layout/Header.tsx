@@ -165,10 +165,10 @@ export default function Header({ user }: HeaderProps) {
     return (
       <header className="w-full bg-white shadow-sm">
         <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
-          <div className="w-full px-2 sm:px-4 lg:px-6 py-2 sm:py-3 bg-white">
+          <div className="w-full px-2 sm:px-4 lg:px-6 pb-0.5 pt-1.5 sm:pb-1 sm:pt-2 bg-white">
             <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-16 bg-gray-200 animate-pulse rounded"></div>
+                <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gray-200 animate-pulse rounded"></div>
               </div>
               <div className="flex-1 max-w-xl lg:max-w-2xl mx-1 sm:mx-2">
                 <div className="h-8 bg-gray-200 animate-pulse rounded"></div>
@@ -182,7 +182,7 @@ export default function Header({ user }: HeaderProps) {
           </div>
           <div className="bg-orange-600 h-12"></div>
         </div>
-        <div className="h-16 sm:h-20 lg:h-28"></div>
+        <div className="h-10 sm:h-12 lg:h-14"></div>
       </header>
     )
   }
@@ -190,7 +190,7 @@ export default function Header({ user }: HeaderProps) {
   return (
     <header className="w-full bg-white shadow-sm">
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
-        <div className="w-full px-2 sm:px-4 lg:px-6 py-2 sm:py-3 bg-white">
+        <div className="w-full px-2 sm:px-4 lg:px-6 pb-0.5 pt-1.5 sm:pb-1 sm:pt-2 bg-white">
           <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center">
@@ -199,7 +199,7 @@ export default function Header({ user }: HeaderProps) {
                   alt="IND2B Logo"
                   width={120}
                   height={80}
-                  className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-16 object-contain"
+                  className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 object-contain"
                   priority
                   quality={90}
                 />
@@ -280,9 +280,9 @@ export default function Header({ user }: HeaderProps) {
           </div>
         </div>
 
-        <div className="bg-orange-600 text-white overflow-hidden">
+        <div className="bg-orange-600 text-white overflow-hidden -mt-px">
           <div className="w-full px-2 sm:px-3 lg:px-4">
-            <div className="flex items-center py-2 sm:py-2.5 lg:py-3">
+            <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5">
               <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
                 Categories:
               </span>
@@ -337,7 +337,7 @@ export default function Header({ user }: HeaderProps) {
         </div>
       </div>
 
-      <div className="h-16 sm:h-20 lg:h-28"></div>
+      <div className="h-10 sm:h-12 lg:h-14"></div>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </header>

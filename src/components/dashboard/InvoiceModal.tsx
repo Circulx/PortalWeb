@@ -202,7 +202,7 @@ export function InvoiceModal({ order, isOpen, onClose }: InvoiceModalProps) {
             </div>
             <div className="text-right">
               <div className="h-12 w-auto relative">
-                <Image src="/" alt="Company Logo" width={150} height={48} className="object-contain" />
+                <Image src="/ind2b.png" alt="Company Logo" width={150} height={48} className="object-contain" />
               </div>
               <p className="text-sm text-gray-600 mt-2">IND2B</p>
               <p className="text-sm text-gray-600">product.circ@i10ai.com</p>

@@ -61,7 +61,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14">{children}</main>
           <Footer />
         </Providers>
       </body>
