@@ -9,8 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 import type { Seller } from "@/types/seller"
-import { connectProfileDB } from "@/lib/profileDb"
-import mongoose from "mongoose"
 import { useToast } from "@/components/ui/use-toast"
 
 const formSchema = z.object({
@@ -108,68 +106,47 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      // Connect to the PROFILE_DB database
-      const db = await connectProfileDB()
-
-      // Define Business schema
-      const BusinessSchema = new mongoose.Schema({
-        userId: { type: String, required: true, index: true },
-        legalEntityName: { type: String, required: true },
-        tradeName: { type: String, required: true },
-        gstin: { type: String, required: true },
-        businessCountry: { type: String, required: true },
-        pincode: { type: String, required: true },
-        state: { type: String, required: true },
-        city: { type: String, required: true },
-        businessEntityType: { type: String, required: true },
+      const response = await fetch("/api/admin/sellers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
       })
 
-      // Get the Business model
-      const Business = db.models.Business || db.model("Business", BusinessSchema)
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || "Failed to add seller")
+      }
 
-      // Create a new business record
-      const newBusiness = new Business({
-        userId: `0000${Math.floor(Math.random() * 10000)}`.slice(-5), // Generate a random ID
-        legalEntityName: values.legalEntityName,
-        tradeName: values.tradeName,
-        gstin: values.gstin,
-        businessCountry: values.businessCountry,
-        pincode: values.pincode,
-        state: values.state,
-        city: values.city,
-        businessEntityType: values.businessEntityType,
-      })
-
-      // Save the new business record to the database
-      await newBusiness.save()
+      const result = await response.json()
 
       toast({
         title: "Success",
         description: "New seller added successfully",
       })
 
-      // Create a new seller object with the required fields
       const newSeller: Seller = {
-        id: newBusiness.gstin, // Use gstin as ID
+        id: values.gstin,
         name: values.name,
         email: values.emailId,
         address: `${values.billingAddressLine1}, ${values.billingCity}, ${values.billingState}, ${values.billingCountry}`,
         registeredDate: new Date(),
-        totalSales: "$0", // Initialize with zero sales
-        status: "Pending", // Set initial status as Pending
+        totalSales: "$0",
+        status: "Pending",
       }
 
-      // Call the onSuccess callback if provided, otherwise redirect to the sellers page
       if (onSuccess) {
         onSuccess(newSeller)
       } else {
-        router.push("/sellers")
+        router.push("/admin/sellers")
       }
     } catch (error: any) {
       console.error("Error adding seller:", error)
       toast({
         title: "Error",
         description: error.message || "Failed to add seller. Please try again.",
+        
       })
     }
   }

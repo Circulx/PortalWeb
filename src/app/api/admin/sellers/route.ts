@@ -8,19 +8,28 @@ interface Business {
   legalEntityName?: string
   tradeName?: string
   gstin?: string // Add gstin to the Business interface
+  businessCountry?: string
+  pincode?: string
+  state?: string
+  city?: string
+  businessEntityType?: string
   createdAt?: string | Date
   [key: string]: any // For other properties
 }
 
 interface Contact {
   userId: string
+  name?: string
   emailId?: string
   phoneNumber?: string
+  pickupTime?: string
   [key: string]: any // For other properties
 }
 
 interface ProfileProgress {
   userId: string
+  completedSteps: string[]
+  currentStep: string
   status: "Approved" | "Reject" | "Review"
 }
 
@@ -110,5 +119,113 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching sellers:", error)
     return NextResponse.json({ error: "Failed to fetch sellers" }, { status: 500 })
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const values = await request.json()
+
+    // Connect to the PROFILE_DB database
+    const db = await connectProfileDB()
+
+    // Define Business schema
+    const BusinessSchema = new mongoose.Schema(
+      {
+        userId: { type: String, required: true, index: true },
+        legalEntityName: { type: String, required: true },
+        tradeName: { type: String, required: true },
+        gstin: { type: String, required: true },
+        businessCountry: { type: String, required: true },
+        pincode: { type: String, required: true },
+        state: { type: String, required: true },
+        city: { type: String, required: true },
+        businessEntityType: { type: String, required: true },
+      },
+      { timestamps: true },
+    )
+
+    // Get the Business model
+    const Business = db.models.Business || db.model("Business", BusinessSchema)
+
+    // Generate a unique user ID
+    const userId = `0000${Math.floor(Math.random() * 10000)}`.slice(-5)
+
+    // Create a new business record
+    const newBusiness = new Business({
+      userId: userId,
+      legalEntityName: values.legalEntityName,
+      tradeName: values.tradeName,
+      gstin: values.gstin,
+      businessCountry: values.businessCountry,
+      pincode: values.pincode,
+      state: values.state,
+      city: values.city,
+      businessEntityType: values.businessEntityType,
+    })
+
+    // Save the new business record to the database
+    await newBusiness.save()
+
+    // Also create contact record if we have contact information
+    if (values.name || values.emailId || values.phoneNumber) {
+      const ContactSchema = new mongoose.Schema(
+        {
+          userId: { type: String, required: true, index: true },
+          name: { type: String },
+          emailId: { type: String },
+          phoneNumber: { type: String },
+          pickupTime: { type: String },
+        },
+        { timestamps: true },
+      )
+
+      const Contact = db.models.Contact || db.model("Contact", ContactSchema)
+
+      const newContact = new Contact({
+        userId: userId,
+        name: values.name,
+        emailId: values.emailId,
+        phoneNumber: values.phoneNumber,
+        pickupTime: values.pickupTime,
+      })
+
+      await newContact.save()
+    }
+
+    // Create initial profile progress record
+    const ProfileProgressSchema = new mongoose.Schema(
+      {
+        userId: { type: String, required: true, index: true },
+        completedSteps: [{ type: String, required: true }],
+        currentStep: { type: String, required: true },
+        status: {
+          type: String,
+          enum: ["Approved", "Reject", "Review"],
+          default: "Review",
+        },
+      },
+      { timestamps: true },
+    )
+
+    const ProfileProgress = db.models.ProfileProgress || db.model("ProfileProgress", ProfileProgressSchema)
+
+    const newProgress = new ProfileProgress({
+      userId: userId,
+      completedSteps: ["business"],
+      currentStep: "contact",
+      status: "Review",
+    })
+
+    await newProgress.save()
+
+    return NextResponse.json({
+      message: "Seller created successfully",
+      sellerId: userId,
+      gstin: values.gstin,
+    })
+  } catch (error) {
+    console.error("Error creating seller:", error)
+    return NextResponse.json({ error: "Failed to create seller" }, { status: 500 })
   }
 }

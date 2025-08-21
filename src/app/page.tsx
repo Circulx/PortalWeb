@@ -8,12 +8,15 @@ import { LazyPromotionSection } from "@/components/layout/lazy-promotion-section
 import PromotionalBanner from "@/components/layout/promotional-banner"
 import CategoryGrid from "@/components/categories/category-grid"
 import DeliveryPoster from "@/components/layout/delivery-poster"
+import IdlePopup from "@/components/layout/idle-popup";
 
 export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Hero Section - Load immediately with highest priority - NO lazy loading for critical content */}
       <LazySimpleSlider />
+
+      <IdlePopup />
 
       {/* Brand Carousel - Reduced delay and optimized threshold 
       <LazySection delay={50} threshold={0.1} rootMargin="50px" fallback={<SectionSkeleton type="carousel" />}>
@@ -49,6 +52,8 @@ export default function Home() {
       <LazySection delay={100} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
         <LazyFeatureCard />
       </LazySection>
+
+      
     </main>
   )
 }

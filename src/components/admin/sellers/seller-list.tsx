@@ -297,7 +297,10 @@ export function SellerList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{seller.name || "N/A"}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{seller.email || "N/A"}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       <Select
                         defaultValue="Review"
                         value={seller.status || "Review"}
