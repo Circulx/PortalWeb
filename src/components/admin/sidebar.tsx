@@ -3,7 +3,18 @@
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, Users, Star, Store, PackageOpen, ImageIcon, MessageSquare, X } from "lucide-react"
+import {
+  LayoutDashboard,
+  Users,
+  Star,
+  Store,
+  PackageOpen,
+  ImageIcon,
+  MessageSquare,
+  X,
+  MessageCircle,
+  BarChart3,
+} from "lucide-react"
 
 const sidebarLinks = [
   {
@@ -45,6 +56,16 @@ const sidebarLinks = [
     href: "/admin/advertisements",
     title: "Advertisements",
     icon: ImageIcon,
+  },
+  {
+    href: "/admin/whatsapp/campaigns",
+    title: "WhatsApp Campaigns",
+    icon: MessageCircle,
+  },
+  {
+    href: "/admin/whatsapp/analytics",
+    title: "WhatsApp Analytics",
+    icon: BarChart3,
   },
   {
     title: "Customer Feedbacks",

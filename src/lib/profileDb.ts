@@ -72,6 +72,58 @@ interface IMessage {
   updatedAt: Date
 }
 
+// WhatsApp Campaign interface
+interface IWhatsAppCampaign {
+  title: string
+  description: string
+  messageTemplate: string
+  targetAudience: "all" | "customers" | "sellers" | "custom"
+  customerSegment?: {
+    orderHistory?: "has_orders" | "no_orders" | "recent_orders"
+    location?: string[]
+    registrationDate?: {
+      from?: Date
+      to?: Date
+    }
+  }
+  scheduledAt?: Date
+  status: "draft" | "scheduled" | "sent" | "cancelled"
+  sentCount: number
+  deliveredCount: number
+  failedCount: number
+  createdBy: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+// WhatsApp Campaign Log interface
+interface IWhatsAppCampaignLog {
+  campaignId: string
+  recipientPhone: string
+  recipientName: string
+  recipientEmail?: string
+  messageContent: string
+  status: "pending" | "sent" | "delivered" | "failed"
+  twilioSid?: string
+  errorMessage?: string
+  sentAt?: Date
+  deliveredAt?: Date
+  createdAt: Date
+}
+
+// Customer Preferences interface
+interface ICustomerPreferences {
+  userId: string
+  whatsappMarketing: boolean
+  emailMarketing: boolean
+  smsMarketing: boolean
+  productUpdates: boolean
+  offerNotifications: boolean
+  orderUpdates: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
 // Cache the database connection
 let cachedConnection: Connection | null = null
 let connectionPromise: Promise<Connection> | null = null
@@ -691,6 +743,186 @@ MessageSchema.index({ queryType: 1 })
 MessageSchema.index({ email: 1, createdAt: -1 })
 MessageSchema.index({ priority: 1, status: 1 })
 
+// Define WhatsApp Campaign schema
+const WhatsAppCampaignSchema = new mongoose.Schema<IWhatsAppCampaign>(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+    messageTemplate: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    targetAudience: {
+      type: String,
+      enum: ["all", "customers", "sellers", "custom"],
+      required: true,
+    },
+    customerSegment: {
+      orderHistory: {
+        type: String,
+        enum: ["has_orders", "no_orders", "recent_orders"],
+      },
+      location: [String],
+      registrationDate: {
+        from: Date,
+        to: Date,
+      },
+    },
+    scheduledAt: {
+      type: Date,
+    },
+    status: {
+      type: String,
+      enum: ["draft", "scheduled", "sent", "cancelled"],
+      default: "draft",
+      index: true,
+    },
+    sentCount: {
+      type: Number,
+      default: 0,
+    },
+    deliveredCount: {
+      type: Number,
+      default: 0,
+    },
+    failedCount: {
+      type: Number,
+      default: 0,
+    },
+    createdBy: {
+      type: String,
+      required: true,
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "whatsappcampaigns",
+  },
+)
+
+// Add indexes for WhatsApp Campaign
+WhatsAppCampaignSchema.index({ status: 1, createdAt: -1 })
+WhatsAppCampaignSchema.index({ scheduledAt: 1 })
+WhatsAppCampaignSchema.index({ createdBy: 1, createdAt: -1 })
+WhatsAppCampaignSchema.index({ targetAudience: 1 })
+
+// Define WhatsApp Campaign Log schema
+const WhatsAppCampaignLogSchema = new mongoose.Schema<IWhatsAppCampaignLog>(
+  {
+    campaignId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    recipientPhone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    recipientName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    recipientEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+    },
+    messageContent: {
+      type: String,
+      required: true,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "sent", "delivered", "failed"],
+      default: "pending",
+      index: true,
+    },
+    twilioSid: {
+      type: String,
+      trim: true,
+    },
+    errorMessage: {
+      type: String,
+      trim: true,
+    },
+    sentAt: {
+      type: Date,
+    },
+    deliveredAt: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "whatsappcampaignlogs",
+  },
+)
+
+// Add indexes for WhatsApp Campaign Log
+WhatsAppCampaignLogSchema.index({ campaignId: 1, status: 1 })
+WhatsAppCampaignLogSchema.index({ recipientPhone: 1 })
+WhatsAppCampaignLogSchema.index({ status: 1, createdAt: -1 })
+WhatsAppCampaignLogSchema.index({ sentAt: 1 })
+
+// Define Customer Preferences schema
+const CustomerPreferencesSchema = new mongoose.Schema<ICustomerPreferences>(
+  {
+    userId: {
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
+    },
+    whatsappMarketing: {
+      type: Boolean,
+      default: true,
+    },
+    emailMarketing: {
+      type: Boolean,
+      default: true,
+    },
+    smsMarketing: {
+      type: Boolean,
+      default: false,
+    },
+    productUpdates: {
+      type: Boolean,
+      default: true,
+    },
+    offerNotifications: {
+      type: Boolean,
+      default: true,
+    },
+    orderUpdates: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "customerpreferences",
+  },
+)
+
+// Add indexes for Customer Preferences
+CustomerPreferencesSchema.index({ userId: 1 })
+CustomerPreferencesSchema.index({ whatsappMarketing: 1 })
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -760,6 +992,18 @@ function registerModels(connection: Connection) {
     connection.model("Message", MessageSchema)
     console.log("Registered Message model")
   }
+  if (!connection.models.WhatsAppCampaign) {
+    connection.model("WhatsAppCampaign", WhatsAppCampaignSchema)
+    console.log("Registered WhatsAppCampaign model")
+  }
+  if (!connection.models.WhatsAppCampaignLog) {
+    connection.model("WhatsAppCampaignLog", WhatsAppCampaignLogSchema)
+    console.log("Registered WhatsAppCampaignLog model")
+  }
+  if (!connection.models.CustomerPreferences) {
+    connection.model("CustomerPreferences", CustomerPreferencesSchema)
+    console.log("Registered CustomerPreferences model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -782,6 +1026,9 @@ export {
   BuyerAddressSchema,
   FeedbackSchema,
   MessageSchema,
+  WhatsAppCampaignSchema,
+  WhatsAppCampaignLogSchema,
+  CustomerPreferencesSchema,
   PROFILE_DB,
 }
 

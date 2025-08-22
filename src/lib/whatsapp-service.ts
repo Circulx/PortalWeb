@@ -16,6 +16,12 @@ interface OrderDetails {
   createdAt: string
 }
 
+interface MarketingMessageDetails {
+  phone: string
+  name: string
+  message: string
+}
+
 export class WhatsAppService {
   private client: twilio.Twilio
   private fromNumber: string
@@ -73,6 +79,41 @@ export class WhatsAppService {
     message += `Thank you for shopping with IND2B! 🙏`
 
     return message
+  }
+
+  async sendMarketingMessage(messageDetails: MarketingMessageDetails): Promise<boolean> {
+    try {
+      // Format phone number for WhatsApp (ensure it starts with country code)
+      let phoneNumber = messageDetails.phone.replace(/\D/g, "") // Remove non-digits
+
+      // Add country code if not present (assuming India +91)
+      if (!phoneNumber.startsWith("91") && phoneNumber.length === 10) {
+        phoneNumber = "91" + phoneNumber
+      }
+
+      const toNumber = `whatsapp:+${phoneNumber}`
+
+      console.log(`[WhatsApp Marketing] Sending message to ${toNumber}`)
+      console.log(`[WhatsApp Marketing] Message preview:`, messageDetails.message.substring(0, 200) + "...")
+
+      const result = await this.client.messages.create({
+        from: this.fromNumber,
+        to: toNumber,
+        body: messageDetails.message,
+      })
+
+      console.log(`[WhatsApp Marketing] Message sent successfully. SID: ${result.sid}`)
+      return true
+    } catch (error) {
+      console.error("[WhatsApp Marketing] Failed to send message:", error)
+
+      // Log specific error details for debugging
+      if (error instanceof Error) {
+        console.error("[WhatsApp Marketing] Error message:", error.message)
+      }
+
+      return false
+    }
   }
 
   // Send WhatsApp notification
