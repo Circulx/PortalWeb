@@ -549,7 +549,7 @@ export default function ProductsPage() {
           </div>
         </div>
         <div className="flex justify-center mt-20">
-          <Image src="/time-delivery-banner.png" alt="On time delivery" width={800} height={583} />
+          <Image src="/time-delivery-banner.webp" alt="On time delivery" width={800} height={583} />
         </div>
         <div className="px-4 md:px-40 flex flex-col mt-28">
           <div className="">

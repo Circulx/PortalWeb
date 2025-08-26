@@ -21,7 +21,7 @@ const productDetails: IProductDetails = {
   availableStock: 150,
   description:
     "Aluminum sheet compound is a lightweight, durable, and corrosion-resistant sheet compound. Used in a variety of applications. Known for its excellent strength-to-weight ratio, aluminum is ideal for applications in aerospace, automotive, construction, packaging, and electronics. In today's industrial world, it can be formed into different formats such as sheets, foils, and extrusions. Aluminum is also 100% recyclable, offering an environmentally-friendly option for sustainable manufacturing.",
-  imageUrl: "/image.png",
+  imageUrl: "/image.webp",
 }
 
 const productMetrics: ProductMetrics = {
@@ -56,7 +56,7 @@ const productMetrics: ProductMetrics = {
 //     rating: 2.5,
 //     text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
 //     date: "24th Dec 2023",
-//     imageUrl: "/image.png",
+//     imageUrl: "/image.webp",
 //   },
 //   {
 //     id: "2",
@@ -66,7 +66,7 @@ const productMetrics: ProductMetrics = {
 //     rating: 4.5,
 //     text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
 //     date: "14th Dec 2022",
-//     imageUrl: "/image.png",
+//     imageUrl: "/image.webp",
 //   },
 //   {
 //     id: "3",
@@ -76,7 +76,7 @@ const productMetrics: ProductMetrics = {
 //     rating: 4.5,
 //     text: "A type of fake review specifically designed to spread false information about a product or service. Disinformation reviews are often coordinated campaigns aimed at misleading consumers by presenting fabricated or manipulated facts.",
 //     date: "24th Dec 2023",
-//     imageUrl: "/image.png",
+//     imageUrl: "/image.webp",
 //   },
 // ]
 

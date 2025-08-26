@@ -9,7 +9,7 @@
                 {
                 <div className="relative w-full">
                   <Image
-                    src="/Delivery Banner-2.png"
+                    src="/Delivery Banner-2.webp"
                     alt="On Time Delivery - Professional delivery service"
                     width={1200}
                     height={224}
@@ -28,7 +28,7 @@
                 {/*
                 <div className="relative w-screen h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56 -mx-4 sm:-mx-6 lg:-mx-8">
                   <Image
-                    src="/poster1.png"
+                    src="/poster1.webp"
                     alt="On Time Delivery - Professional delivery service"
                     fill
                     className="object-cover w-full h-full"

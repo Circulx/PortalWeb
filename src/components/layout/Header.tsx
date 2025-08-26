@@ -195,7 +195,7 @@ export default function Header({ user }: HeaderProps) {
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center">
                 <Image
-                  src="/logo1.png"
+                  src="/logo1.webp"
                   alt="IND2B Logo"
                   width={120}
                   height={80}
@@ -228,7 +228,7 @@ export default function Header({ user }: HeaderProps) {
                 className="relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors"
               >
                 <Image
-                  src="/cart.png"
+                  src="/cart.webp"
                   alt="Shopping Cart"
                   width={24}
                   height={24}

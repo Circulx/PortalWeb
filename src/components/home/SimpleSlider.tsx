@@ -15,7 +15,7 @@ const defaultSlides = [
     title: "New Arrivals",
     subtitle: "SHOP NOW",
     description: "Fresh Stock Available",
-    image: "/OIP.jpg",
+    image: "/OIP.webp",
     linkUrl: "https://circulx.vercel.app/categories/Welding%20%26%20Soldering",
   },
 ]

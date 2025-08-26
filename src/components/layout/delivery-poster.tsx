@@ -41,7 +41,7 @@ export default function DeliveryPoster() {
       {/* Full width container with updated heights 
       <div className="relative w-full h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56">
         <Image
-          src="/poster1.png"
+          src="/poster1.webp"
           alt="On Time Delivery - Professional delivery service with fast delivery, professional service, and guaranteed quality"
           fill
           className="object-cover w-full h-full"
@@ -58,7 +58,7 @@ export default function DeliveryPoster() {
       {
       <div className="relative w-full">
         <Image
-          src="/Delivery Banner.png"
+          src="/Delivery Banner.webp"
           alt="On Time Delivery - Professional delivery service"
           width={1200}
           height={224}
@@ -77,7 +77,7 @@ export default function DeliveryPoster() {
       {/*
       <div className="relative w-screen h-40 sm:h-44 md:h-48 lg:h-52 xl:h-56 -mx-4 sm:-mx-6 lg:-mx-8">
         <Image
-          src="/poster1.png"
+          src="/poster1.webp"
           alt="On Time Delivery - Professional delivery service"
           fill
           className="object-cover w-full h-full"

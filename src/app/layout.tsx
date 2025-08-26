@@ -17,20 +17,20 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/logo.png",
+        url: "/logo.webp",
         sizes: "64x64",
-        type: "image/png",
+        type: "image/webp",
       },
       {
-        url: "/logo.png",
+        url: "/logo.webp",
         sizes: "32x32",
-        type: "image/png",
+        type: "image/webp",
       },
     ],
     apple: {
-      url: "/logo.png",
+      url: "/logo.webp",
       sizes: "360x360",
-      type: "image/png",
+      type: "image/webp",
     },
   },
 }
@@ -50,8 +50,8 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="icon" href="/logo.png" sizes="any" />
-        <link rel="apple-touch-icon" href="/logo.png" />
+        <link rel="icon" href="/logo.webp" sizes="any" />
+        <link rel="apple-touch-icon" href="/logo.webp" />
       </head>
       <body className="bg-gray-100">
         <GoogleAnalytics />

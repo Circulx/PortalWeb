@@ -24,7 +24,7 @@ export default function SellerHelpPage() {
           </div>
         </div>
         <div className="relative h-[400px] lg:h-[500px]">
-          <Image src="/image.png" alt="Help and Support Illustration" fill className="object-contain" priority />
+          <Image src="/image.webp" alt="Help and Support Illustration" fill className="object-contain" priority />
         </div>
       </div>
 

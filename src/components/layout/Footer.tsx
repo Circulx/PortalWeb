@@ -42,7 +42,7 @@ export default function Footer() {
           <div className="space-y-4">
             <Link href="/" className="inline-block">
               <Image
-                src="/logo1.png"
+                src="/logo1.webp"
                 alt="IND2B Logo"
                 width={80}
                 height={80}
