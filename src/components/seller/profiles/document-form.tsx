@@ -51,11 +51,11 @@ export function DocumentForm({ initialData, onSuccess }: DocumentFormProps) {
       })
 
       // Import the server action dynamically to avoid source map issues
-      const { saveDocumentsAndComplete } = await import("@/actions/profile")
-      const response = await saveDocumentsAndComplete(formDataObj)
+      const { saveDocuments } = await import("@/actions/profile")
+      const response = await saveDocuments(formDataObj)
 
       if (response.success) {
-        toast.success("Profile completed successfully")
+        toast.success("Documents saved successfully")
         setIsEditing(false) // Set to view mode after successful save
 
         // Call the onSuccess callback if provided
@@ -63,7 +63,7 @@ export function DocumentForm({ initialData, onSuccess }: DocumentFormProps) {
           onSuccess()
         }
       } else {
-        toast.error(response.message || "Failed to complete profile")
+        toast.error(response.message || "Failed to save documents")
       }
     } catch (error) {
       console.error("Error completing profile:", error)
@@ -111,6 +111,7 @@ export function DocumentForm({ initialData, onSuccess }: DocumentFormProps) {
               />
               <p className="text-xs text-gray-500 mt-1">Upload a clear scan or photo of your Aadhar Card</p>
             </div>
+
           </div>
         </CardContent>
         <CardFooter className="flex flex-col items-center space-y-4">
