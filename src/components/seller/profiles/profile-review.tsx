@@ -308,6 +308,7 @@ export function ProfileReview({ profileData, onEdit, onSubmit, onBack }: Profile
                {profileData.document?.panCardUrl && 
                 profileData.document.panCardUrl !== "placeholder-pancard-url" &&
                 profileData.document.panCardUrl !== "pancard-uploaded-placeholder" ? (
+               {profileData.document?.panCardUrl ? (
                  <span className="text-green-600">✓ Uploaded</span>
                ) : (
                  "Not provided"
@@ -320,6 +321,7 @@ export function ProfileReview({ profileData, onEdit, onSubmit, onBack }: Profile
                {profileData.document?.aadharCardUrl && 
                 profileData.document.aadharCardUrl !== "placeholder-aadharcard-url" &&
                 profileData.document.aadharCardUrl !== "aadharcard-uploaded-placeholder" ? (
+               {profileData.document?.aadharCardUrl ? (
                  <span className="text-green-600">✓ Uploaded</span>
                ) : (
                  "Not provided"
