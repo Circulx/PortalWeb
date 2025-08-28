@@ -7,13 +7,15 @@ import { CategoryBrandForm } from "@/components/seller/profiles/category-brand-f
 import { AddressForm } from "@/components/seller/profiles/address-form"
 import { BankForm } from "@/components/seller/profiles/bank-form"
 import { DocumentForm } from "@/components/seller/profiles/document-form"
+import { ProfileReview } from "@/components/seller/profiles/profile-review"
+
 import { ProfileSuccess } from "@/components/seller/profiles/profile-success"
-import { getProfileData } from "@/actions/profile"
+
 import type { TabType } from "@/types/profile"
 import { Loader2, CheckCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 
-const TAB_ORDER: TabType[] = ["business", "contact", "category", "addresses", "bank", "documents"]
+const TAB_ORDER: TabType[] = ["business", "contact", "category", "addresses", "bank", "documents", "review"]
 
 // Properly type the tabs array to ensure value is recognized as TabType
 const tabs: { label: string; value: TabType }[] = [
@@ -23,6 +25,7 @@ const tabs: { label: string; value: TabType }[] = [
   { label: "Address", value: "addresses" },
   { label: "Bank", value: "bank" },
   { label: "Documents", value: "documents" },
+  { label: "Review", value: "review" },
 ]
 
 export default function ProfilePage() {
@@ -57,9 +60,26 @@ export default function ProfilePage() {
   const fetchProfileData = useCallback(async () => {
     try {
       setLoading(true)
-      const result = await getProfileData()
+      console.log("Fetching profile data from API...")
+      
+      const response = await fetch("/api/profile", {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      console.log("API response:", result)
+      
       if (result.success) {
         console.log("Profile data loaded:", result.data)
+        console.log("Business data for form:", result.data.business)
+        console.log("Contact data for form:", result.data.contact)
         setProfileData(result.data)
 
         // Check if result.data.progress exists before accessing its properties
@@ -81,9 +101,12 @@ export default function ProfilePage() {
 
           // Show success screen if all steps are completed
           if (completed.includes("documents")) {
-            setShowSuccess(true)
+            // Don't automatically show success, let user go to review first
+            setFurthestStep(TAB_ORDER.length - 1) // Allow access to review step
           }
         }
+      } else {
+        console.error("API returned error:", result.error)
       }
     } catch (error) {
       console.error("Error fetching profile data:", error)
@@ -97,6 +120,8 @@ export default function ProfilePage() {
     async (tab: TabType) => {
       if (isTabEnabled(tab)) {
         try {
+          console.log("Tab clicked:", tab, "- refreshing data...")
+          
           // Refresh data from the server before changing tabs
           await fetchProfileData()
 
@@ -107,6 +132,7 @@ export default function ProfilePage() {
 
           // Generate a new key to force re-render of the form component
           setFormKey(Date.now())
+          console.log("Tab change - Form key updated to:", Date.now())
         } catch (error) {
           console.error("Error changing tabs:", error)
         }
@@ -117,6 +143,8 @@ export default function ProfilePage() {
 
   // Callback for when a form is successfully saved
   const handleFormSaved = useCallback(async () => {
+    console.log("handleFormSaved called - refreshing data...")
+    
     // Refresh the data from the server
     await fetchProfileData()
 
@@ -125,6 +153,7 @@ export default function ProfilePage() {
 
     // Generate a new key to force re-render of the form component
     setFormKey(Date.now())
+    console.log("Form key updated to:", Date.now())
   }, [fetchProfileData])
 
   // Fetch data on initial mount
@@ -138,6 +167,8 @@ export default function ProfilePage() {
 
     console.log("Rendering form for tab:", activeTab)
     console.log("Profile data for this tab:", profileData[activeTab])
+    console.log("Full profileData:", profileData)
+    console.log("Form key:", formKey)
 
     switch (activeTab) {
       case "business":
@@ -158,9 +189,22 @@ export default function ProfilePage() {
             key={`documents-${formKey}`}
             initialData={profileData.document}
             onSuccess={() => {
-              setShowSuccess(true)
               handleFormSaved()
+              setActiveTab("review")
             }}
+          />
+        )
+      case "review":
+        console.log("Rendering review with profileData:", profileData)
+        return (
+          <ProfileReview
+            key={`review-${formKey}`}
+            profileData={profileData}
+            onEdit={(tab) => setActiveTab(tab)}
+            onSubmit={() => {
+              setShowSuccess(true)
+            }}
+            onBack={() => setActiveTab("documents")}
           />
         )
       default:
