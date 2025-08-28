@@ -300,36 +300,34 @@ export function ProfileReview({ profileData, onEdit, onSubmit, onBack }: Profile
           Edit
         </Button>
       </CardHeader>
-             <CardContent className="space-y-3">
-         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-           <div>
-             <p className="text-sm font-medium text-muted-foreground">PAN Card</p>
-             <p className="text-sm">
-               {profileData.document?.panCardUrl && 
-                profileData.document.panCardUrl !== "placeholder-pancard-url" &&
-                profileData.document.panCardUrl !== "pancard-uploaded-placeholder" ? (
-               {profileData.document?.panCardUrl ? (
-                 <span className="text-green-600">✓ Uploaded</span>
-               ) : (
-                 "Not provided"
-               )}
-             </p>
-           </div>
-           <div>
-             <p className="text-sm font-medium text-muted-foreground">Aadhar Card</p>
-             <p className="text-sm">
-               {profileData.document?.aadharCardUrl && 
-                profileData.document.aadharCardUrl !== "placeholder-aadharcard-url" &&
-                profileData.document.aadharCardUrl !== "aadharcard-uploaded-placeholder" ? (
-               {profileData.document?.aadharCardUrl ? (
-                 <span className="text-green-600">✓ Uploaded</span>
-               ) : (
-                 "Not provided"
-               )}
-             </p>
-           </div>
-         </div>
-       </CardContent>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">PAN Card</p>
+            <p className="text-sm">
+              {profileData.document?.panCardUrl && 
+               profileData.document.panCardUrl !== "placeholder-pancard-url" &&
+               profileData.document.panCardUrl !== "pancard-uploaded-placeholder" ? (
+                <span className="text-green-600">✓ Uploaded</span>
+              ) : (
+                "Not provided"
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-muted-foreground">Aadhar Card</p>
+            <p className="text-sm">
+              {profileData.document?.aadharCardUrl && 
+               profileData.document.aadharCardUrl !== "placeholder-aadharcard-url" &&
+               profileData.document.aadharCardUrl !== "aadharcard-uploaded-placeholder" ? (
+                <span className="text-green-600">✓ Uploaded</span>
+              ) : (
+                "Not provided"
+              )}
+            </p>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   )
 
