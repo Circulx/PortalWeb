@@ -8,17 +8,7 @@ import { useDispatch, useSelector } from "react-redux"
 import { fetchAdvertisements, type Advertisement } from "@/store/slices/advertisementSlice"
 import type { AppDispatch, RootState } from "@/store"
 
-// Optimized default slides with proper image sizing
-const defaultSlides = [
-  {
-    id: "default-1",
-    title: "New Arrivals",
-    subtitle: "SHOP NOW",
-    description: "Fresh Stock Available",
-    image: "/OIP.webp",
-    linkUrl: "https://circulx.vercel.app/categories/Welding%20%26%20Soldering",
-  },
-]
+
 
 export default function SimpleSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -56,6 +46,7 @@ export default function SimpleSlider() {
   const slides = useMemo(() => {
     console.log("Creating slides - advertisements count:", advertisements.length)
 
+    // Only show actual advertisements from database, no default slides
     if (advertisements.length > 0) {
       const dbSlides = advertisements.map((ad) => ({
         id: ad._id,
@@ -69,8 +60,9 @@ export default function SimpleSlider() {
       return dbSlides
     }
 
-    console.log("Using default slides")
-    return defaultSlides
+    // Return empty array instead of default slides
+    console.log("No advertisements available, showing empty slider")
+    return []
   }, [advertisements, getImageSource])
 
   useEffect(() => {
@@ -132,7 +124,21 @@ export default function SimpleSlider() {
   }
 
   if (status === "failed" && advertisements.length === 0) {
-    console.warn("Failed to load advertisements, using default slides:", error)
+    console.warn("Failed to load advertisements:", error)
+    return (
+      <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center space-y-4">
+            <p className="text-gray-600 text-sm">No advertisements available</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Don't render anything if no advertisements are available
+  if (slides.length === 0) {
+    return null
   }
 
   return (
