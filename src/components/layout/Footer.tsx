@@ -50,7 +50,7 @@ export default function Footer() {
                 priority
               />
             </Link>
-            <p className="text-sm text-white">© 2024 One step Ecommerce Solutions</p>
+            <p className="text-sm text-white">© 2025 One step Ecommerce Solutions</p>
           </div>
 
           {/* About Links */}
