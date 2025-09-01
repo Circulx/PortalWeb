@@ -3,7 +3,6 @@ import mongoose, { Schema } from "mongoose"
 export interface IDocument {
   userId: string
   panCardUrl: string
-  aadharCardUrl: string
   gstinUrl: string
   bankLetterUrl: string
   bankStatementUrl: string
@@ -20,8 +19,7 @@ export interface IDocument {
 const DocumentSchema = new Schema<IDocument>(
   {
     userId: { type: String, required: true, index: true },
-        panCardUrl: { type: String, required: true },
-    aadharCardUrl: { type: String, required: true },
+    panCardUrl: { type: String, required: true },
     gstinUrl: { type: String, required: true },
     bankLetterUrl: { type: String, required: true },
     bankStatementUrl: { type: String, required: true },

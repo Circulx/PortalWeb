@@ -161,12 +161,10 @@ export async function saveBusinessDetails(formData: FormData) {
   try {
     console.log("Starting saveBusinessDetails server action")
     const user = await getCurrentUser()
-    console.log("Current user:", user)
     if (!user) {
       console.log("No authenticated user found")
       return { error: "Not authenticated" }
     }
-    console.log("User ID:", user.id)
 
     console.log("Connecting to profile DB")
     const db = await connectProfileDB()
@@ -188,16 +186,13 @@ export async function saveBusinessDetails(formData: FormData) {
 
     // Check if business details already exist for this user
     const existingBusiness = await safelyFindOne(Business, { userId: user.id })
-    console.log("Existing business record:", existingBusiness)
 
     if (existingBusiness) {
       console.log("Updating existing business record")
-      const updatedBusiness = await Business.findByIdAndUpdate(existingBusiness._id, businessData, { new: true })
-      console.log("Updated business record:", updatedBusiness)
+      await Business.findByIdAndUpdate(existingBusiness._id, businessData)
     } else {
       console.log("Creating new business record")
-      const newBusiness = await Business.create(businessData)
-      console.log("Created business record:", newBusiness)
+      await Business.create(businessData)
     }
 
     // Update progress
@@ -222,12 +217,10 @@ export async function saveContactDetails(formData: FormData) {
   try {
     console.log("Starting saveContactDetails server action")
     const user = await getCurrentUser()
-    console.log("Current user:", user)
     if (!user) {
       console.log("No authenticated user found")
       return { error: "Not authenticated" }
     }
-    console.log("User ID:", user.id)
 
     console.log("Connecting to profile DB")
     const db = await connectProfileDB()
@@ -245,16 +238,13 @@ export async function saveContactDetails(formData: FormData) {
 
     // Check if contact details already exist for this user
     const existingContact = await safelyFindOne(Contact, { userId: user.id })
-    console.log("Existing contact record:", existingContact)
 
     if (existingContact) {
       console.log("Updating existing contact record")
-      const updatedContact = await Contact.findByIdAndUpdate(existingContact._id, contactData, { new: true })
-      console.log("Updated contact record:", updatedContact)
+      await Contact.findByIdAndUpdate(existingContact._id, contactData)
     } else {
       console.log("Creating new contact record")
-      const newContact = await Contact.create(contactData)
-      console.log("Created contact record:", newContact)
+      await Contact.create(contactData)
     }
 
     // Update progress
@@ -437,133 +427,6 @@ export async function saveBankDetails(formData: FormData) {
   }
 }
 
-// Save document details only (without completing profile)
-export async function saveDocuments(formData: FormData) {
-  try {
-    const user = await getCurrentUser()
-    if (!user) return { success: false, message: "Not authenticated", redirect: false }
-
-    const db = await connectProfileDB()
-    const Document = db.model("Document")
-    const ProfileProgress = db.model("ProfileProgress")
-
-    // Get data from formData
-    const panCard = formData.get("panCard")
-    const aadharCard = formData.get("aadharCard")
-
-    // Handle file uploads - convert to strings if they're File objects
-    let panCardUrl = "placeholder-pancard-url" // Default placeholder
-    let aadharCardUrl = "placeholder-aadharcard-url" // Default placeholder
-
-    if (panCard) {
-      if (typeof panCard === "string") {
-        panCardUrl = panCard
-      } else {
-        // If it's a File object, in a real app you would upload it
-        panCardUrl = "pancard-uploaded-placeholder"
-      }
-    }
-
-    if (aadharCard) {
-      if (typeof aadharCard === "string") {
-        aadharCardUrl = aadharCard
-      } else {
-        // If it's a File object, in a real app you would upload it
-        aadharCardUrl = "aadharcard-uploaded-placeholder"
-      }
-    }
-
-    // Create a document with all required fields
-    const documentData = {
-      userId: user.id,
-      panCardUrl,
-      aadharCardUrl,
-      // Add all required fields with placeholder values
-      gstinUrl: "placeholder-gstin-url",
-      bankLetterUrl: "placeholder-bank-letter-url",
-      bankStatementUrl: "placeholder-bank-statement-url",
-      corporationCertificateUrl: "placeholder-corporation-certificate-url",
-      businessAddressUrl: "placeholder-business-address-url",
-      pickupAddressProofUrl: "placeholder-pickup-address-proof-url",
-      signatureUrl: "placeholder-signature-url",
-      balanceSheet2223Url: "placeholder-balance-sheet-2223-url",
-      balanceSheet2324Url: "placeholder-balance-sheet-2324-url",
-      updatedAt: new Date(),
-    }
-
-    // Check if document details already exist for this user
-    const existingDocument = await safelyFindOne(Document, { userId: user.id })
-
-    if (existingDocument) {
-      // Update existing record
-      await Document.findByIdAndUpdate(existingDocument._id, documentData)
-    } else {
-      // Create new record
-      await Document.create({
-        ...documentData,
-        createdAt: new Date(),
-      })
-    }
-
-    // Update progress to mark documents as completed
-    const progress = await safelyFindOne(ProfileProgress, { userId: user.id })
-    if (progress) {
-      const updatedSteps = [...new Set([...progress.completedSteps, "documents"])]
-      await ProfileProgress.findByIdAndUpdate(progress._id, {
-        completedSteps: updatedSteps,
-        currentStep: "review",
-      })
-    } else {
-      await ProfileProgress.create({
-        userId: user.id,
-        completedSteps: ["documents"],
-        currentStep: "review",
-      })
-    }
-
-    revalidatePath("/seller/profile")
-
-    return {
-      success: true,
-      message: "Documents saved successfully",
-      redirect: false,
-    }
-  } catch (error) {
-    console.error("Error in saveDocuments:", error)
-    return { success: false, message: "Failed to save documents", redirect: false }
-  }
-}
-
-// Final profile submission action
-export async function submitProfileForReview() {
-  try {
-    const user = await getCurrentUser()
-    if (!user) return { error: "Not authenticated" }
-
-    const db = await connectProfileDB()
-    const ProfileProgress = db.model("ProfileProgress")
-
-    // Update the profile status to "submitted for review"
-    const progress = await safelyFindOne(ProfileProgress, { userId: user.id })
-    if (progress) {
-      await ProfileProgress.findByIdAndUpdate(progress._id, {
-        status: "submitted",
-        submittedAt: new Date(),
-      })
-    }
-
-    revalidatePath("/seller/profile")
-
-    return {
-      success: true,
-      message: "Profile submitted for review successfully",
-    }
-  } catch (error) {
-    console.error("Error in submitProfileForReview:", error)
-    return { error: "Failed to submit profile for review" }
-  }
-}
-
 // Save document details and complete profile
 export async function saveDocumentsAndComplete(formData: FormData) {
   try {
@@ -662,12 +525,6 @@ export async function saveDocumentsAndComplete(formData: FormData) {
   }
 }
 
-
-
-
-
-
-
 // Get all profile data for a user
 export async function getProfileData() {
   try {
@@ -736,22 +593,6 @@ export async function getProfileData() {
     const document = await safelyFindOne(Document, { userId: user.id })
     const progress = await safelyFindOne(ProfileProgress, { userId: user.id })
 
-    // Debug: Log the raw data from database
-    console.log("getProfileData - Raw business data:", business)
-    console.log("getProfileData - Raw contact data:", contact)
-    console.log("getProfileData - Raw category data:", category)
-    console.log("getProfileData - Raw address data:", address)
-    console.log("getProfileData - Raw bank data:", bank)
-    console.log("getProfileData - Raw document data:", document)
-    
-    // Debug: Check if data exists
-    console.log("getProfileData - Business exists:", !!business)
-    console.log("getProfileData - Contact exists:", !!contact)
-    console.log("getProfileData - Category exists:", !!category)
-    console.log("getProfileData - Address exists:", !!address)
-    console.log("getProfileData - Bank exists:", !!bank)
-    console.log("getProfileData - Document exists:", !!document)
-
     // Ensure all data is properly serialized
     const serializedData = {
       business: serializeDocument(business),
@@ -771,19 +612,8 @@ export async function getProfileData() {
           },
     }
 
-    // Debug: Log the serialized data
-    console.log("getProfileData - Serialized business:", serializedData.business)
-    console.log("getProfileData - Serialized contact:", serializedData.contact)
-    console.log("getProfileData - Serialized category:", serializedData.category)
-    console.log("getProfileData - Serialized address:", serializedData.address)
-    console.log("getProfileData - Serialized bank:", serializedData.bank)
-    console.log("getProfileData - Serialized document:", serializedData.document)
-
     // Convert to plain JSON to ensure no methods are passed
     const safeData = JSON.parse(JSON.stringify(serializedData))
-
-    // Debug: Log the final safe data
-    console.log("getProfileData - Final safe data:", safeData)
 
     return {
       success: true,
@@ -792,118 +622,5 @@ export async function getProfileData() {
   } catch (error) {
     console.error("Error in getProfileData:", error)
     return { error: "Failed to get profile data" }
-  }
-}
-
-// Test function to create sample data for debugging
-export async function createTestData() {
-  try {
-    const user = await getCurrentUser()
-    if (!user) return { error: "Not authenticated" }
-
-    const db = await connectProfileDB()
-    
-    // Create sample business data
-    const Business = db.model("Business")
-    const businessData = {
-      userId: user.id,
-      legalEntityName: "Test Company Ltd",
-      tradeName: "Test Trade",
-      gstin: "22AAAAA0000A1Z5",
-      country: "India",
-      pincode: "123456",
-      state: "Maharashtra",
-      city: "Mumbai",
-      businessEntityType: "Private Limited",
-    }
-    
-    // Create sample contact data
-    const Contact = db.model("Contact")
-    const contactData = {
-      userId: user.id,
-      contactName: "John Doe",
-      phoneNumber: "9876543210",
-      emailId: "john@test.com",
-      pickupTime: "9:00 AM - 6:00 PM",
-    }
-    
-    // Create sample category data
-    const CategoryBrand = db.model("CategoryBrand")
-    const categoryData = {
-      userId: user.id,
-      categories: ["Electronics", "Home & Garden"],
-      authorizedBrands: ["Samsung", "LG"],
-    }
-    
-    // Create sample address data
-    const Address = db.model("Address")
-    const addressData = {
-      userId: user.id,
-      billingAddress: {
-        country: "India",
-        state: "Maharashtra",
-        city: "Mumbai",
-        addressLine1: "123 Test Street",
-        addressLine2: "Test Building",
-        phoneNumber: "9876543210",
-      },
-      pickupAddress: {
-        country: "India",
-        state: "Maharashtra",
-        city: "Mumbai",
-        addressLine1: "456 Pickup Street",
-        addressLine2: "Pickup Building",
-        phoneNumber: "9876543210",
-      },
-    }
-    
-    // Create sample bank data
-    const Bank = db.model("Bank")
-    const bankData = {
-      userId: user.id,
-      accountHolderName: "John Doe",
-      accountNumber: "1234567890",
-      ifscCode: "SBIN0001234",
-      bankName: "State Bank of India",
-      branch: "Mumbai Main",
-      city: "Mumbai",
-      accountType: "Savings",
-      bankLetterUrl: "test-bank-letter-url",
-    }
-    
-    // Create sample document data
-    const Document = db.model("Document")
-    const documentData = {
-      userId: user.id,
-      panCardUrl: "test-pancard-url",
-      aadharCardUrl: "test-aadharcard-url",
-      gstinUrl: "test-gstin-url",
-      bankLetterUrl: "test-bank-letter-url",
-      bankStatementUrl: "test-bank-statement-url",
-      corporationCertificateUrl: "test-corporation-url",
-      businessAddressUrl: "test-business-address-url",
-      pickupAddressProofUrl: "test-pickup-address-url",
-      signatureUrl: "test-signature-url",
-      balanceSheet2223Url: "test-balance-sheet-22-23-url",
-      balanceSheet2324Url: "test-balance-sheet-23-24-url",
-    }
-    
-    // Save all test data
-    await Business.findOneAndUpdate({ userId: user.id }, businessData, { upsert: true })
-    await Contact.findOneAndUpdate({ userId: user.id }, contactData, { upsert: true })
-    await CategoryBrand.findOneAndUpdate({ userId: user.id }, categoryData, { upsert: true })
-    await Address.findOneAndUpdate({ userId: user.id }, addressData, { upsert: true })
-    await Bank.findOneAndUpdate({ userId: user.id }, bankData, { upsert: true })
-    await Document.findOneAndUpdate({ userId: user.id }, documentData, { upsert: true })
-    
-    console.log("Test data created successfully")
-    
-    return {
-      success: true,
-      message: "Test data created successfully",
-    }
-  } catch (error) {
-    console.error("Error creating test data:", error)
-    return { error: "Failed to create test data" }
   }
 }

@@ -261,7 +261,6 @@ const DocumentSchema = new mongoose.Schema<IDocument>(
   {
     userId: { type: String, required: true, index: true },
     panCardUrl: { type: String, required: true },
-    aadharCardUrl: { type: String, required: true },
     gstinUrl: { type: String, required: true },
     bankLetterUrl: { type: String, required: true },
     bankStatementUrl: { type: String, required: true },

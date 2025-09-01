@@ -34,13 +34,10 @@ interface BusinessFormProps {
 
 export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(!initialData || Object.keys(initialData).length === 0)
 
   // Log the initialData to help debug
   console.log("BusinessForm initialData:", initialData)
-  console.log("BusinessForm isEditing:", isEditing)
-  console.log("BusinessForm has initialData:", !!initialData)
-  console.log("BusinessForm initialData keys:", initialData ? Object.keys(initialData) : [])
 
   const form = useForm<BusinessDetails>({
     resolver: zodResolver(businessSchema),
@@ -57,11 +54,9 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
     },
   })
 
-  // Initialize isEditing state and form data when component mounts or initialData changes
+  // Force form reset when initialData changes
   useEffect(() => {
-    console.log("BusinessForm useEffect - initialData changed:", initialData)
-    
-    if (initialData && Object.keys(initialData).length > 0) {
+    if (initialData) {
       console.log("Resetting form with initialData:", initialData)
       form.reset({
         legalEntityName: initialData.legalEntityName || "",
@@ -73,13 +68,6 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
         city: initialData.city || "",
         businessEntityType: initialData.businessEntityType || "",
       })
-      
-      // If we have data, start in read-only mode
-      setIsEditing(false)
-    } else {
-      console.log("No initialData, starting in edit mode")
-      // If no data, start in edit mode
-      setIsEditing(true)
     }
   }, [initialData, form])
 
