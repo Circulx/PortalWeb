@@ -6,6 +6,7 @@ import ProductActions from "./product-actions"
 import ProductReviews from "./product-reviews"
 import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
+import PincodeCheck from "@/components/product/pincode-check"
 
 // Define the product interface
 interface Product {
@@ -366,6 +367,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
             {/* Product Description with Read More functionality */}
             <ProductDescription description={description} />
+
+            {/* Pincode Checker */}
+            <PincodeCheck className="my-6" />
 
             {/* Features */}
             <div className="mb-6">
