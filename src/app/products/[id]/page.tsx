@@ -6,7 +6,7 @@ import ProductActions from "./product-actions"
 import ProductReviews from "./product-reviews"
 import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
-import PincodeCheck from "@/components/product/pincode-check"
+import PincodeCheck from "@/components/products/pincode-check"
 
 // Define the product interface
 interface Product {
