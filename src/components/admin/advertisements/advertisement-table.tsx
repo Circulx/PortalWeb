@@ -18,6 +18,7 @@ interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
   startDate?: string
   endDate?: string
   createdAt: string
@@ -65,6 +66,21 @@ export function AdvertisementTable({
         return "bg-green-100 text-green-800"
       case "tablet":
         return "bg-purple-100 text-purple-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getPositionColor = (position: string) => {
+    switch (position) {
+      case "homepage":
+        return "bg-blue-100 text-blue-800"
+      case "category":
+        return "bg-purple-100 text-purple-800"
+      case "bottomofhomepage":
+        return "bg-orange-100 text-orange-800"
+      case "cart":
+        return "bg-red-100 text-red-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
@@ -168,6 +184,7 @@ export function AdvertisementTable({
                     <th className="text-left py-3 px-2">Image</th>
                     <th className="text-left py-3 px-2">Title</th>
                     <th className="text-left py-3 px-2">Status</th>
+                    <th className="text-left py-3 px-2">Position</th>
                     <th className="text-left py-3 px-2">Device</th>
                     <th className="text-left py-3 px-2">Order</th>
                     <th className="text-left py-3 px-2">Schedule</th>
@@ -190,6 +207,9 @@ export function AdvertisementTable({
                         <Badge variant={ad.isActive ? "default" : "secondary"}>
                           {ad.isActive ? "Active" : "Inactive"}
                         </Badge>
+                      </td>
+                      <td className="py-3 px-2">
+                        <Badge className={getPositionColor(ad.position)}>{ad.position}</Badge>
                       </td>
                       <td className="py-3 px-2">
                         <Badge className={getDeviceTypeColor(ad.deviceType)}>{ad.deviceType}</Badge>
@@ -255,6 +275,7 @@ export function AdvertisementTable({
                           <Badge variant={ad.isActive ? "default" : "secondary"} className="text-xs">
                             {ad.isActive ? "Active" : "Inactive"}
                           </Badge>
+                          <Badge className={`text-xs ${getPositionColor(ad.position)}`}>{ad.position}</Badge>
                           <Badge className={`text-xs ${getDeviceTypeColor(ad.deviceType)}`}>{ad.deviceType}</Badge>
                           <span className="text-xs text-gray-500">Order: {ad.order}</span>
                         </div>
