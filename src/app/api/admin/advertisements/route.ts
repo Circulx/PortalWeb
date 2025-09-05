@@ -1,8 +1,21 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
+import { getCurrentUser } from "@/actions/auth"
 
 export async function GET(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const user = await getCurrentUser()
+    console.log("Current user:", user ? { id: user.id, type: user.type } : "No user")
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (user.type !== "admin") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     // Connect to the profile database
     const connection = await connectProfileDB()
     const Advertisement = connection.models.Advertisement
@@ -16,8 +29,9 @@ export async function GET(request: NextRequest) {
     const limit = Number.parseInt(searchParams.get("limit") || "10")
     const isActive = searchParams.get("isActive")
     const deviceType = searchParams.get("deviceType")
+    const position = searchParams.get("position")
 
-    console.log("Fetching advertisements with params:", { page, limit, isActive, deviceType })
+    console.log("Fetching advertisements with params:", { page, limit, isActive, deviceType, position })
 
     // Build filter
     const filter: any = {}
@@ -26,6 +40,9 @@ export async function GET(request: NextRequest) {
     }
     if (deviceType && deviceType !== "all") {
       filter.deviceType = deviceType
+    }
+    if (position && position !== "all") {
+      filter.position = position
     }
 
     console.log("Advertisement filter:", filter)
@@ -73,6 +90,18 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Verify admin authentication
+    const user = await getCurrentUser()
+    console.log("Current user:", user ? { id: user.id, type: user.type } : "No user")
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    if (user.type !== "admin") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     // Connect to the profile database
     const connection = await connectProfileDB()
     const Advertisement = connection.models.Advertisement
@@ -108,6 +137,7 @@ export async function POST(request: NextRequest) {
       isActive: body.isActive !== undefined ? body.isActive : true,
       order: body.order || 1,
       deviceType: body.deviceType || "all",
+      position: body.position || "all",
       startDate: body.startDate || null,
       endDate: body.endDate || null,
     })

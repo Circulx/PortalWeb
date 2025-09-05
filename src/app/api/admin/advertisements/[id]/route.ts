@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
+import { getCurrentUser } from "@/actions/auth"
 import type mongoose from "mongoose"
 
 // Define a type for the Advertisement document
@@ -9,10 +10,12 @@ interface AdvertisementDocument {
   subtitle: string
   description: string
   imageUrl?: string
+  imageData?: string
   linkUrl?: string
   isActive: boolean
   order: number
   deviceType: string
+  position: string
   startDate?: Date | null
   endDate?: Date | null
   createdAt?: Date
@@ -22,6 +25,12 @@ interface AdvertisementDocument {
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Verify admin authentication
+    const user = await getCurrentUser()
+    if (!user || user.type !== "admin") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     // Connect to the profile database
     const connection = await connectProfileDB()
     const Advertisement = connection.models.Advertisement
@@ -64,6 +73,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Verify admin authentication
+    const user = await getCurrentUser()
+    if (!user || user.type !== "admin") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     // Connect to the profile database
     const connection = await connectProfileDB()
     const Advertisement = connection.models.Advertisement
@@ -116,6 +131,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    // Verify admin authentication
+    const user = await getCurrentUser()
+    if (!user || user.type !== "admin") {
+      return NextResponse.json({ error: "Admin access required" }, { status: 403 })
+    }
+
     // Connect to the profile database
     const connection = await connectProfileDB()
     const Advertisement = connection.models.Advertisement

@@ -12,6 +12,9 @@ export interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+  startDate?: string
+  endDate?: string
 }
 
 // Define the state structure
@@ -37,7 +40,7 @@ const initialState: AdvertisementState = {
 // Ultra-fast fetch with aggressive caching and immediate response
 export const fetchAdvertisements = createAsyncThunk(
   "advertisements/fetchAdvertisements",
-  async (deviceType: string, { getState, rejectWithValue }) => {
+  async ({ deviceType, position }: { deviceType: string; position?: string }, { getState, rejectWithValue }) => {
     const state = getState() as { advertisements: AdvertisementState }
 
     const cacheValidityDuration = 10 * 60 * 1000
@@ -67,7 +70,8 @@ export const fetchAdvertisements = createAsyncThunk(
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 1000)
 
-      const response = await fetch(`/api/advertisements/active?deviceType=${deviceType}`, {
+      const url = `/api/advertisements/active?deviceType=${deviceType}${position ? `&position=${position}` : ''}`
+      const response = await fetch(url, {
         signal: controller.signal,
         headers: {
           "Cache-Control": "public, max-age=180", // Reduced to 3 minutes
