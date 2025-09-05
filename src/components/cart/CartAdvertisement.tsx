@@ -48,7 +48,7 @@ export default function CartAdvertisement() {
       .filter(ad => 
         ad.isActive && 
         (ad.deviceType === deviceType || ad.deviceType === "all") &&
-        (ad.position === "cart" || ad.position === "all")
+        ad.position === "cart"
       )
       .sort((a, b) => (a.order || 0) - (b.order || 0))
   }, [advertisements, deviceType])

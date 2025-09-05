@@ -348,13 +348,13 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                     order: prev.order,
                   }))
                 }}
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Positions </option>
-                <option value="homepage">Homepage Slider Only</option>
-                <option value="category">Category Section Only</option>
-                <option value="bottomofhomepage">Bottom of Homepage Only</option>
-                <option value="cart">Cart Page Only</option>
+                <option value="all" className="text-gray-900">All Positions</option>
+                <option value="homepage" className="text-gray-900">Homepage Slider Only</option>
+                <option value="category" className="text-gray-900">Category Section Only</option>
+                <option value="bottomofhomepage" className="text-gray-900">Bottom of Homepage Only</option>
+                <option value="cart" className="text-gray-900">Cart Page Only</option>
               </select>
               <p className="text-xs text-gray-500"> "All Positions" allows the ad to appear in any available slot</p>
             </div>
@@ -369,12 +369,12 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                     deviceType: e.target.value as "all" | "desktop" | "mobile" | "tablet",
                   }))
                 }
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Devices </option>
-                <option value="desktop">Desktop Only</option>
-                <option value="tablet">Tablet Only</option>
-                <option value="mobile">Mobile Only</option>
+                <option value="all" className="text-gray-900">All Devices</option>
+                <option value="desktop" className="text-gray-900">Desktop Only</option>
+                <option value="tablet" className="text-gray-900">Tablet Only</option>
+                <option value="mobile" className="text-gray-900">Mobile Only</option>
               </select>
               <p className="text-xs text-gray-500">"All Devices" automatically optimizes for each screen size</p>
             </div>

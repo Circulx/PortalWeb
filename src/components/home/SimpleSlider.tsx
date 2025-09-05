@@ -8,12 +8,23 @@ import { useDispatch, useSelector } from "react-redux"
 import { fetchAdvertisements, type Advertisement } from "@/store/slices/advertisementSlice"
 import type { AppDispatch, RootState } from "@/store"
 
-
+// Skeleton loading component for better UX
+const SliderSkeleton = () => (
+  <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
+    <div className="absolute inset-0 flex items-center justify-center">
+      <div className="flex flex-col items-center space-y-4">
+        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+        <p className="text-blue-600 text-sm">Loading advertisements...</p>
+      </div>
+    </div>
+  </div>
+)
 
 export default function SimpleSlider() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [deviceType, setDeviceType] = useState<string>("desktop")
+  const [isInitializing, setIsInitializing] = useState(true)
 
   const dispatch = useDispatch<AppDispatch>()
   const { advertisements, status, error, isInitialized } = useSelector((state: RootState) => state.advertisements)
@@ -46,9 +57,18 @@ export default function SimpleSlider() {
   const slides = useMemo(() => {
     console.log("Creating slides - advertisements count:", advertisements.length)
 
+    // Filter advertisements for homepage position
+    const homepageAds = advertisements.filter(ad => 
+      ad.isActive && 
+      ad.position === "homepage" &&
+      (ad.deviceType === deviceType || ad.deviceType === "all")
+    )
+
+    console.log("Homepage filtered ads:", homepageAds.length)
+
     // Only show actual advertisements from database, no default slides
-    if (advertisements.length > 0) {
-      const dbSlides = advertisements.map((ad) => ({
+    if (homepageAds.length > 0) {
+      const dbSlides = homepageAds.map((ad) => ({
         id: ad._id,
         title: ad.title,
         subtitle: ad.subtitle,
@@ -61,16 +81,19 @@ export default function SimpleSlider() {
     }
 
     // Return empty array instead of default slides
-    console.log("No advertisements available, showing empty slider")
+    console.log("No homepage advertisements available, showing empty slider")
     return []
-  }, [advertisements, getImageSource])
+  }, [advertisements, getImageSource, deviceType])
 
   useEffect(() => {
     const initialDeviceType = getDeviceType()
     setDeviceType(initialDeviceType)
 
     console.log("Fetching advertisements for device type:", initialDeviceType)
-    dispatch(fetchAdvertisements(initialDeviceType))
+    dispatch(fetchAdvertisements({ deviceType: initialDeviceType, position: "homepage" }))
+      .finally(() => {
+        setIsInitializing(false)
+      })
   }, [dispatch, getDeviceType])
 
   useEffect(() => {
@@ -79,7 +102,7 @@ export default function SimpleSlider() {
       if (newDeviceType !== deviceType) {
         setDeviceType(newDeviceType)
         console.log("Device type changed, fetching for:", newDeviceType)
-        dispatch(fetchAdvertisements(newDeviceType))
+        dispatch(fetchAdvertisements({ deviceType: newDeviceType, position: "homepage" }))
       }
     }
 
@@ -110,17 +133,14 @@ export default function SimpleSlider() {
     return slide.title || slide.subtitle || slide.description
   }, [])
 
+  // Show skeleton while initializing
+  if (isInitializing) {
+    return <SliderSkeleton />
+  }
+
+  // Show skeleton while loading and no cached data
   if (status === "loading" && advertisements.length === 0 && !isInitialized) {
-    return (
-      <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center space-y-4">
-            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-            <p className="text-blue-600 text-sm">Loading advertisements...</p>
-          </div>
-        </div>
-      </div>
-    )
+    return <SliderSkeleton />
   }
 
   if (status === "failed" && advertisements.length === 0) {
@@ -178,7 +198,9 @@ export default function SimpleSlider() {
                     priority={index === 0}
                     unoptimized={slide.image?.startsWith("data:")}
                     sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
-                    quality={index === 0 ? 90 : 75}
+                    quality={index === 0 ? 85 : 70}
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
                   />
                 )
               ) : (

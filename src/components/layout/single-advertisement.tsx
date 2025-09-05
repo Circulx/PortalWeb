@@ -39,7 +39,7 @@ export default function SingleAdvertisement({
   const filteredAds = advertisements.filter(ad => 
     ad.isActive && 
     (ad.deviceType === currentDeviceType || ad.deviceType === "all") &&
-    (ad.position === position || ad.position === "all")
+    ad.position === position
   )
 
   // Get the first available advertisement (no slides, just one ad)
