@@ -1,4 +1,4 @@
-export const MOQ_AMOUNT = 10000 // ₹10,000 minimum order value
+export const MOQ_AMOUNT = 5000 // ₹5,000 minimum order value
 
 export interface MOQStatus {
   isValid: boolean
