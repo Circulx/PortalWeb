@@ -163,7 +163,7 @@ export default function Cart() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isCheckingUser, setIsCheckingUser] = useState(true)
-  const [moqStatus, setMoqStatus] = useState({ isValid: false, message: "", shortfall: 10000 })
+  const [moqStatus, setMoqStatus] = useState({ isValid: false, message: "", shortfall: 5000 })
 
   useEffect(() => {
     const checkUser = async () => {
