@@ -12,13 +12,16 @@ import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import ProductCard from "@/components/layout/product-card"
 import "swiper/css"
-import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle, Heart, ShoppingCart } from "lucide-react"
+import { ChevronLeft, ChevronRight, Trash2, AlertCircle, Heart, ShoppingCart } from "lucide-react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
 import { useWishlistSync } from "@/hooks/useWishlistSync"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
+import FeaturesSection from "@/components/layout/features-section"
+import CartAdvertisement from "./CartAdvertisement"
+import AdvertisementPreloader from "@/components/home/advertisement-preloader"
 
 interface Product {
   product_id: number
@@ -50,56 +53,9 @@ interface BrowsingHistoryItem {
   image?: string
 }
 
-interface FeatureCardProps {
-  icon: React.ReactNode
-  title: string
-  description: string
-  iconColor: string
-  hoverColor: string
-}
 
-function FeatureCard({ icon, title, description, iconColor, hoverColor }: FeatureCardProps) {
-  return (
-    <div
-      className={`flex flex-col items-center justify-center p-4 bg-[#F3F5F7] bg-opacity-80 shadow-lg w-full max-w-[200px] h-[180px] transition-all duration-300 ${hoverColor}`}
-    >
-      <div className="mb-3">{icon}</div>
-      <h3 className="mb-1 text-base font-medium text-gray-900 text-center">{title}</h3>
-      <p className="text-xs text-gray-500 text-center">{description}</p>
-    </div>
-  )
-}
 
-const features = [
-  {
-    icon: <Truck size={28} />,
-    title: "Free Shipping",
-    description: "Order above $200",
-    iconColor: "text-blue-600",
-    hoverColor: "hover:bg-blue-100 hover:bg-opacity-80 hover:shadow-lg",
-  },
-  {
-    icon: <RefreshCw size={28} />,
-    title: "Money-back",
-    description: "30 days guarantee",
-    iconColor: "text-teal-600",
-    hoverColor: "hover:bg-teal-100 hover:bg-opacity-80 hover:shadow-lg",
-  },
-  {
-    icon: <Lock size={28} />,
-    title: "Secure Payments",
-    description: "Secured by Stripe",
-    iconColor: "text-purple-600",
-    hoverColor: "hover:bg-purple-100 hover:bg-opacity-80 hover:shadow-lg",
-  },
-  {
-    icon: <Phone size={28} />,
-    title: "24/7 Support",
-    description: "Phone and Email support",
-    iconColor: "text-orange-600",
-    hoverColor: "hover:bg-orange-100 hover:bg-opacity-80 hover:shadow-lg",
-  },
-]
+
 
 // Component for browsing history cards that matches the product card style
 function BrowsingHistoryCard({ item }: { item: BrowsingHistoryItem }) {
@@ -513,321 +469,303 @@ export default function Cart() {
   const displayItems = cartItems || []
 
   return (
-    <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">Your Cart</h2>
+    <div className="min-h-screen bg-gray-50">
+      {/* Preload advertisements for faster loading */}
+      <AdvertisementPreloader />
 
-      {/* Show stock update indicator only when updating */}
-      {isUpdatingStock && (
-        <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
-            <span className="text-sm text-blue-700">Updating stock information...</span>
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-3">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+              <Link href="/" className="flex items-center">
+                <ShoppingCart className="mr-2 text-blue-600" />
+                <span>My Cart</span>
+              </Link>
+            </h1>
+            <div className="flex items-center">
+              <Link href="/wishlist" className="text-gray-600 hover:text-gray-900 mr-4">
+                <Heart size={24} />
+              </Link>
+              <Link href="/checkout" className="text-orange-600 hover:text-orange-800">
+                <ShoppingCart size={24} />
+              </Link>
+            </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {displayItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[200px]">
-          <p className="text-lg text-gray-500">Your cart is empty.</p>
-          <Button variant="outline" onClick={handleReturnToShop} className="mt-4">
-            Return to Shop
-          </Button>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
-          <div className="lg:col-span-2">
-            <div className="bg-white p-3 sm:p-4 border border-[#9E9E9E] rounded shadow-xl">
-              {/* Cart header - Hide on small screens, use alternative layout */}
-              <div className="hidden sm:flex justify-between border-b pb-2">
-                <h2 className="font-semibold w-1/4 text-left">PRODUCTS</h2>
-                <h2 className="font-semibold w-1/4 text-right">PRICE</h2>
-                <h2 className="font-semibold w-1/4 text-right">QUANTITY</h2>
-                <h2 className="font-semibold w-1/4 text-right">SUB-TOTAL</h2>
-              </div>
+      {/* Cart Content */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">Your Cart</h2>
 
-              <div className="py-2">
-                <div
-                  className={`${displayItems.length > 5 ? "max-h-[600px] overflow-y-auto" : ""} pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`}
-                >
-                  <ul>
-                    {displayItems.map((item) => (
-                      <li
-                        key={item.id}
-                        className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4"
-                      >
-                        {/* Product info - Full width on mobile, 1/4 on larger screens */}
-                        <div className="w-full sm:w-1/4 flex items-center mb-3 sm:mb-0">
-                        <Link href={`${item.id}`} className="flex items-center w-full">
-                          <div className="relative w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] flex-shrink-0">
-                            <Image
-                              src={item.image_link || "/placeholder.svg"}
-                              alt={item.title}
-                              fill
-                              className="object-cover rounded"
-                              priority
-                            />
-                          </div>
-                          <div className="ml-3 sm:ml-4 flex-1">
-                            <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
-                            {/* Mobile only price */}
-                            <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
-                            {/* Stock information */}
-                            <p className="text-xs text-gray-500 mt-1">
-                              Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
-                            </p>
-                          </div>
-                          </Link>
-                        </div>
+        {/* Show stock update indicator only when updating */}
+        {isUpdatingStock && (
+          <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-center">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+              <span className="text-sm text-blue-700">Updating stock information...</span>
+            </div>
+          </div>
+        )}
 
-                        {/* Price - Hidden on mobile, shown on larger screens */}
-                        <div className="hidden sm:block sm:w-1/4 text-right">
-                          <p>₹{item.price.toFixed(2)}</p>
-                        </div>
-
-                        {/* Quantity controls - Full width on mobile, 1/4 on larger screens */}
-                        <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center mb-3 sm:mb-0">
-                          <span className="sm:hidden text-sm font-medium">Quantity:</span>
-                          <div className="flex border items-center gap-2 relative">
-                            <button
-                              className="px-2 rounded hover:bg-gray-100"
-                              onClick={() => handleDecrement(item.id)}
-                              aria-label="Decrease quantity"
-                            >
-                              -
-                            </button>
-                            <p className="w-8 text-center">{item.quantity}</p>
-                            <button
-                              className={`px-2 rounded ${
-                                item.quantity >= (item.stock || 0)
-                                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                                  : "hover:bg-gray-100"
-                              }`}
-                              onClick={() => handleIncrement(item.id)}
-                              disabled={item.quantity >= (item.stock || 0)}
-                              aria-label="Increase quantity"
-                            >
-                              +
-                            </button>
-                            {stockWarnings[item.id] && (
-                              <div className="absolute -top-8 right-0 bg-amber-50 text-amber-700 text-xs p-1 rounded border border-amber-200 whitespace-nowrap flex items-center">
-                                <AlertCircle size={12} className="mr-1" />
-                                Max stock reached
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Subtotal and remove button - Full width on mobile, 1/4 on larger screens */}
-                        <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center">
-                          <span className="sm:hidden text-sm font-medium">Subtotal:</span>
-                          <div className="flex items-center">
-                            <p className="mr-3">₹{calculateSubTotal(item.price, item.quantity).toFixed(2)}</p>
-                            <button
-                              onClick={() => handleRemoveItem(item.id)}
-                              className="text-gray-500 hover:text-red-500 transition-colors"
-                              aria-label="Remove item"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+        {displayItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center min-h-[200px]">
+            <p className="text-lg text-gray-500">Your cart is empty.</p>
+            <Button variant="outline" onClick={handleReturnToShop} className="mt-4">
+              Return to Shop
+            </Button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
+            <div className="lg:col-span-2">
+              <div className="bg-white p-3 sm:p-4 border border-[#9E9E9E] rounded shadow-xl">
+                {/* Cart header - Hide on small screens, use alternative layout */}
+                <div className="hidden sm:flex justify-between border-b pb-2">
+                  <h2 className="font-semibold w-1/4 text-left">PRODUCTS</h2>
+                  <h2 className="font-semibold w-1/4 text-right">PRICE</h2>
+                  <h2 className="font-semibold w-1/4 text-right">QUANTITY</h2>
+                  <h2 className="font-semibold w-1/4 text-right">SUB-TOTAL</h2>
                 </div>
-                {displayItems.length > 5 && (
-                  <div className="flex justify-center mt-2 space-x-2">
-                    <button
-                      className="p-1 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none"
-                      onClick={() => {
-                        const container = document.querySelector(".overflow-y-auto")
-                        if (container) container.scrollBy({ top: -100, behavior: "smooth" })
-                      }}
-                      aria-label="Scroll up"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      className="p-1 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none"
-                      onClick={() => {
-                        const container = document.querySelector(".overflow-y-auto")
-                        if (container) container.scrollBy({ top: 100, behavior: "smooth" })
-                      }}
-                      aria-label="Scroll down"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                      >
-                        <path
-                          fillRule="evenodd"
-                          d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    </button>
+
+                <div className="py-2">
+                  <div
+                    className={`${displayItems.length > 5 ? "max-h-[600px] overflow-y-auto" : ""} pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100`}
+                  >
+                    <ul>
+                      {displayItems.map((item) => (
+                        <li
+                          key={item.id}
+                          className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4"
+                        >
+                          {/* Product info - Full width on mobile, 1/4 on larger screens */}
+                          <div className="w-full sm:w-1/4 flex items-center mb-3 sm:mb-0">
+                          <Link href={`${item.id}`} className="flex items-center w-full">
+                            <div className="relative w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] flex-shrink-0">
+                              <Image
+                                src={item.image_link || "/placeholder.svg"}
+                                alt={item.title}
+                                fill
+                                className="object-cover rounded"
+                                priority
+                              />
+                            </div>
+                            <div className="ml-3 sm:ml-4 flex-1">
+                              <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
+                              {/* Mobile only price */}
+                              <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
+                              {/* Stock information */}
+                              <p className="text-xs text-gray-500 mt-1">
+                                Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
+                              </p>
+                            </div>
+                            </Link>
+                          </div>
+
+                          {/* Price - Hidden on mobile, shown on larger screens */}
+                          <div className="hidden sm:block sm:w-1/4 text-right">
+                            <p>₹{item.price.toFixed(2)}</p>
+                          </div>
+
+                          {/* Quantity controls - Full width on mobile, 1/4 on larger screens */}
+                          <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center mb-3 sm:mb-0">
+                            <span className="sm:hidden text-sm font-medium">Quantity:</span>
+                            <div className="flex border items-center gap-2 relative">
+                              <button
+                                className="px-2 rounded hover:bg-gray-100"
+                                onClick={() => handleDecrement(item.id)}
+                                aria-label="Decrease quantity"
+                              >
+                                -
+                              </button>
+                              <p className="w-8 text-center">{item.quantity}</p>
+                              <button
+                                className={`px-2 rounded ${
+                                  item.quantity >= (item.stock || 0)
+                                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                                    : "hover:bg-gray-100"
+                                }`}
+                                onClick={() => handleIncrement(item.id)}
+                                disabled={item.quantity >= (item.stock || 0)}
+                                aria-label="Increase quantity"
+                              >
+                                +
+                              </button>
+                              {stockWarnings[item.id] && (
+                                <div className="absolute -top-8 right-0 bg-amber-50 text-amber-700 text-xs p-1 rounded border border-amber-200 whitespace-nowrap flex items-center">
+                                  <AlertCircle size={12} className="mr-1" />
+                                  Max stock reached
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Subtotal and remove button - Full width on mobile, 1/4 on larger screens */}
+                          <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center">
+                            <span className="sm:hidden text-sm font-medium">Subtotal:</span>
+                            <div className="flex items-center">
+                              <p className="mr-3">₹{calculateSubTotal(item.price, item.quantity).toFixed(2)}</p>
+                              <button
+                                onClick={() => handleRemoveItem(item.id)}
+                                className="text-gray-500 hover:text-red-500 transition-colors"
+                                aria-label="Remove item"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                )}
-              </div>
+                  {displayItems.length > 5 && (
+                    <div className="flex justify-center mt-2 space-x-2">
+                      <button
+                        className="p-1 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none"
+                        onClick={() => {
+                          const container = document.querySelector(".overflow-y-auto")
+                          if (container) container.scrollBy({ top: -100, behavior: "smooth" })
+                        }}
+                        aria-label="Scroll up"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        className="p-1 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none"
+                        onClick={() => {
+                          const container = document.querySelector(".overflow-y-auto")
+                          if (container) container.scrollBy({ top: 100, behavior: "smooth" })
+                        }}
+                        aria-label="Scroll down"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-5 w-5"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 011.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
 
-              {/* Action buttons - Ensure they stay inside the cart box */}
-              <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4 pb-2 border-t pt-4">
-                <Button variant="outline" onClick={handleClearCart} className="text-xs sm:text-sm">
-                  CLEAR CART
-                </Button>
-                <Button variant="outline" onClick={handleReturnToShop} className="text-xs sm:text-sm">
-                  RETURN TO SHOP
-                </Button>
+                {/* Action buttons - Ensure they stay inside the cart box */}
+                <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4 pb-2 border-t pt-4">
+                  <Button variant="outline" onClick={handleClearCart} className="text-xs sm:text-sm">
+                    CLEAR CART
+                  </Button>
+                  <Button variant="outline" onClick={handleReturnToShop} className="text-xs sm:text-sm">
+                    RETURN TO SHOP
+                  </Button>
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col">
+              <div className="bg-white p-4 border border-[#9E9E9E] rounded shadow-xl">
+                <h2 className="font-semibold border-b text-lg sm:text-xl pb-2">Cart Totals</h2>
+                <div className="flex justify-between py-2 font-bold">
+                  <span>Sub-total</span>
+                  <span>₹{calculateCartSubTotal().toFixed(2)}</span>
+                </div>
+                
+                
+                
+                
+
+                <button
+                  className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg mt-4 transition-colors"
+                  onClick={handleProceedToCheckout}
+                >
+                  PROCEED TO CHECKOUT
+                </button>
               </div>
             </div>
           </div>
-          <div className="flex flex-col">
-            <div className="bg-white p-4 border border-[#9E9E9E] rounded shadow-xl">
-              <h2 className="font-semibold border-b text-lg sm:text-xl pb-2">Cart Totals</h2>
-              <div className="flex justify-between py-2 font-bold">
-                <span>Sub-total</span>
-                <span>₹{calculateCartSubTotal().toFixed(2)}</span>
-              </div>
-              
-              
-              
-              
+        )}
 
-              <button
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg mt-4 transition-colors"
-                onClick={handleProceedToCheckout}
-              >
-                PROCEED TO CHECKOUT
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Recommended Products Section */}
-      <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">
-          Recommended based on your shopping trends
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 justify-center">
-          {recommendedProducts.slice(0, 8).map((product) => (
-            <ProductCard
-              key={product.product_id}
-              title={product.title}
-              company={product.seller_name}
-              location={product.location}
-              price={product.price}
-              discount={product.discount}
-              image_link={product.image_link}
-              href={`/products/${product.product_id}`}
-              rating={product.rating}
-              originalPrice={product.price + product.discount}
-              hoverImage={product.image_link}
-              seller_id={product.seller_id || 0}
-              stock={product.stock}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Promotional Banner */}
-      <div className="mt-16 sm:mt-20 flex justify-center">
-        <div className="w-full max-w-[1280px] flex flex-col md:flex-row bg-[#FDCC0D] rounded-[20px] overflow-hidden">
-          <div className="w-full md:w-1/2 h-[250px] md:h-auto relative">
-            <svg
-              className="w-full h-full object-cover"
-              viewBox="0 0 795 421"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              xmlnsXlink="http://www.w3.org/1999/xlink"
-            >
-              <rect width="835" height="421" transform="matrix(-1 0 0 1 795 0)" fill="url(#pattern0_1411_15703)" />
-              <defs>
-                <pattern id="pattern0_1411_15703" patternContentUnits="objectBoundingBox" width="1" height="1">
-                  <use xlinkHref="#image0_1411_15703" transform="matrix(0.00166667 0 0 0.00330562 0 -0.161124)" />
-                </pattern>
-                <image id="image0_1411_15703" width="600" height="400" />
-              </defs>
-            </svg>
-          </div>
-          <div className="w-full md:w-1/2 flex flex-col justify-center p-6 md:p-10">
-            <h3 className="text-3xl md:text-4xl lg:text-6xl font-bold text-white mb-4">
-              Get a free <br className="hidden md:block" /> demo
-            </h3>
-            <p className="text-white text-sm md:text-base mb-6">
-              Lorem Neque porro quisquam est qui <br className="hidden md:block" /> dolorem ipsum quia dolor sit
-            </p>
-            <button className="bg-[#14BA6D] text-white py-3 px-8 rounded-lg text-sm md:text-base font-medium self-start">
-              Explore now
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Browsing History Section - slider aligned like Recommended */}
-      {historyItems.length > 0 && (
-      <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">Your browsing history</h2>
-        <div className="relative">
-          <div
-            ref={historyRef}
-            className="flex overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 gap-4 pb-4"
-          >
-            {historyItems.map((item) => (
-              <BrowsingHistoryCard key={item.productId} item={item} />
-            ))}
-          </div>
-          <button
-            onClick={() => historyRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
-            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
-            aria-label="Previous product"
-          >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
-          </button>
-          <button
-            onClick={() => historyRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
-            aria-label="Next product"
-          >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
-          </button>
-        </div>
-      </div>
-      )}
-
-      {/* Features Section */}
-      <div className="w-full py-8 mt-16 mb-8">
-        <div className="rounded-2xl py-6 px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-full">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 justify-items-center gap-4 sm:gap-6">
-            {features.map((feature, index) => (
-              <FeatureCard
-                key={index}
-                icon={feature.icon}
-                title={feature.title}
-                description={feature.description}
-                iconColor={feature.iconColor}
-                hoverColor={feature.hoverColor}
+        {/* Recommended Products Section */}
+        <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">
+            Recommended based on your shopping trends
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 justify-center">
+            {recommendedProducts.slice(0, 8).map((product) => (
+              <ProductCard
+                key={product.product_id}
+                title={product.title}
+                company={product.seller_name}
+                location={product.location}
+                price={product.price}
+                discount={product.discount}
+                image_link={product.image_link}
+                href={`/products/${product.product_id}`}
+                rating={product.rating}
+                originalPrice={product.price + product.discount}
+                hoverImage={product.image_link}
+                seller_id={product.seller_id || 0}
+                stock={product.stock}
               />
             ))}
           </div>
         </div>
-      </div>
 
-      {/* Auth Modal */}
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
+        {/* Advertisement Banner - Dynamic from Database */}
+        <CartAdvertisement />
+
+        {/* Browsing History Section - slider aligned like Recommended */}
+        {historyItems.length > 0 && (
+        <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">Your browsing history</h2>
+          <div className="relative">
+            <div
+              ref={historyRef}
+              className="flex overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 gap-4 pb-4"
+            >
+              {historyItems.map((item) => (
+                <BrowsingHistoryCard key={item.productId} item={item} />
+              ))}
+            </div>
+            <button
+              onClick={() => historyRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
+              className="absolute left-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+              aria-label="Previous product"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+            </button>
+            <button
+              onClick={() => historyRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
+              className="absolute right-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+              aria-label="Next product"
+            >
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+            </button>
+          </div>
+        </div>
+        )}
+
+                 {/* Features Section */}
+         <FeaturesSection />
+
+        {/* Auth Modal */}
+        <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
+      </div>
     </div>
   )
 }

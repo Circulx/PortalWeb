@@ -6,6 +6,7 @@ import ProductActions from "./product-actions"
 import ProductReviews from "./product-reviews"
 import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
+import SellerInformationSection from "./seller-information-section"
 
 // Define the product interface
 interface Product {
@@ -28,6 +29,8 @@ interface Product {
   rating?: number
   reviewCount?: number
   units?: string
+  seller_gstin?: string
+  features?: string[]
 }
 
 // Define the review interface
@@ -181,6 +184,47 @@ async function getProductById(id: string): Promise<Product | null> {
       return null
     }
 
+    // Fetch seller's GST information if seller_name is available
+    let sellerGstin = ""
+    if (doc.seller_name) {
+      try {
+        console.log(`Looking for GST info for seller: "${doc.seller_name}"`)
+        
+        // Define Business schema if it doesn't exist
+        if (!connection.models.Business) {
+          const BusinessSchema = new mongoose.Schema({
+            userId: { type: String, required: true, index: true },
+            legalEntityName: { type: String, required: true },
+            tradeName: { type: String, required: true },
+            gstin: { type: String, required: true },
+            businessCountry: { type: String, required: true },
+            pincode: { type: String, required: true },
+            state: { type: String, required: true },
+            city: { type: String, required: true },
+            businessEntityType: { type: String, required: true },
+          }, { timestamps: true })
+          connection.model("Business", BusinessSchema)
+        }
+
+        const Business = connection.models.Business
+        const businessDoc = await Business.findOne({ 
+          $or: [
+            { legalEntityName: doc.seller_name },
+            { tradeName: doc.seller_name }
+          ]
+        }).lean().exec() as any
+
+        if (businessDoc) {
+          sellerGstin = businessDoc.gstin || ""
+          console.log(`Found business profile for "${doc.seller_name}": GST = "${sellerGstin}"`)
+        } else {
+          console.log(`No business profile found for seller: "${doc.seller_name}"`)
+        }
+      } catch (error) {
+        console.error("Error fetching seller GST information:", error)
+      }
+    }
+
     const product: Product = {
       _id: doc._id ? doc._id.toString() : "",
       product_id: doc.product_id || 0,
@@ -201,6 +245,8 @@ async function getProductById(id: string): Promise<Product | null> {
       reviewCount: doc.reviewCount || 0,
       units: doc.units || "units",
       model: "",
+      seller_gstin: sellerGstin,
+      features: doc.features || [],
     }
 
     console.log(`Product found: ${product.title}`)
@@ -263,7 +309,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
         {/* Toast container for notifications */}
         <Toaster />
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid md:grid-cols-3 gap-6">
           {/* Product Image Gallery - Made sticky */}
           <div className="relative">
             <div className="sticky top-[80px] z-10">
@@ -321,7 +367,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
           </div>
 
           {/* Product Info */}
-          <div>
+          <div className="bg-white p-6 rounded-lg shadow-md">
             {/* Product Title */}
             <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
 
@@ -364,12 +410,74 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               Available: {product.stock} {product.units}
             </p>
 
-            {/* Product Description with Read More functionality */}
-            <ProductDescription description={description} />
+            {/* Product Information Card */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-6 mb-6">
+              <h2 className="text-xl font-semibold mb-4 text-gray-800">About This Product</h2>
+              
+              {/* Key Features */}
+              {product.features && product.features.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-3 text-gray-800">Key Features</h3>
+                  <ul className="space-y-2">
+                    {product.features.map((feature, index) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-blue-600 mr-2">•</span>
+                        <span className="text-gray-600">{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
+              {/* Product Specifications */}
+              <div className="mb-6">
+                <h3 className="font-semibold mb-3 text-gray-800">Product Specifications</h3>
+                <div className="bg-white border border-gray-300 rounded-md overflow-hidden">
+                  <table className="w-full border-collapse">
+                    <tbody>
+                      <tr className="border-b border-dashed border-gray-300">
+                        <td className="px-4 py-3 font-medium text-gray-700 bg-gray-50 border-r border-dashed border-gray-300">Brand</td>
+                        <td className="px-4 py-3 text-blue-600 font-medium">{product.seller_name || "Brand Name"}</td>
+                      </tr>
+                      <tr className="border-b border-dashed border-gray-300">
+                        <td className="px-4 py-3 font-medium text-gray-700 bg-gray-50 border-r border-dashed border-gray-300">Model</td>
+                        <td className="px-4 py-3 text-gray-800">{product.model || "Standard Model"}</td>
+                      </tr>
+                      <tr className="border-b border-dashed border-gray-300">
+                        <td className="px-4 py-3 font-medium text-gray-700 bg-gray-50 border-r border-dashed border-gray-300">SKU</td>
+                        <td className="px-4 py-3 text-gray-800">{product.SKU || "1112"}</td>
+                      </tr>
+                      <tr>
+                        <td className="px-4 py-3 font-medium text-gray-700 bg-gray-50 border-r border-dashed border-gray-300">Category</td>
+                        <td className="px-4 py-3 text-gray-800">{product.category_name || "Electrical Appliance"}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+               
+              </div>
+
+              {/* Product Details */}
+              <div>
+                <h3 className="font-semibold mb-3 text-gray-800">Product Details</h3>
+                <div className="text-gray-600 leading-relaxed">
+                  {/* Product Description with Read More functionality */}
+              
+
+            <ProductDescription description={description} />
+                </div>
+              </div>
+            </div>
+
+           
+
+          
+            
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-md">
             {/* Features */}
             <div className="mb-6">
-              <h3 className="font-semibold text-lg mb-3">Feature</h3>
+              <h3 className="font-semibold text-lg mb-3">Features</h3>
               <ul className="grid gap-2">
                 <li className="flex items-center gap-2">
                   <svg
@@ -383,7 +491,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M9 12l2 2 4-4m5.414-1.414a2 2 0 00-2.828 0L12 12l-1.586-1.586a2 2 0 00-2.828 2.828L9.172 14.828a2 2 0 002.828 0L15 12l1.586 1.586a2 2 0 002.828-2.828L17.828 9.172z"
                     />
                   </svg>
                   <span>Free 1 Year Warranty</span>
@@ -400,10 +508,10 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
                     />
                   </svg>
-                  <span>Free Shipping & Fasted Delivery</span>
+                  <span>Free Shipping & Fast Delivery</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <svg
@@ -417,7 +525,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
                     />
                   </svg>
                   <span>100% Money-back guarantee</span>
@@ -434,7 +542,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 100 19.5 9.75 9.75 0 000-19.5z"
                     />
                   </svg>
                   <span>24/7 Customer support</span>
@@ -451,7 +559,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                     />
                   </svg>
                   <span>Secure payment method</span>
@@ -459,43 +567,14 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
               </ul>
             </div>
 
-            {/* Product Details */}
-            <div className="border-t pt-6 mb-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-semibold mb-3">SKU</h3>
-                  <p>{product.SKU || "1112"}</p>
-                </div>
-                <div>
-                  <h3 className="font-semibold mb-3">CATEGORY</h3>
-                  <p>{product.category_name || "Electrical Appliance"}</p>
-                </div>
-              </div>
-            </div>
-
             {/* Seller Information */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold mb-3">Seller information:</h3>
-              <div className="grid gap-2">
-                <div className="flex">
-                  <span className="font-medium w-28">Seller Name:</span>
-                  <span>{product.seller_name || "AB Industrial Supplies"}</span>
-                </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Location:</span>
-                  <span>{product.location || "Singapore"}</span>
-                </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Ratings:</span>
-                  <div className="flex items-center">
-                    <span className="mr-1">({reviewData.averageRating}/5</span>
-                    <span className="text-sm">based on {reviewData.totalReviews} reviews)</span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <SellerInformationSection 
+              product={product}
+              reviewData={reviewData}
+            />
           </div>
         </div>
+         
 
         {/* Product Reviews Section */}
         <ProductReviews

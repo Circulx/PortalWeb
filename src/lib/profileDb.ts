@@ -28,6 +28,7 @@ interface IAdvertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
   startDate?: Date
   endDate?: Date
 }
@@ -473,6 +474,11 @@ const AdvertisementSchema = new mongoose.Schema<IAdvertisement>(
       enum: ["all", "desktop", "mobile", "tablet"],
       default: "all",
     },
+    position: {
+      type: String,
+      enum: ["homepage", "category", "bottomofhomepage", "cart", "all"],
+      default: "all",
+    },
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null },
   },
@@ -486,6 +492,7 @@ const AdvertisementSchema = new mongoose.Schema<IAdvertisement>(
 AdvertisementSchema.index({ isActive: 1, order: 1 })
 AdvertisementSchema.index({ startDate: 1, endDate: 1 })
 AdvertisementSchema.index({ deviceType: 1 })
+AdvertisementSchema.index({ position: 1 })
 
 // Define Review schema with enhanced orderItems structure
 const ReviewSchema = new mongoose.Schema<IReview>(

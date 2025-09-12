@@ -114,6 +114,18 @@ export async function signUp(formData: FormData) {
     const userType = (formData.get("userType") as string) || "customer"
     const gstNumber = formData.get("gstNumber") as string
 
+    // Validate name format
+    const nameRegex = /^[a-zA-Z\s.'-]+$/
+    if (!nameRegex.test(name)) {
+      return { error: "Full name can only contain letters, spaces, periods, apostrophes, and hyphens" }
+    }
+
+    // Validate email format
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(email)) {
+      return { error: "Please enter a valid email format" }
+    }
+
     const existingUser = await UserModel.findOne({ email })
     if (existingUser) {
       return { error: "Email already exists" }
