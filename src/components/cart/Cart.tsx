@@ -12,10 +12,11 @@ import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import ProductCard from "@/components/layout/product-card"
 import "swiper/css"
-import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle } from "lucide-react"
+import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle, Heart, ShoppingCart } from "lucide-react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
+import { useWishlistSync } from "@/hooks/useWishlistSync"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { validateMOQ } from "@/lib/moq"
@@ -44,62 +45,11 @@ interface Product {
   sub_category_name: string
 }
 
-interface BrowsingHistoryProduct {
-  product_id: number
-  title: string
-  image_link: string
+interface BrowsingHistoryItem {
+  productId: string
+  title?: string
+  image?: string
 }
-
-const browsingHistory: BrowsingHistoryProduct[] = [
-  {
-    product_id: 1,
-    title: "Wireless Headphones",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 2,
-    title: "Smartphone",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 3,
-    title: "Laptop",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 4,
-    title: "Smartwatch",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 5,
-    title: "Bluetooth Speaker",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 6,
-    title: "Gaming Console",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 7,
-    title: "Digital Camera",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 8,
-    title: "Tablet",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-]
 
 interface FeatureCardProps {
   icon: React.ReactNode
@@ -152,6 +102,149 @@ const features = [
   },
 ]
 
+// Component for browsing history cards that matches the product card style
+function BrowsingHistoryCard({ item }: { item: BrowsingHistoryItem }) {
+  const [productData, setProductData] = useState<Product | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const { addItem: addToCart } = useCartSync()
+  const { addItem: addToWishlist, removeItem: removeFromWishlist } = useWishlistSync()
+  const { toast } = useToast()
+  const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
+  const isWishlisted = wishlistItems.some((wishItem) => wishItem.id === item.productId)
+
+  // Fetch full product data
+  useEffect(() => {
+    const fetchProduct = async () => {
+      try {
+        const response = await axios.get("/api/products")
+        const products: Product[] = response.data
+        const product = products.find((p) => p.product_id.toString() === item.productId)
+        setProductData(product || null)
+      } catch (error) {
+        console.error("Error fetching product:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchProduct()
+  }, [item.productId])
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!productData) return
+
+    addToCart({
+      item: {
+        id: item.productId,
+        title: productData.title,
+        image_link: productData.image_link,
+        price: productData.price,
+        discount: productData.discount || 0,
+        seller_id: productData.product_id,
+        units: productData.units || "units",
+        quantity: 1,
+      },
+      stock: productData.stock,
+    })
+
+    toast({
+      title: "Added to cart",
+      description: `${productData.title} has been added to your cart.`,
+    })
+  }
+
+  const handleToggleWishlist = async (e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!productData) return
+
+    try {
+      if (isWishlisted) {
+        await removeFromWishlist(item.productId)
+        toast({
+          title: "Removed from wishlist",
+          description: `${productData.title} has been removed from your wishlist.`,
+        })
+      } else {
+        await addToWishlist({
+          id: item.productId,
+          title: productData.title,
+          image_link: productData.image_link,
+          price: productData.price,
+          discount: productData.discount || 0,
+          seller_id: productData.product_id,
+          units: undefined,
+          stock: 0,
+        })
+        toast({
+          title: "Added to wishlist",
+          description: `${productData.title} has been added to your wishlist.`,
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling wishlist:", error)
+      toast({
+        title: "Error",
+        description: "Failed to update wishlist. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex-shrink-0 w-[262px] bg-white border border-gray-200 rounded-lg p-4">
+        <div className="animate-pulse">
+          <div className="bg-gray-200 h-48 rounded mb-4"></div>
+          <div className="bg-gray-200 h-4 rounded mb-2"></div>
+          <div className="bg-gray-200 h-4 rounded w-2/3"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!productData) {
+    return (
+      <Link href={`/products/${item.productId}`} className="flex-shrink-0 w-[280px] bg-white border border-gray-200 rounded-lg p-4">
+        <div className="relative h-48 mb-4">
+          <Image
+            src={item.image || "/placeholder.svg"}
+            alt={item.title || "Product"}
+            fill
+            className="object-contain rounded"
+          />
+        </div>
+        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{item.title || "Product"}</h3>
+        <p className="text-sm text-gray-500">Product details unavailable</p>
+      </Link>
+    )
+  }
+
+  return (
+    <div className="flex-shrink-0 w-[262px]">
+      <ProductCard
+        title={productData.title}
+        company={productData.seller_name}
+        location={productData.location}
+        price={productData.price}
+        discount={productData.discount}
+        image_link={productData.image_link}
+        href={`/products/${productData.product_id}`}
+        rating={productData.rating}
+        originalPrice={productData.price + (productData.discount || 0)}
+        hoverImage={productData.image_link}
+        seller_id={productData.seller_id || 0}
+        stock={productData.stock}
+        units={productData.units}
+      />
+    </div>
+  )
+}
+
 export default function Cart() {
   const router = useRouter()
   const dispatch = useDispatch()
@@ -165,6 +258,7 @@ export default function Cart() {
   const [isCheckingUser, setIsCheckingUser] = useState(true)
   const [moqStatus, setMoqStatus] = useState({ isValid: false, message: "", shortfall: 5000 })
 
+  // Check if user is logged in
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -180,23 +274,27 @@ export default function Cart() {
     checkUser()
   }, [])
 
+  // Background stock validation (non-blocking)
   useEffect(() => {
     const validateStock = async () => {
       if (cartItems.length === 0 || !cartInitialized) return
 
       setIsUpdatingStock(true)
       try {
+        // Fetch all products to get their current stock
         const response = await axios.get("/api/products")
         const products = response.data
 
         let hasStockIssues = false
         const newWarnings: Record<string, boolean> = {}
 
+        // Update stock information for each cart item
         cartItems.forEach((item) => {
           const productId = Number.parseInt(item.id)
           const product = products.find((p: any) => p.product_id === productId)
 
           if (product) {
+            // Update the stock in the cart state
             dispatch(
               updateItemStock({
                 productId: item.id,
@@ -204,10 +302,12 @@ export default function Cart() {
               }),
             )
 
+            // Check if we need to show a warning (quantity exceeds stock)
             if (item.quantity > product.stock) {
               newWarnings[item.id] = true
               hasStockIssues = true
 
+              // If product is out of stock, remove it from cart
               if (product.stock === 0) {
                 dispatch(removeItemAction(item.id))
                 toast({
@@ -236,9 +336,16 @@ export default function Cart() {
       }
     }
 
+    // Run stock validation in background after cart is loaded
     const timeoutId = setTimeout(validateStock, 1000)
     return () => clearTimeout(timeoutId)
   }, [cartItems.length, cartInitialized, dispatch, toast])
+
+  useEffect(() => {
+    const cartTotal = calculateCartSubTotal()
+    const newMoqStatus = validateMOQ(cartTotal)
+    setMoqStatus(newMoqStatus)
+  }, [cartItems])
 
   const { increaseQuantity, decreaseQuantity, removeItem, clearCart } = useCartSync()
 
@@ -246,6 +353,7 @@ export default function Cart() {
     const item = cartItems.find((item) => item.id === id)
     if (item) {
       if (item.quantity >= item.stock) {
+        // Show warning if trying to add more than available stock
         setStockWarnings((prev) => ({ ...prev, [id]: true }))
 
         toast({
@@ -257,6 +365,7 @@ export default function Cart() {
         return
       }
 
+      // Clear warning if it was previously shown
       if (stockWarnings[id]) {
         setStockWarnings((prev) => {
           const newWarnings = { ...prev }
@@ -272,10 +381,13 @@ export default function Cart() {
   const handleDecrement = (id: string) => {
     const item = cartItems.find((item) => item.id === id)
     if (item && item.quantity <= 1) {
+      // If quantity is 1 or less, remove the item completely
       removeItem(id)
     } else {
+      // Otherwise just decrease the quantity
       decreaseQuantity(id)
 
+      // Clear warning if it was previously shown
       if (stockWarnings[id]) {
         setStockWarnings((prev) => {
           const newWarnings = { ...prev }
@@ -289,6 +401,7 @@ export default function Cart() {
   const handleRemoveItem = (id: string) => {
     removeItem(id)
 
+    // Clear warning if it was previously shown
     if (stockWarnings[id]) {
       setStockWarnings((prev) => {
         const newWarnings = { ...prev }
@@ -304,12 +417,15 @@ export default function Cart() {
   }
 
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
+  const [historyItems, setHistoryItems] = useState<BrowsingHistoryItem[]>([])
+  const historyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchRecommendedProducts = async () => {
       try {
         const response = await axios.get("/api/products")
         const products: Product[] = response.data
+        // Limit to 8 most recent products
         const recentProducts = products.slice(0, 8)
         setRecommendedProducts(recentProducts)
       } catch (error) {
@@ -320,25 +436,37 @@ export default function Cart() {
     fetchRecommendedProducts()
   }, [])
 
+  // Load browsing history (user -> API, guest -> localStorage)
   useEffect(() => {
-    const cartTotal = calculateCartSubTotal()
-    const newMoqStatus = validateMOQ(cartTotal)
-    setMoqStatus(newMoqStatus)
-  }, [cartItems])
+    const loadHistory = async () => {
+      try {
+        const res = await fetch("/api/browsing-history?limit=16")
+        const data = await res.json()
+        if (Array.isArray(data.items) && data.items.length > 0) {
+          const items = data.items.map((x: any) => ({
+            productId: x.productId,
+            title: x.title,
+            image: x.image,
+          }))
+          setHistoryItems(items)
+          return
+        }
+      } catch (_err) {
+        // fall back to guest storage
+      }
 
-  const historyRef = useRef<HTMLDivElement>(null)
-
-  const scrollLeft = () => {
-    if (historyRef.current) {
-      historyRef.current.scrollBy({ left: -300, behavior: "smooth" })
+      try {
+        const key = "guest_browsing_history"
+        const guest = JSON.parse(localStorage.getItem(key) || "[]") as Array<any>
+        const items = guest.map((x) => ({ productId: String(x.productId), title: x.title, image: x.image }))
+        setHistoryItems(items)
+      } catch (_e) {
+        setHistoryItems([])
+      }
     }
-  }
 
-  const scrollRight = () => {
-    if (historyRef.current) {
-      historyRef.current.scrollBy({ left: 300, behavior: "smooth" })
-    }
-  }
+    loadHistory()
+  }, [])
 
   const calculateSubTotal = (price: number, quantity: number) => {
     return (price || 0) * (quantity || 0)
@@ -388,16 +516,20 @@ export default function Cart() {
   }
 
   const handleAuthSuccess = () => {
+    // Close the auth modal
     setIsAuthModalOpen(false)
+    // Redirect to checkout page
     router.push("/checkout")
   }
 
+  // Show cart immediately without waiting for initialization
   const displayItems = cartItems || []
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">Your Cart</h2>
 
+      {/* Show stock update indicator only when updating */}
       {isUpdatingStock && (
         <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-center">
@@ -410,7 +542,7 @@ export default function Cart() {
       {displayItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[200px]">
           <p className="text-lg text-gray-500">Your cart is empty.</p>
-          <Button variant="outline" onClick={handleReturnToShop} className="mt-4 bg-transparent">
+          <Button variant="outline" onClick={handleReturnToShop} className="mt-4">
             Return to Shop
           </Button>
         </div>
@@ -418,6 +550,7 @@ export default function Cart() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           <div className="lg:col-span-2">
             <div className="bg-white p-3 sm:p-4 border border-[#9E9E9E] rounded shadow-xl">
+              {/* Cart header - Hide on small screens, use alternative layout */}
               <div className="hidden sm:flex justify-between border-b pb-2">
                 <h2 className="font-semibold w-1/4 text-left">PRODUCTS</h2>
                 <h2 className="font-semibold w-1/4 text-right">PRICE</h2>
@@ -435,31 +568,36 @@ export default function Cart() {
                         key={item.id}
                         className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4"
                       >
+                        {/* Product info - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex items-center mb-3 sm:mb-0">
-                          <Link href={`${item.id}`} className="flex items-center w-full">
-                            <div className="relative w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] flex-shrink-0">
-                              <Image
-                                src={item.image_link || "/placeholder.svg"}
-                                alt={item.title}
-                                fill
-                                className="object-cover rounded"
-                                priority
-                              />
-                            </div>
-                            <div className="ml-3 sm:ml-4 flex-1">
-                              <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
-                              <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
-                              <p className="text-xs text-gray-500 mt-1">
-                                Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
-                              </p>
-                            </div>
+                        <Link href={`${item.id}`} className="flex items-center w-full">
+                          <div className="relative w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] flex-shrink-0">
+                            <Image
+                              src={item.image_link || "/placeholder.svg"}
+                              alt={item.title}
+                              fill
+                              className="object-cover rounded"
+                              priority
+                            />
+                          </div>
+                          <div className="ml-3 sm:ml-4 flex-1">
+                            <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
+                            {/* Mobile only price */}
+                            <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
+                            {/* Stock information */}
+                            <p className="text-xs text-gray-500 mt-1">
+                              Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
+                            </p>
+                          </div>
                           </Link>
                         </div>
 
+                        {/* Price - Hidden on mobile, shown on larger screens */}
                         <div className="hidden sm:block sm:w-1/4 text-right">
                           <p>₹{item.price.toFixed(2)}</p>
                         </div>
 
+                        {/* Quantity controls - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center mb-3 sm:mb-0">
                           <span className="sm:hidden text-sm font-medium">Quantity:</span>
                           <div className="flex border items-center gap-2 relative">
@@ -492,6 +630,7 @@ export default function Cart() {
                           </div>
                         </div>
 
+                        {/* Subtotal and remove button - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center">
                           <span className="sm:hidden text-sm font-medium">Subtotal:</span>
                           <div className="flex items-center">
@@ -557,11 +696,12 @@ export default function Cart() {
                 )}
               </div>
 
+              {/* Action buttons - Ensure they stay inside the cart box */}
               <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4 pb-2 border-t pt-4">
-                <Button variant="outline" onClick={handleClearCart} className="text-xs sm:text-sm bg-transparent">
+                <Button variant="outline" onClick={handleClearCart} className="text-xs sm:text-sm">
                   CLEAR CART
                 </Button>
-                <Button variant="outline" onClick={handleReturnToShop} className="text-xs sm:text-sm bg-transparent">
+                <Button variant="outline" onClick={handleReturnToShop} className="text-xs sm:text-sm">
                   RETURN TO SHOP
                 </Button>
               </div>
@@ -623,6 +763,7 @@ export default function Cart() {
         </div>
       )}
 
+      {/* Recommended Products Section */}
       <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
         <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">
           Recommended based on your shopping trends
@@ -648,6 +789,7 @@ export default function Cart() {
         </div>
       </div>
 
+      {/* Promotional Banner */}
       <div className="mt-16 sm:mt-20 flex justify-center">
         <div className="w-full max-w-[1280px] flex flex-col md:flex-row bg-[#FDCC0D] rounded-[20px] overflow-hidden">
           <div className="w-full md:w-1/2 h-[250px] md:h-auto relative">
@@ -681,49 +823,38 @@ export default function Cart() {
         </div>
       </div>
 
-      <div className="mt-16 sm:mt-20 max-w-[1440px] mx-auto">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
-          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 sm:mb-0">Your browsing history</h2>
-          <div className="underline text-sm">
-            <p>Page 1 of 2</p>
-          </div>
-        </div>
+      {/* Browsing History Section - slider aligned like Recommended */}
+      {historyItems.length > 0 && (
+      <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
+        <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">Your browsing history</h2>
         <div className="relative">
           <div
             ref={historyRef}
             className="flex overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 gap-4 pb-4"
           >
-            {browsingHistory.map((product) => (
-              <div key={product.product_id} className="flex-shrink-0 w-[180px] sm:w-[220px] md:w-[262px] bg-white">
-                <div className="relative aspect-square w-full">
-                  <Image
-                    src={product.image_link || "/placeholder.svg"}
-                    alt={product.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <h3 className="text-base md:text-lg pt-3 font-semibold px-2">{product.title}</h3>
-              </div>
+            {historyItems.map((item) => (
+              <BrowsingHistoryCard key={item.productId} item={item} />
             ))}
           </div>
           <button
-            onClick={scrollLeft}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+            onClick={() => historyRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
+            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
             aria-label="Previous product"
           >
             <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
           </button>
           <button
-            onClick={scrollRight}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+            onClick={() => historyRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
+            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
             aria-label="Next product"
           >
             <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
           </button>
         </div>
       </div>
+      )}
 
+      {/* Features Section */}
       <div className="w-full py-8 mt-16 mb-8">
         <div className="rounded-2xl py-6 px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 justify-items-center gap-4 sm:gap-6">
@@ -741,6 +872,7 @@ export default function Cart() {
         </div>
       </div>
 
+      {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </div>
   )

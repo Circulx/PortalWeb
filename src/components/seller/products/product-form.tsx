@@ -46,6 +46,7 @@ const productSchema = z.object({
   location: z.string().min(1, "Location is required"),
   category_name: z.string().min(1, "Category is required"),
   sub_category_name: z.string().optional(),
+  features: z.array(z.string()).optional(),
 })
 
 type ProductFormData = z.infer<typeof productSchema>
@@ -80,6 +81,8 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
   const [sellerEmail, setSellerEmail] = useState<string | null>(null)
   const [isLoadingEmail, setIsLoadingEmail] = useState(true)
   const [emailError, setEmailError] = useState<string | null>(null)
+  const [features, setFeatures] = useState<string[]>(initialData?.features || [])
+  const [newFeature, setNewFeature] = useState("")
   const { toast } = useToast()
   const router = useRouter()
 
@@ -115,12 +118,29 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
       location: "",
       category_name: "",
       sub_category_name: "",
+      features: [],
     },
   })
 
   const selectedCategoryId = watch("category_id")
   const selectedCategoryName = watch("category_name")
   const price = watch("price") || 0
+
+  // Features management functions
+  const addFeature = () => {
+    if (newFeature.trim() && !features.includes(newFeature.trim())) {
+      const updatedFeatures = [...features, newFeature.trim()]
+      setFeatures(updatedFeatures)
+      setValue("features", updatedFeatures)
+      setNewFeature("")
+    }
+  }
+
+  const removeFeature = (index: number) => {
+    const updatedFeatures = features.filter((_, i) => i !== index)
+    setFeatures(updatedFeatures)
+    setValue("features", updatedFeatures)
+  }
   const discount = watch("discount") || 0
 
   // Calculate total price with discount only
@@ -534,6 +554,52 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
                     placeholder="Enter product description"
                     className="min-h-[100px] bg-white"
                   />
+                </div>
+
+                <div className="grid gap-1.5">
+                  <Label className="text-base">Key Features</Label>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <Input
+                        value={newFeature}
+                        onChange={(e) => setNewFeature(e.target.value)}
+                        placeholder="Enter a key feature"
+                        className="bg-white h-10"
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addFeature()
+                          }
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        onClick={addFeature}
+                        disabled={!newFeature.trim()}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {features.length > 0 && (
+                      <div className="space-y-2">
+                        {features.map((feature, index) => (
+                          <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
+                            <span className="text-sm text-gray-700">{feature}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFeature(index)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>

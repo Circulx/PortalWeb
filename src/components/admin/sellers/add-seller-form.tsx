@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { FormInput } from "@/components/ui/form-input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -13,8 +13,14 @@ import { useToast } from "@/components/ui/use-toast"
 
 const formSchema = z.object({
   // Business Details
-  legalEntityName: z.string().min(1, { message: "Legal Entity Name is required" }),
-  tradeName: z.string().min(1, { message: "Trade Name is required" }),
+  legalEntityName: z
+    .string()
+    .min(1, { message: "Legal Entity Name is required" })
+    .regex(/^[a-zA-Z0-9\s]+$/, { message: "Legal Entity Name can only contain letters, numbers, and spaces" }),
+  tradeName: z
+    .string()
+    .min(1, { message: "Trade Name is required" })
+    .regex(/^[a-zA-Z0-9\s]+$/, { message: "Trade Name can only contain letters, numbers, and spaces" }),
   gstin: z.string().min(15, { message: "GSTIN must be 15 characters" }).max(15),
   businessCountry: z.string().min(1, { message: "Country is required" }),
   pincode: z.string().min(6, { message: "Pincode must be 6 digits" }).max(6),
@@ -23,9 +29,19 @@ const formSchema = z.object({
   businessEntityType: z.string().min(1, { message: "Business Entity Type is required" }),
 
   // Contact Details
-  name: z.string().min(1, { message: "Name is required" }),
-  phoneNumber: z.string().min(10, { message: "Phone number must be 10 digits" }).max(10),
-  emailId: z.string().email({ message: "Invalid email address" }),
+  name: z
+    .string()
+    .min(1, { message: "Name is required" })
+    .regex(/^[a-zA-Z\s.'-]+$/, { message: "Name can only contain letters, spaces, periods, apostrophes, and hyphens" }),
+  phoneNumber: z
+    .string()
+    .min(10, { message: "Phone number must be exactly 10 digits" })
+    .max(10, { message: "Phone number must be exactly 10 digits" })
+    .regex(/^[1-9][\d]{9}$/, { message: "Phone number must be exactly 10 digits and cannot start with 0" }),
+  emailId: z
+    .string()
+    .email({ message: "Invalid email address" })
+    .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, { message: "Please enter a valid email format" }),
   pickupTime: z.string().optional(),
 
   // Category and Brand
@@ -49,9 +65,21 @@ const formSchema = z.object({
   pickupAddressLine3: z.string().optional(),
 
   // Bank Details
-  accountHolderName: z.string().min(1, { message: "Account Holder Name is required" }),
-  accountNumber: z.string().min(1, { message: "Account Number is required" }),
-  ifscCode: z.string().min(11, { message: "IFSC Code must be 11 characters" }).max(11),
+  accountHolderName: z
+    .string()
+    .min(1, { message: "Account Holder Name is required" })
+    .regex(/^[a-zA-Z\s.'-]+$/, { message: "Account holder name can only contain letters, spaces, periods, apostrophes, and hyphens" }),
+  accountNumber: z
+    .string()
+    .min(1, { message: "Account Number is required" })
+    .regex(/^[0-9]+$/, { message: "Account number can only contain digits" })
+    .min(8, { message: "Account number must be at least 8 digits" })
+    .max(20, { message: "Account number cannot exceed 20 digits" }),
+  ifscCode: z
+    .string()
+    .min(11, { message: "IFSC Code must be 11 characters" })
+    .max(11, { message: "IFSC Code must be 11 characters" })
+    .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, { message: "IFSC code must be in format: 4 letters, 0, then 6 alphanumeric characters" }),
   bankName: z.string().min(1, { message: "Bank Name is required" }),
   bankCity: z.string().min(1, { message: "City is required" }),
   accountType: z.enum(["Savings", "Current", "Other"], {
@@ -168,8 +196,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Legal Entity Name <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -182,8 +211,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Trade Name <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -196,7 +226,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     GSTIN <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -210,7 +240,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Country <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -224,7 +254,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Pincode <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -238,7 +268,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     State <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -252,7 +282,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     City <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -266,7 +296,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Business Entity Type <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -287,8 +317,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Name <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -301,8 +332,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Phone Number <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} type="tel" required />
+                    <FormInput {...field} type="tel" required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -315,8 +347,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Email Id <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} type="email" required />
+                    <FormInput {...field} type="email" required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -327,7 +360,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Pickup Time</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -348,7 +381,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Category <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -360,7 +393,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Brand</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -381,7 +414,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Country <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -395,7 +428,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     State <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -409,7 +442,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     City <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -423,7 +456,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Address Line 1 <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -435,7 +468,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Address Line 2</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -447,7 +480,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Address Line 3</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -466,7 +499,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Country</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -478,7 +511,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>State</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -490,7 +523,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>City</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -502,7 +535,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Address Line 1</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -514,7 +547,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Address Line 2</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -526,7 +559,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                 <FormItem>
                   <FormLabel>Address Line 3</FormLabel>
                   <FormControl>
-                    <Input {...field} />
+                    <FormInput {...field} />
                   </FormControl>
                 </FormItem>
               )}
@@ -547,8 +580,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Account Holder Name <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -561,8 +595,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Account Number <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -575,8 +610,9 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     IFSC Code <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />
@@ -589,7 +625,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     Bank Name <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}
@@ -603,7 +639,7 @@ export function AddSellerForm({ onSuccess }: AddSellerFormProps) {
                     City <span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input {...field} required />
+                    <FormInput {...field} required />
                   </FormControl>
                 </FormItem>
               )}

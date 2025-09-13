@@ -172,10 +172,24 @@ export async function saveBusinessDetails(formData: FormData) {
     const db = await connectProfileDB()
     const Business = db.model("Business")
 
+    const legalEntityName = formData.get("legalEntityName") as string
+    const tradeName = formData.get("tradeName") as string
+
+    // Validate Legal Entity Name and Trade Name with regex
+    const alphanumericRegex = /^[a-zA-Z0-9\s]+$/
+    
+    if (!alphanumericRegex.test(legalEntityName)) {
+      return { error: "Legal Entity Name can only contain letters, numbers, and spaces" }
+    }
+    
+    if (!alphanumericRegex.test(tradeName)) {
+      return { error: "Trade Name can only contain letters, numbers, and spaces" }
+    }
+
     const businessData = {
       userId: user.id,
-      legalEntityName: formData.get("legalEntityName") as string,
-      tradeName: formData.get("tradeName") as string,
+      legalEntityName,
+      tradeName,
       gstin: formData.get("gstin") as string,
       country: formData.get("country") as string,
       pincode: formData.get("pincode") as string,
@@ -233,11 +247,33 @@ export async function saveContactDetails(formData: FormData) {
     const db = await connectProfileDB()
     const Contact = db.model("Contact")
 
+    const contactName = formData.get("contactName") as string
+    const phoneNumber = formData.get("phoneNumber") as string
+    const emailId = formData.get("emailId") as string
+
+    // Validate Contact Name with regex
+    const nameRegex = /^[a-zA-Z\s.'-]+$/
+    if (!nameRegex.test(contactName)) {
+      return { error: "Contact name can only contain letters, spaces, periods, apostrophes, and hyphens" }
+    }
+
+    // Validate Phone Number with regex
+    const phoneRegex = /^[1-9][\d]{9}$/
+    if (!phoneRegex.test(phoneNumber)) {
+      return { error: "Phone number must be exactly 10 digits and cannot start with 0" }
+    }
+
+    // Validate Email with regex
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(emailId)) {
+      return { error: "Please enter a valid email format" }
+    }
+
     const contactData = {
       userId: user.id,
-      contactName: formData.get("contactName") as string,
-      phoneNumber: formData.get("phoneNumber") as string,
-      emailId: formData.get("emailId") as string,
+      contactName,
+      phoneNumber,
+      emailId,
       pickupTime: formData.get("pickupTime") as string,
     }
 
@@ -398,11 +434,33 @@ export async function saveBankDetails(formData: FormData) {
       }
     }
 
+    const accountHolderName = formData.get("accountHolderName") as string
+    const accountNumber = formData.get("accountNumber") as string
+    const ifscCode = formData.get("ifscCode") as string
+
+    // Validate Account Holder Name with regex
+    const nameRegex = /^[a-zA-Z\s.'-]+$/
+    if (!nameRegex.test(accountHolderName)) {
+      return { error: "Account holder name can only contain letters, spaces, periods, apostrophes, and hyphens" }
+    }
+
+    // Validate Account Number with regex
+    const accountNumberRegex = /^[0-9]+$/
+    if (!accountNumberRegex.test(accountNumber) || accountNumber.length < 8 || accountNumber.length > 20) {
+      return { error: "Account number must be 8-20 digits only" }
+    }
+
+    // Validate IFSC Code with regex
+    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
+    if (!ifscRegex.test(ifscCode)) {
+      return { error: "IFSC code must be in format: 4 letters, 0, then 6 alphanumeric characters" }
+    }
+
     const bankData = {
       userId: user.id,
-      accountHolderName: formData.get("accountHolderName") as string,
-      accountNumber: formData.get("accountNumber") as string,
-      ifscCode: formData.get("ifscCode") as string,
+      accountHolderName,
+      accountNumber,
+      ifscCode,
       bankName: formData.get("bankName") as string,
       branch: formData.get("branch") as string,
       city: formData.get("city") as string,
