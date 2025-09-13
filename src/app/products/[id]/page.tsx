@@ -6,6 +6,8 @@ import ProductActions from "./product-actions"
 import ProductReviews from "./product-reviews"
 import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
+import PincodeCheck from "@/components/product/pincode-check"
+import RequestQuoteButton from "@/components/product/request-quote-button"
 
 // Define the product interface
 interface Product {
@@ -211,11 +213,11 @@ async function getProductById(id: string): Promise<Product | null> {
   }
 }
 
-// Product detail page component - Using a simpler approach to avoid type conflicts
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+// Product detail page component - Now a proper server component
+export default async function ProductPage({ params }: { params: { id: string } }) {
   try {
     // Extract the ID parameter
-    const { id } = await params
+    const { id } = params
 
     if (!id) {
       console.error("No ID parameter provided")
@@ -366,6 +368,25 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
             {/* Product Description with Read More functionality */}
             <ProductDescription description={description} />
+
+            {/* Pincode Checker */}
+            <PincodeCheck className="my-6" />
+
+            {/* Request Quote section */}
+            <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-lg text-orange-800">Need a Better Price?</h3>
+              </div>
+              <p className="text-sm text-orange-700 mb-3">
+                Request a custom quotation from the seller and get the best deal for your requirements.
+              </p>
+              <RequestQuoteButton
+                productId={id}
+                productTitle={product.title}
+                sellerId={product.product_id.toString()}
+                currentPrice={priceCalculation.finalPrice}
+              />
+            </div>
 
             {/* Features */}
             <div className="mb-6">

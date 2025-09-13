@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Script from "next/script"
 
 export type PaymentMethod = "COD" | "ONLINE"
@@ -17,6 +17,10 @@ interface PaymentOptionsProps {
   ) => void
   disabled?: boolean
   amount: number // Total amount to be paid
+  billingDetails?: {
+    zipCode?: string
+    [key: string]: any
+  }
 }
 
 interface RazorpayPaymentResponse {
@@ -48,7 +52,12 @@ interface RazorpayOptions {
 
 // Remove the global declaration since it's already defined in razorpay.d.ts
 
-const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, disabled = false, amount }) => {
+const PaymentOptions: React.FC<PaymentOptionsProps> = ({
+  onPaymentMethodSelect,
+  disabled = false,
+  amount,
+  billingDetails,
+}) => {
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>("COD")
   const [isProcessing, setIsProcessing] = useState(false)
   const [razorpayLoaded, setRazorpayLoaded] = useState(false)
@@ -115,6 +124,10 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
   }
 
   const handleMethodSelect = (method: PaymentMethod) => {
+    if (method === "COD" && !codAvailability.available) {
+      return
+    }
+
     setSelectedMethod(method)
     // Reset payment details when changing methods
     setPaymentDetails(null)
@@ -309,6 +322,53 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
     }
   }
 
+  const METRO_PREFIXES: Record<string, string[]> = {
+    Delhi: ["110"],
+    Mumbai: ["400"],
+    Bengaluru: ["560"],
+    Chennai: ["600"],
+    Kolkata: ["700"],
+    Hyderabad: ["500"],
+    Pune: ["411"],
+    Ahmedabad: ["380"],
+  }
+
+  function checkMetroPincode(pin: string): { isMetro: boolean; city?: string } {
+    const normalized = (pin || "").trim()
+    if (!normalized || !/^\d{6}$/.test(normalized)) {
+      return { isMetro: false }
+    }
+    const prefix = normalized.slice(0, 3)
+    for (const [city, prefixes] of Object.entries(METRO_PREFIXES)) {
+      if (prefixes.includes(prefix)) {
+        return {
+          isMetro: true,
+          city,
+        }
+      }
+    }
+    return {
+      isMetro: false,
+    }
+  }
+
+  const codAvailability = useMemo(() => {
+    if (!billingDetails?.zipCode) {
+      return { available: true, message: "" }
+    }
+    const pincodeCheck = checkMetroPincode(billingDetails.zipCode)
+    if (pincodeCheck.isMetro) {
+      return {
+        available: true,
+        message: `COD available in ${pincodeCheck.city}`,
+      }
+    }
+    return {
+      available: false,
+      message: "COD not available for remote locations. We will start service soon.",
+    }
+  }, [billingDetails?.zipCode])
+
   return (
     <>
       {/* Load Razorpay Script */}
@@ -343,7 +403,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
               >
                 <path
                   fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm8.707-7.293a1 1 0 00-1.414 1.414L10 11.414l-1.293 1.293a1 1 0 001.414 1.414L12 13.414l1.293 1.293a1 1 0 00-1.414 1.414L10 14.414l-1.293 1.293a1 1 0 001.414-1.414L11.414 12l1.293-1.293a1 1 0 00-1.414-1.414z"
                   clipRule="evenodd"
                 />
               </svg>
@@ -384,8 +444,12 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
         <div className="sm:hidden">
           {/* Cash on Delivery */}
           <div
-            className={`w-full flex items-center justify-between p-4 cursor-pointer transition-all ${
-              selectedMethod === "COD" ? "bg-orange-50" : "hover:bg-gray-50"
+            className={`w-full flex items-center justify-between p-4 transition-all ${
+              !codAvailability.available
+                ? "opacity-50 cursor-not-allowed bg-gray-50"
+                : selectedMethod === "COD"
+                  ? "bg-orange-50 cursor-pointer"
+                  : "hover:bg-gray-50 cursor-pointer"
             }`}
             onClick={() => handleMethodSelect("COD")}
           >
@@ -408,17 +472,28 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
                   </svg>
                 </div>
               </div>
-              <span className="text-sm text-gray-700">Cash on Delivery</span>
+              <div className="flex flex-col">
+                <span className="text-sm text-gray-700">Cash on Delivery</span>
+                {codAvailability.message && (
+                  <span className={`text-xs mt-1 ${codAvailability.available ? "text-green-600" : "text-red-600"}`}>
+                    {codAvailability.message}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Selection Circle */}
-            {selectedMethod === "COD" ? (
+            {selectedMethod === "COD" && codAvailability.available ? (
               <div className="relative h-4 w-4">
                 <div className="h-4 w-4 rounded-full bg-orange-500"></div>
                 <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white"></div>
               </div>
             ) : (
-              <div className="h-4 w-4 rounded-full border border-gray-300"></div>
+              <div
+                className={`h-4 w-4 rounded-full border ${
+                  codAvailability.available ? "border-gray-300" : "border-gray-200"
+                }`}
+              ></div>
             )}
           </div>
 
@@ -470,8 +545,12 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
         <div className="hidden sm:flex">
           {/* Cash on Delivery */}
           <div
-            className={`flex-1 flex flex-col items-center justify-center p-4 cursor-pointer transition-all relative ${
-              selectedMethod === "COD" ? "bg-orange-50" : "hover:bg-gray-50"
+            className={`flex-1 flex flex-col items-center justify-center p-4 transition-all relative ${
+              !codAvailability.available
+                ? "opacity-50 cursor-not-allowed bg-gray-50"
+                : selectedMethod === "COD"
+                  ? "bg-orange-50 cursor-pointer"
+                  : "hover:bg-gray-50 cursor-pointer"
             }`}
             onClick={() => handleMethodSelect("COD")}
           >
@@ -491,17 +570,28 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
                 <path d="M6 12h.01M18 12h.01"></path>
               </svg>
             </div>
-            <span className="text-xs text-gray-700 text-center mb-6">Cash on Delivery</span>
+            <span className="text-xs text-gray-700 text-center mb-2">Cash on Delivery</span>
+            {codAvailability.message && (
+              <span
+                className={`text-xs text-center mb-4 ${codAvailability.available ? "text-green-600" : "text-red-600"}`}
+              >
+                {codAvailability.message}
+              </span>
+            )}
 
             {/* Circle at the Bottom */}
             <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
-              {selectedMethod === "COD" ? (
+              {selectedMethod === "COD" && codAvailability.available ? (
                 <div className="relative h-4 w-4">
                   <div className="h-4 w-4 rounded-full bg-orange-500"></div>
                   <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-2 w-2 rounded-full bg-white"></div>
                 </div>
               ) : (
-                <div className="h-4 w-4 rounded-full border border-gray-300"></div>
+                <div
+                  className={`h-4 w-4 rounded-full border ${
+                    codAvailability.available ? "border-gray-300" : "border-gray-200"
+                  }`}
+                ></div>
               )}
             </div>
           </div>
@@ -576,7 +666,7 @@ const PaymentOptions: React.FC<PaymentOptionsProps> = ({ onPaymentMethodSelect, 
         <div className="mt-6">
           <button
             onClick={handleContinue}
-            disabled={isProcessing}
+            disabled={isProcessing || (selectedMethod === "COD" && !codAvailability.available)}
             className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center w-full sm:w-auto"
           >
             {isProcessing ? (

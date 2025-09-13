@@ -24,6 +24,7 @@ interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
   startDate?: string
   endDate?: string
   createdAt: string
@@ -48,6 +49,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
     isActive: true,
     order: 0,
     deviceType: "all" as "all" | "desktop" | "mobile" | "tablet",
+    position: "all" as "homepage" | "category" | "bottomofhomepage" | "cart" | "all",
     startDate: "",
     endDate: "",
   })
@@ -64,8 +66,10 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
         imageData: advertisement.imageData || "",
         linkUrl: advertisement.linkUrl || "",
         isActive: advertisement.isActive,
+        // Set order to 0 for single advertisement positions (not used)
         order: advertisement.order,
         deviceType: advertisement.deviceType,
+        position: advertisement.position,
         startDate: advertisement.startDate ? advertisement.startDate.split("T")[0] : "",
         endDate: advertisement.endDate ? advertisement.endDate.split("T")[0] : "",
       })
@@ -82,6 +86,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
         isActive: true,
         order: 0,
         deviceType: "all",
+        position: "all",
         startDate: "",
         endDate: "",
       })
@@ -329,7 +334,30 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
           </div>
 
           {/* Settings */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="position">Advertisement Position</Label>
+              <select
+                id="position"
+                value={formData.position}
+                onChange={(e) => {
+                  const newPosition = e.target.value as "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+                  setFormData((prev) => ({
+                    ...prev,
+                    position: newPosition,
+                    order: prev.order,
+                  }))
+                }}
+                className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all" className="text-gray-900">All Positions</option>
+                <option value="homepage" className="text-gray-900">Homepage Slider Only</option>
+                <option value="category" className="text-gray-900">Category Section Only</option>
+                <option value="bottomofhomepage" className="text-gray-900">Bottom of Homepage Only</option>
+                <option value="cart" className="text-gray-900">Cart Page Only</option>
+              </select>
+              <p className="text-xs text-gray-500"> "All Positions" allows the ad to appear in any available slot</p>
+            </div>
             <div className="space-y-2">
               <Label htmlFor="deviceType">Device Type</Label>
               <select
@@ -341,15 +369,19 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                     deviceType: e.target.value as "all" | "desktop" | "mobile" | "tablet",
                   }))
                 }
-                className="w-full p-2 border rounded-md"
+                className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all">All Devices (★ Recommended)</option>
-                <option value="desktop">Desktop Only</option>
-                <option value="tablet">Tablet Only</option>
-                <option value="mobile">Mobile Only</option>
+                <option value="all" className="text-gray-900">All Devices</option>
+                <option value="desktop" className="text-gray-900">Desktop Only</option>
+                <option value="tablet" className="text-gray-900">Tablet Only</option>
+                <option value="mobile" className="text-gray-900">Mobile Only</option>
               </select>
-              <p className="text-xs text-gray-500">★ "All Devices" automatically optimizes for each screen size</p>
+              <p className="text-xs text-gray-500">"All Devices" automatically optimizes for each screen size</p>
             </div>
+          </div>
+
+          {/* Additional Settings */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="order">Display Order</Label>
               <Input
@@ -360,6 +392,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                 min={0}
                 max={100}
               />
+              <p className="text-xs text-gray-500">Lower numbers appear first within the same position</p>
             </div>
             <div className="space-y-2">
               <Label>Status</Label>

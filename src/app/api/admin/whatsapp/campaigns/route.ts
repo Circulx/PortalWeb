@@ -104,12 +104,31 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    console.log("[v0] Request body:", body)
+
     const { title, description, messageTemplate, targetAudience, customerSegment, scheduledAt } = body
 
-    // Validate required fields
-    if (!title || !description || !messageTemplate || !targetAudience) {
+    const missingFields = []
+    if (!title || title.trim() === "") missingFields.push("title")
+    if (!description || description.trim() === "") missingFields.push("description")
+    if (!messageTemplate || messageTemplate.trim() === "") missingFields.push("messageTemplate")
+    if (!targetAudience || targetAudience.trim() === "") missingFields.push("targetAudience")
+
+    console.log("[v0] Field validation:", {
+      title: !!title,
+      description: !!description,
+      messageTemplate: !!messageTemplate,
+      targetAudience: !!targetAudience,
+    })
+    console.log("[v0] Missing fields:", missingFields)
+
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: "Title, description, message template, and target audience are required" },
+        {
+          error: `Missing required fields: ${missingFields.join(", ")}`,
+          missingFields,
+          receivedData: { title, description, messageTemplate, targetAudience },
+        },
         { status: 400 },
       )
     }

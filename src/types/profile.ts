@@ -1,9 +1,9 @@
 export const ACCOUNT_TYPES = ["Savings", "Current"] as const
 export type AccountType = (typeof ACCOUNT_TYPES)[number]
 
-export type TabType = "business" | "contact" | "category" | "addresses" | "bank" | "documents"
+export type TabType = "business" | "contact" | "category" | "addresses" | "bank" | "documents" | "review"
 
-export const TAB_ORDER: TabType[] = ["business", "contact", "category", "addresses", "bank", "documents"]
+export const TAB_ORDER: TabType[] = ["business", "contact", "category", "addresses", "bank", "documents", "review"]
 
 // Add the missing category and brand constants
 export const AVAILABLE_CATEGORIES = [

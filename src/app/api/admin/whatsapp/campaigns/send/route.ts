@@ -94,6 +94,11 @@ export async function POST(request: NextRequest) {
           .replace(/\{name\}/g, recipient.name)
           .replace(/\{phone\}/g, recipient.phone)
 
+        // Detect campaign type and extract additional details
+        const campaignType = detectCampaignType(campaign.name, personalizedMessage)
+        const productLink = extractProductLink(personalizedMessage)
+        const offerCode = extractOfferCode(personalizedMessage)
+
         // Create log entry
         const logEntry = new WhatsAppCampaignLog({
           campaignId: campaignId,
@@ -111,6 +116,9 @@ export async function POST(request: NextRequest) {
               phone: recipient.phone,
               name: recipient.name,
               message: personalizedMessage,
+              campaignType,
+              productLink,
+              offerCode,
             })
           } else {
             console.log("[v0] WhatsApp service not available, simulating send")
@@ -169,4 +177,44 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     )
   }
+}
+
+// Helper methods for campaign type detection and content extraction
+function detectCampaignType(campaignName: string, message: string): "product_launch" | "offer" | "update" | "general" {
+  const lowerName = (campaignName || "").toLowerCase()
+  const lowerMessage = (message || "").toLowerCase()
+
+  if (lowerName.includes("launch") || lowerMessage.includes("new product") || lowerMessage.includes("launching")) {
+    return "product_launch"
+  }
+  if (
+    lowerName.includes("offer") ||
+    lowerMessage.includes("discount") ||
+    lowerMessage.includes("sale") ||
+    lowerMessage.includes("%")
+  ) {
+    return "offer"
+  }
+  if (lowerName.includes("update") || lowerMessage.includes("announcement") || lowerMessage.includes("news")) {
+    return "update"
+  }
+  return "general"
+}
+
+function extractProductLink(message: string): string | undefined {
+  if (!message) return undefined
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const matches = message.match(urlRegex)
+  return matches ? matches[0] : undefined
+}
+
+function extractOfferCode(message: string): string | undefined {
+  if (!message) return undefined
+  const codeRegex = /(?:code|coupon|promo)[\s:]*([A-Z0-9]{3,15})/gi
+  const matches = message.match(codeRegex)
+  if (matches) {
+    const code = matches[0].replace(/(?:code|coupon|promo)[\s:]*/gi, "")
+    return code.toUpperCase()
+  }
+  return undefined
 }

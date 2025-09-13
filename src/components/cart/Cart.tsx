@@ -18,6 +18,7 @@ import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
+import { validateMOQ } from "@/lib/moq"
 
 interface Product {
   product_id: number
@@ -162,8 +163,8 @@ export default function Cart() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isCheckingUser, setIsCheckingUser] = useState(true)
+  const [moqStatus, setMoqStatus] = useState({ isValid: false, message: "", shortfall: 5000 })
 
-  // Check if user is logged in
   useEffect(() => {
     const checkUser = async () => {
       try {
@@ -179,27 +180,23 @@ export default function Cart() {
     checkUser()
   }, [])
 
-  // Background stock validation (non-blocking)
   useEffect(() => {
     const validateStock = async () => {
       if (cartItems.length === 0 || !cartInitialized) return
 
       setIsUpdatingStock(true)
       try {
-        // Fetch all products to get their current stock
         const response = await axios.get("/api/products")
         const products = response.data
 
         let hasStockIssues = false
         const newWarnings: Record<string, boolean> = {}
 
-        // Update stock information for each cart item
         cartItems.forEach((item) => {
           const productId = Number.parseInt(item.id)
           const product = products.find((p: any) => p.product_id === productId)
 
           if (product) {
-            // Update the stock in the cart state
             dispatch(
               updateItemStock({
                 productId: item.id,
@@ -207,12 +204,10 @@ export default function Cart() {
               }),
             )
 
-            // Check if we need to show a warning (quantity exceeds stock)
             if (item.quantity > product.stock) {
               newWarnings[item.id] = true
               hasStockIssues = true
 
-              // If product is out of stock, remove it from cart
               if (product.stock === 0) {
                 dispatch(removeItemAction(item.id))
                 toast({
@@ -241,7 +236,6 @@ export default function Cart() {
       }
     }
 
-    // Run stock validation in background after cart is loaded
     const timeoutId = setTimeout(validateStock, 1000)
     return () => clearTimeout(timeoutId)
   }, [cartItems.length, cartInitialized, dispatch, toast])
@@ -252,7 +246,6 @@ export default function Cart() {
     const item = cartItems.find((item) => item.id === id)
     if (item) {
       if (item.quantity >= item.stock) {
-        // Show warning if trying to add more than available stock
         setStockWarnings((prev) => ({ ...prev, [id]: true }))
 
         toast({
@@ -264,7 +257,6 @@ export default function Cart() {
         return
       }
 
-      // Clear warning if it was previously shown
       if (stockWarnings[id]) {
         setStockWarnings((prev) => {
           const newWarnings = { ...prev }
@@ -280,13 +272,10 @@ export default function Cart() {
   const handleDecrement = (id: string) => {
     const item = cartItems.find((item) => item.id === id)
     if (item && item.quantity <= 1) {
-      // If quantity is 1 or less, remove the item completely
       removeItem(id)
     } else {
-      // Otherwise just decrease the quantity
       decreaseQuantity(id)
 
-      // Clear warning if it was previously shown
       if (stockWarnings[id]) {
         setStockWarnings((prev) => {
           const newWarnings = { ...prev }
@@ -300,7 +289,6 @@ export default function Cart() {
   const handleRemoveItem = (id: string) => {
     removeItem(id)
 
-    // Clear warning if it was previously shown
     if (stockWarnings[id]) {
       setStockWarnings((prev) => {
         const newWarnings = { ...prev }
@@ -322,7 +310,6 @@ export default function Cart() {
       try {
         const response = await axios.get("/api/products")
         const products: Product[] = response.data
-        // Limit to 8 most recent products
         const recentProducts = products.slice(0, 8)
         setRecommendedProducts(recentProducts)
       } catch (error) {
@@ -332,6 +319,12 @@ export default function Cart() {
 
     fetchRecommendedProducts()
   }, [])
+
+  useEffect(() => {
+    const cartTotal = calculateCartSubTotal()
+    const newMoqStatus = validateMOQ(cartTotal)
+    setMoqStatus(newMoqStatus)
+  }, [cartItems])
 
   const historyRef = useRef<HTMLDivElement>(null)
 
@@ -372,38 +365,39 @@ export default function Cart() {
   }
 
   const handleProceedToCheckout = async () => {
-    // Check if user is logged in
+    if (!moqStatus.isValid) {
+      toast({
+        title: "Minimum Order Not Met",
+        description: moqStatus.message,
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       const user = await getCurrentUser()
       if (user) {
-        // User is logged in, proceed to checkout
         router.push("/checkout")
       } else {
-        // User is not logged in, show auth modal
         setIsAuthModalOpen(true)
       }
     } catch (error) {
       console.error("Error checking user:", error)
-      // If there's an error, show auth modal to be safe
       setIsAuthModalOpen(true)
     }
   }
 
   const handleAuthSuccess = () => {
-    // Close the auth modal
     setIsAuthModalOpen(false)
-    // Redirect to checkout page
     router.push("/checkout")
   }
 
-  // Show cart immediately without waiting for initialization
   const displayItems = cartItems || []
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <h2 className="text-xl sm:text-2xl font-bold mb-4 text-center">Your Cart</h2>
 
-      {/* Show stock update indicator only when updating */}
       {isUpdatingStock && (
         <div className="mb-4 p-2 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-center justify-center">
@@ -416,7 +410,7 @@ export default function Cart() {
       {displayItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[200px]">
           <p className="text-lg text-gray-500">Your cart is empty.</p>
-          <Button variant="outline" onClick={handleReturnToShop} className="mt-4">
+          <Button variant="outline" onClick={handleReturnToShop} className="mt-4 bg-transparent">
             Return to Shop
           </Button>
         </div>
@@ -424,7 +418,6 @@ export default function Cart() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-8">
           <div className="lg:col-span-2">
             <div className="bg-white p-3 sm:p-4 border border-[#9E9E9E] rounded shadow-xl">
-              {/* Cart header - Hide on small screens, use alternative layout */}
               <div className="hidden sm:flex justify-between border-b pb-2">
                 <h2 className="font-semibold w-1/4 text-left">PRODUCTS</h2>
                 <h2 className="font-semibold w-1/4 text-right">PRICE</h2>
@@ -442,36 +435,31 @@ export default function Cart() {
                         key={item.id}
                         className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4"
                       >
-                        {/* Product info - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex items-center mb-3 sm:mb-0">
-                        <Link href={`${item.id}`} className="flex items-center w-full">
-                          <div className="relative w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] flex-shrink-0">
-                            <Image
-                              src={item.image_link || "/placeholder.svg"}
-                              alt={item.title}
-                              fill
-                              className="object-cover rounded"
-                              priority
-                            />
-                          </div>
-                          <div className="ml-3 sm:ml-4 flex-1">
-                            <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
-                            {/* Mobile only price */}
-                            <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
-                            {/* Stock information */}
-                            <p className="text-xs text-gray-500 mt-1">
-                              Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
-                            </p>
-                          </div>
+                          <Link href={`${item.id}`} className="flex items-center w-full">
+                            <div className="relative w-[60px] h-[60px] sm:w-[80px] sm:h-[80px] flex-shrink-0">
+                              <Image
+                                src={item.image_link || "/placeholder.svg"}
+                                alt={item.title}
+                                fill
+                                className="object-cover rounded"
+                                priority
+                              />
+                            </div>
+                            <div className="ml-3 sm:ml-4 flex-1">
+                              <h4 className="text-sm font-semibold line-clamp-2 text-left">{item.title}</h4>
+                              <p className="text-sm text-gray-600 mt-1 sm:hidden">₹{item.price.toFixed(2)}</p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Available: {item.stock || 0} {(item.stock || 0) === 1 ? "unit" : "units"}
+                              </p>
+                            </div>
                           </Link>
                         </div>
 
-                        {/* Price - Hidden on mobile, shown on larger screens */}
                         <div className="hidden sm:block sm:w-1/4 text-right">
                           <p>₹{item.price.toFixed(2)}</p>
                         </div>
 
-                        {/* Quantity controls - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center mb-3 sm:mb-0">
                           <span className="sm:hidden text-sm font-medium">Quantity:</span>
                           <div className="flex border items-center gap-2 relative">
@@ -504,7 +492,6 @@ export default function Cart() {
                           </div>
                         </div>
 
-                        {/* Subtotal and remove button - Full width on mobile, 1/4 on larger screens */}
                         <div className="w-full sm:w-1/4 flex justify-between sm:justify-end items-center">
                           <span className="sm:hidden text-sm font-medium">Subtotal:</span>
                           <div className="flex items-center">
@@ -570,12 +557,11 @@ export default function Cart() {
                 )}
               </div>
 
-              {/* Action buttons - Ensure they stay inside the cart box */}
               <div className="flex flex-wrap justify-center sm:justify-start gap-2 mt-4 pb-2 border-t pt-4">
-                <Button variant="outline" onClick={handleClearCart} className="text-xs sm:text-sm">
+                <Button variant="outline" onClick={handleClearCart} className="text-xs sm:text-sm bg-transparent">
                   CLEAR CART
                 </Button>
-                <Button variant="outline" onClick={handleReturnToShop} className="text-xs sm:text-sm">
+                <Button variant="outline" onClick={handleReturnToShop} className="text-xs sm:text-sm bg-transparent">
                   RETURN TO SHOP
                 </Button>
               </div>
@@ -588,23 +574,55 @@ export default function Cart() {
                 <span>Sub-total</span>
                 <span>₹{calculateCartSubTotal().toFixed(2)}</span>
               </div>
-              
-              
-              
-              
+
+              <div
+                className={`mt-4 p-3 rounded-lg border ${
+                  moqStatus.isValid
+                    ? "bg-green-50 border-green-200 text-green-700"
+                    : "bg-amber-50 border-amber-200 text-amber-700"
+                }`}
+              >
+                <div className="flex items-center text-sm">
+                  {moqStatus.isValid ? (
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                  <span className="font-medium">
+                    {moqStatus.isValid ? "Minimum Order Met" : "Minimum Order Required"}
+                  </span>
+                </div>
+                <p className="text-xs mt-1">{moqStatus.message}</p>
+              </div>
 
               <button
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2 rounded-lg mt-4 transition-colors"
+                className={`w-full py-2 rounded-lg mt-4 transition-colors font-medium ${
+                  moqStatus.isValid
+                    ? "bg-orange-500 hover:bg-orange-600 text-white"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
                 onClick={handleProceedToCheckout}
+                disabled={!moqStatus.isValid}
               >
-                PROCEED TO CHECKOUT
+                {moqStatus.isValid ? "PROCEED TO CHECKOUT" : `ADD ₹${moqStatus.shortfall.toLocaleString()} MORE`}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Recommended Products Section */}
       <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
         <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">
           Recommended based on your shopping trends
@@ -630,7 +648,6 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Promotional Banner */}
       <div className="mt-16 sm:mt-20 flex justify-center">
         <div className="w-full max-w-[1280px] flex flex-col md:flex-row bg-[#FDCC0D] rounded-[20px] overflow-hidden">
           <div className="w-full md:w-1/2 h-[250px] md:h-auto relative">
@@ -664,7 +681,6 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Browsing History Section */}
       <div className="mt-16 sm:mt-20 max-w-[1440px] mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 sm:mb-0">Your browsing history</h2>
@@ -708,7 +724,6 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Features Section */}
       <div className="w-full py-8 mt-16 mb-8">
         <div className="rounded-2xl py-6 px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-full">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 justify-items-center gap-4 sm:gap-6">
@@ -726,7 +741,6 @@ export default function Cart() {
         </div>
       </div>
 
-      {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </div>
   )

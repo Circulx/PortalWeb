@@ -21,13 +21,6 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   const [contactType, setContactType] = useState<"support" | "customer-care">("support")
   const [userType, setUserType] = useState("customer")
   const [gstError, setGstError] = useState("")
-  const [fullName, setFullName] = useState("")
-  const [gstValue, setGstValue] = useState("")
-  const [gstStatus, setGstStatus] = useState<"idle" | "checking" | "valid" | "invalid" | "api-missing" | "error">(
-    "idle",
-  )
-  const [gstHolderName, setGstHolderName] = useState<string | null>(null)
-  const [gstHelper, setGstHelper] = useState<string>("")
 
   const searchParams = useSearchParams()
 
@@ -54,102 +47,14 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     return gstRegex.test(cleanGST)
   }
 
-  // Checksum function (mirror of server, simplified here)
-  const validateGSTChecksum = (gstNumber: string): boolean => {
-    const gstin = (gstNumber || "").replace(/\s+/g, "").toUpperCase()
-    if (gstin.length !== 15) return false
-    const charToValue = (ch: string) => {
-      const code = ch.charCodeAt(0)
-      if (code >= 48 && code <= 57) return code - 48
-      if (code >= 65 && code <= 90) return code - 55
-      return -1
-    }
-    const valueToChar = (val: number) => {
-      if (val >= 0 && val <= 9) return String.fromCharCode(48 + val)
-      if (val >= 10 && val <= 35) return String.fromCharCode(55 + val)
-      return ""
-    }
-    let sum = 0
-    for (let i = 0; i < 14; i++) {
-      const val = charToValue(gstin[i])
-      if (val < 0) return false
-      const weight = i % 2 === 0 ? 1 : 2
-      const product = val * weight
-      sum += Math.floor(product / 36) + (product % 36)
-    }
-    const checkVal = (36 - (sum % 36)) % 36
-    const expected = valueToChar(checkVal)
-    return expected === gstin[14]
-  }
-
   const handleGSTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase()
-    setGstValue(value)
+    const value = e.target.value
     setGstError("")
-    setGstHolderName(null)
-    setGstHelper("")
-    setGstStatus("idle")
 
     if (value && !validateGSTNumber(value)) {
       setGstError("Invalid GST format. Example: 22AAAAA0000A1Z5")
     }
   }
-
-  useEffect(() => {
-    if (userType !== "seller") return
-    if (gstValue.length !== 15) return
-    if (!validateGSTNumber(gstValue) || !validateGSTChecksum(gstValue)) {
-      setGstStatus("invalid")
-      setGstHelper("Invalid GST format/checksum")
-      return
-    }
-
-    let active = true
-    const timer = setTimeout(async () => {
-      try {
-        setGstStatus("checking")
-        setGstHelper("Verifying GST with GST Network...")
-        const res = await fetch("/api/gst/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ gstin: gstValue }),
-        })
-
-        // 503 indicates missing provider config
-        if (res.status === 503) {
-          const data = await res.json()
-          if (!active) return
-          setGstStatus("api-missing")
-          setGstHelper(data?.error || "GST verification service not configured.")
-          setGstHolderName(null)
-          return
-        }
-
-        const data = await res.json()
-        if (!active) return
-
-        if (data?.valid) {
-          setGstStatus("valid")
-          setGstHolderName(data?.legalName || data?.tradeName || null)
-          setGstHelper("")
-        } else {
-          setGstStatus("invalid")
-          setGstHolderName(null)
-          setGstHelper(data?.error || "GST could not be verified. Please check and try again.")
-        }
-      } catch (e) {
-        if (!active) return
-        setGstStatus("error")
-        setGstHolderName(null)
-        setGstHelper("Unable to verify GST right now. Please try again.")
-      }
-    }, 400) // debounce
-
-    return () => {
-      active = false
-      clearTimeout(timer)
-    }
-  }, [gstValue, userType])
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
@@ -158,18 +63,9 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
     // Validate GST number for sellers before submission
     if (userType === "seller") {
-      const gstNumber = (formData.get("gstNumber") as string) || gstValue
-      if (!gstNumber || !validateGSTNumber(gstNumber) || !validateGSTChecksum(gstNumber)) {
+      const gstNumber = formData.get("gstNumber") as string
+      if (gstNumber && !validateGSTNumber(gstNumber)) {
         setGstError("Please enter a valid GST number")
-        setIsLoading(false)
-        return
-      }
-      if (gstStatus !== "valid") {
-        setGstError(
-          gstStatus === "api-missing"
-            ? "GST verification service is not configured. Please contact support."
-            : "Please verify a valid GST before signing up.",
-        )
         setIsLoading(false)
         return
       }
@@ -207,13 +103,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       <form action={handleSubmit} className="space-y-2">
         <div>
           <p className="text-gray-50 px-1 py-1">Full Name</p>
-          <Input
-            id="name"
-            name="name"
-            required
-            className="h-9 px-8 bg-white text-black  rounded-lg"
-            onChange={(e) => setFullName(e.target.value)}
-          />
+          <Input id="name" name="name" required className="h-9 px-8 bg-white text-black  rounded-lg" />
         </div>
         <div>
           <p className="text-gray-50 px-1 py-1">Email</p>
@@ -248,38 +138,16 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
               className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
               onChange={handleGSTChange}
               maxLength={15}
-              value={gstValue}
             />
-            <div className="mt-1 px-1 space-y-1">
-              {fullName && (
-                <p className="text-xs text-gray-200">
-                  User Name: <span className="font-medium">{fullName}</span>
-                </p>
-              )}
-              {gstStatus === "checking" && <p className="text-xs text-blue-200">Verifying GST…</p>}
-              {gstStatus === "valid" && gstHolderName && (
-                <p className="text-xs text-green-300">
-                  GST Holder: <span className="font-semibold">{gstHolderName}</span>
-                </p>
-              )}
-              {gstError && <p className="text-sm text-red-400">{gstError}</p>}
-              {gstStatus === "invalid" && !gstError && (
-                <p className="text-xs text-red-400">{gstHelper || "Invalid GST"}</p>
-              )}
-              {gstStatus === "api-missing" && (
-                <p className="text-xs text-yellow-200">
-                  {gstHelper || "GST verification service not configured. Contact support."}
-                </p>
-              )}
-              {!gstError && !gstHelper && <p className="text-xs text-gray-300">Enter 15-character GST number</p>}
-            </div>
+            {gstError && <p className="text-sm text-red-400 mt-1 px-1">{gstError}</p>}
+            <p className="text-xs text-gray-300 mt-1 px-1">Enter 15-character GST number</p>
           </div>
         )}
         {error && <p className="text-sm text-red-500">{error}</p>}
         <Button
           type="submit"
           className="w-full h-9 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-lg"
-          disabled={isLoading || (isSellerSignup && gstStatus !== "valid")}
+          disabled={isLoading}
         >
           {isLoading ? "Creating account..." : "Sign up"}
         </Button>

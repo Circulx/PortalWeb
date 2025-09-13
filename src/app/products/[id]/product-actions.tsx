@@ -53,6 +53,40 @@ export default function ProductActions({
   const { addItem: addToCart } = useCartSync()
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isLoading: wishlistLoading } = useWishlistSync()
 
+  // Record product view (user or guest)
+  useEffect(() => {
+    const recordView = async () => {
+      try {
+        // Fire-and-forget server record for logged-in users
+        fetch("/api/browsing-history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productId,
+            title,
+            image: imageUrl,
+          }),
+        }).catch(() => {})
+
+        // LocalStorage fallback for guests
+        try {
+          const key = "guest_browsing_history"
+          const existing = JSON.parse(localStorage.getItem(key) || "[]") as Array<any>
+          const filtered = existing.filter((x) => x.productId !== productId)
+          filtered.unshift({ productId, title, image: imageUrl, viewedAt: Date.now() })
+          const limited = filtered.slice(0, 20)
+          localStorage.setItem(key, JSON.stringify(limited))
+        } catch (_e) {
+          // ignore
+        }
+      } catch (_err) {
+        // ignore
+      }
+    }
+
+    recordView()
+  }, [productId, title, imageUrl])
+
   // Handle adding to cart
   const handleAddToCart = useCallback(() => {
     addToCart({

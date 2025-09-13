@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import TextField from "@/components/ui/TextField"
 import { Country, State, City } from "country-state-city"
 
@@ -21,6 +21,37 @@ export interface BillingDetails {
   zipCode: string
   email: string
   phoneNumber: string // Changed from 'phone' to 'phoneNumber' to match actual usage
+}
+
+const METRO_PREFIXES: Record<string, string[]> = {
+  Delhi: ["110"],
+  Mumbai: ["400"],
+  Bengaluru: ["560"],
+  Chennai: ["600"],
+  Kolkata: ["700"],
+  Hyderabad: ["500"],
+  Pune: ["411"],
+  Ahmedabad: ["380"],
+}
+
+function checkMetroPincode(
+  pin: string,
+): { status: "idle" } | { status: "valid"; city: string } | { status: "invalid"; reason: string } {
+  const normalized = (pin || "").trim()
+  if (!normalized) return { status: "idle" }
+  if (!/^\d{6}$/.test(normalized)) {
+    return { status: "invalid", reason: "Please enter a valid 6-digit pincode." }
+  }
+  const prefix = normalized.slice(0, 3)
+  for (const [city, prefixes] of Object.entries(METRO_PREFIXES)) {
+    if (prefixes.includes(prefix)) {
+      return { status: "valid", city }
+    }
+  }
+  return {
+    status: "invalid",
+    reason: "Pincode is not available for delivery of products. We will start service soon.",
+  }
 }
 
 const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initialValues }) => {
@@ -90,12 +121,12 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
     }
 
     if (!billingDetails.companyName?.trim()) {
-      newErrors.companyName = "Address is required"
+      newErrors.companyName = "Company name is required"
       valid = false
     }
 
     if (!billingDetails.address.trim()) {
-      newErrors.address = "Landmark is required"
+      newErrors.address = "Address is required"
       valid = false
     }
 
@@ -148,6 +179,12 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
   }
 
   const handleChange = (field: keyof BillingDetails, value: string | boolean) => {
+    if (field === "zipCode" && typeof value === "string") {
+      const sanitized = value.replace(/[^\d]/g, "").slice(0, 6)
+      setBillingDetails((prev) => ({ ...prev, [field]: sanitized }))
+      setTouchedFields((prev) => new Set(prev).add(field))
+      return
+    }
     setBillingDetails((prev) => ({ ...prev, [field]: value }))
     setTouchedFields((prev) => new Set(prev).add(field))
   }
@@ -210,10 +247,11 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
     return errors[field] && (touchedFields.has(field) || formSubmitted)
   }
 
+  // Compute pincode delivery eligibility from zipCode
+  const zipStatus = useMemo(() => checkMetroPincode(billingDetails.zipCode), [billingDetails.zipCode])
+
   return (
     <form onSubmit={handleSubmit} className="p-6 bg-white rounded-lg shadow-md border border-gray-200">
-     
-
       <div className="mb-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1">
@@ -245,10 +283,10 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
 
       <div className="mb-4">
         <label className="block text-sm text-gray-600 mb-1">
-          Address <span className="text-red-500">*</span>
+          Company Name <span className="text-red-500">*</span>
         </label>
         <TextField
-          placeholder=""
+          placeholder="Company name"
           value={billingDetails.companyName}
           onChange={(e) => handleChange("companyName", e.target.value)}
           onBlur={() => handleBlur("companyName")}
@@ -258,10 +296,10 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
 
       <div className="mb-4">
         <label className="block text-sm text-gray-600 mb-1">
-          Landmark <span className="text-red-500">*</span>
+          Address <span className="text-red-500">*</span>
         </label>
         <TextField
-          placeholder=""
+          placeholder="Address"
           value={billingDetails.address}
           onChange={(e) => handleChange("address", e.target.value)}
           onBlur={() => handleBlur("address")}
@@ -342,12 +380,29 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
               Zip Code <span className="text-red-500">*</span>
             </label>
             <TextField
-              placeholder=""
+              placeholder="Zip code"
               value={billingDetails.zipCode}
               onChange={(e) => handleChange("zipCode", e.target.value)}
               onBlur={() => handleBlur("zipCode")}
               error={shouldShowError("zipCode") ? errors.zipCode : undefined}
             />
+            {billingDetails.zipCode && billingDetails.zipCode.length >= 1 && (
+              <p
+                className={
+                  zipStatus.status === "valid"
+                    ? "text-green-600 text-xs mt-1"
+                    : zipStatus.status === "invalid"
+                      ? "text-red-600 text-xs mt-1"
+                      : "text-gray-500 text-xs mt-1"
+                }
+                id="zip-help"
+                aria-live="polite"
+              >
+                {zipStatus.status === "idle" && ""}
+                {zipStatus.status === "valid" && `Available for delivery in ${zipStatus.city}.`}
+                {zipStatus.status === "invalid" && zipStatus.reason}
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -358,7 +413,7 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
             Email <span className="text-red-500">*</span>
           </label>
           <TextField
-            placeholder=""
+            placeholder="Email"
             value={billingDetails.email}
             onChange={(e) => handleChange("email", e.target.value)}
             onBlur={() => handleBlur("email")}
@@ -370,7 +425,7 @@ const BillingForm: React.FC<BillingFormProps> = ({ onBillingDetailsSubmit, initi
             Phone Number <span className="text-red-500">*</span>
           </label>
           <TextField
-            placeholder=""
+            placeholder="Phone number"
             value={billingDetails.phoneNumber}
             onChange={(e) => handleChange("phoneNumber", e.target.value)}
             onBlur={() => handleBlur("phoneNumber")}

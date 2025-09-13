@@ -3,7 +3,16 @@
 import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams, useRouter } from "next/navigation"
-import { LayoutDashboard, Package2, ClipboardList, Star, UserCircle, HelpCircle, Menu } from "lucide-react"
+import {
+  LayoutDashboard,
+  Package2,
+  ClipboardList,
+  Star,
+  UserCircle,
+  HelpCircle,
+  Menu,
+  MessageSquare,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -45,6 +54,7 @@ export function Sidebar() {
     { href: "/seller?view=dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/seller/products", icon: Package2, label: "Product Management" },
     { href: "/seller/orders", icon: ClipboardList, label: "Order Management" },
+    { href: "/seller/quotations", icon: MessageSquare, label: "Quotation Requests" },
     { href: "/seller/reviews", icon: Star, label: "Ratings & Reviews" },
     { href: "/seller/profile", icon: UserCircle, label: "Profile Management" },
     { href: "/seller/help", icon: HelpCircle, label: "Help/Support" },

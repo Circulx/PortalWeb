@@ -27,10 +27,13 @@ interface ContactFormProps {
 
 export function ContactForm({ initialData, onSaved }: ContactFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [isEditing, setIsEditing] = useState(!initialData || Object.keys(initialData).length === 0)
+  const [isEditing, setIsEditing] = useState(false)
 
   // Log the initialData to help debug
   console.log("ContactForm initialData:", initialData)
+  console.log("ContactForm isEditing:", isEditing)
+  console.log("ContactForm has initialData:", !!initialData)
+  console.log("ContactForm initialData keys:", initialData ? Object.keys(initialData) : [])
 
   const form = useForm<ContactDetails>({
     resolver: zodResolver(contactSchema),
@@ -43,9 +46,11 @@ export function ContactForm({ initialData, onSaved }: ContactFormProps) {
     },
   })
 
-  // Force form reset when initialData changes
+  // Initialize isEditing state and form data when component mounts or initialData changes
   useEffect(() => {
-    if (initialData) {
+    console.log("ContactForm useEffect - initialData changed:", initialData)
+    
+    if (initialData && Object.keys(initialData).length > 0) {
       console.log("Resetting form with initialData:", initialData)
       form.reset({
         contactName: initialData.contactName || "",
@@ -53,6 +58,13 @@ export function ContactForm({ initialData, onSaved }: ContactFormProps) {
         emailId: initialData.emailId || "",
         pickupTime: initialData.pickupTime || "",
       })
+      
+      // If we have data, start in read-only mode
+      setIsEditing(false)
+    } else {
+      console.log("No initialData, starting in edit mode")
+      // If no data, start in edit mode
+      setIsEditing(true)
     }
   }, [initialData, form])
 

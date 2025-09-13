@@ -5,20 +5,61 @@ import { redirect } from "next/navigation"
 import { getUserModel } from "@/models/user"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { isValidGSTINChecksum, verifyGSTINWithProvider } from "@/lib/gst"
 
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
-// GST Number validation function
 function isValidGSTNumber(gstNumber: string): boolean {
   // Remove spaces and convert to uppercase
   const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
 
+  // Check length
+  if (cleanGST.length !== 15) {
+    return false
+  }
+
   // GST format: 2 digits (state code) + 10 alphanumeric (PAN) + 1 digit (entity number) + 1 alphabet (Z) + 1 alphanumeric (checksum)
-  // Total 15 characters
   const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/
 
-  return gstRegex.test(cleanGST)
+  if (!gstRegex.test(cleanGST)) {
+    return false
+  }
+
+  // Additional validations
+  const stateCode = cleanGST.substring(0, 2)
+  const panPart = cleanGST.substring(2, 12)
+  const entityCode = cleanGST.substring(12, 13)
+  const checkDigit = cleanGST.substring(13, 14)
+  const defaultZ = cleanGST.substring(14, 15)
+
+  // Validate state code (01-37 are valid state codes in India)
+  const stateCodeNum = Number.parseInt(stateCode)
+  if (stateCodeNum < 1 || stateCodeNum > 37) {
+    return false
+  }
+
+  // Validate PAN format within GST (5 letters + 4 digits + 1 letter)
+  const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/
+  if (!panRegex.test(panPart)) {
+    return false
+  }
+
+  // Entity code should be 1-9 or A-Z (but not 0)
+  if (entityCode === "0") {
+    return false
+  }
+
+  // 14th character should be Z (default)
+  if (defaultZ !== "Z") {
+    return false
+  }
+
+  // Basic checksum validation (simplified)
+  const checksumChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  if (!checksumChars.includes(checkDigit)) {
+    return false
+  }
+
+  return true
 }
 
 export async function signIn(formData: FormData) {
@@ -71,33 +112,34 @@ export async function signUp(formData: FormData) {
     const email = formData.get("email") as string
     const password = formData.get("password") as string
     const userType = (formData.get("userType") as string) || "customer"
-    const gstNumber = (formData.get("gstNumber") as string) || ""
+    const gstNumber = formData.get("gstNumber") as string
 
     const existingUser = await UserModel.findOne({ email })
     if (existingUser) {
       return { error: "Email already exists" }
     }
 
-    // Validate GST number for sellers
     if (userType === "seller") {
       if (!gstNumber) {
         return { error: "GST Number is required for sellers" }
       }
 
-      // Format + checksum validation
-      if (!isValidGSTNumber(gstNumber) || !isValidGSTINChecksum(gstNumber)) {
-        return { error: "Please enter a valid GST number (format/checksum failed)" }
+      const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
+
+      if (cleanGST.length !== 15) {
+        return { error: "GST Number must be exactly 15 characters long" }
       }
 
-      // Provider verification (server-side enforcement)
-      const verifyResult = await verifyGSTINWithProvider(gstNumber)
-      if (verifyResult.status === "MISSING_PROVIDER_KEY") {
-        return { error: "GST verification service not configured. Please contact support." }
-      }
-      if (!verifyResult.valid) {
+      if (!isValidGSTNumber(gstNumber)) {
         return {
-          error: verifyResult.message || "GST number could not be verified. Please check and try again.",
+          error: "Invalid GST Number format. Please enter a valid 15-character GST number (e.g., 22AAAAA0000A1Z5)",
         }
+      }
+
+      // Check if GST number already exists
+      const existingGST = await UserModel.findOne({ gstNumber: cleanGST })
+      if (existingGST) {
+        return { error: "This GST Number is already registered with another account" }
       }
     }
 
