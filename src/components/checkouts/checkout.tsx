@@ -584,6 +584,7 @@ export default function CheckoutPage() {
                     onPaymentMethodSelect={handlePaymentMethodSelect}
                     disabled={currentStep !== CheckoutStep.PAYMENT}
                     amount={totalAmount} // Pass the total amount to PaymentOptions
+                    billingDetails={billingDetails !== null ? billingDetails : undefined} // Convert null to undefined to fix TypeScript error
                   />
                 </div>
               )}
