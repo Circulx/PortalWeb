@@ -24,7 +24,7 @@ interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
-  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+  position: "homepage"
   startDate?: string
   endDate?: string
   createdAt: string
@@ -49,7 +49,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
     isActive: true,
     order: 0,
     deviceType: "all" as "all" | "desktop" | "mobile" | "tablet",
-    position: "all" as "homepage" | "category" | "bottomofhomepage" | "cart" | "all",
+    position: "homepage" as const,
     startDate: "",
     endDate: "",
   })
@@ -69,7 +69,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
         // Set order to 0 for single advertisement positions (not used)
         order: advertisement.order,
         deviceType: advertisement.deviceType,
-        position: advertisement.position,
+        position: "homepage",
         startDate: advertisement.startDate ? advertisement.startDate.split("T")[0] : "",
         endDate: advertisement.endDate ? advertisement.endDate.split("T")[0] : "",
       })
@@ -86,7 +86,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
         isActive: true,
         order: 0,
         deviceType: "all",
-        position: "all",
+        position: "homepage",
         startDate: "",
         endDate: "",
       })
@@ -141,6 +141,11 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
     try {
       setLoading(true)
 
+      console.log("[v0] Submitting advertisement with data:", {
+        ...formData,
+        imageData: formData.imageData ? "base64 data present" : "no base64 data",
+      })
+
       const url = advertisement ? `/api/admin/advertisements/${advertisement._id}` : "/api/admin/advertisements"
 
       const method = advertisement ? "PUT" : "POST"
@@ -154,6 +159,8 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
       })
 
       const result = await response.json()
+
+      console.log("[v0] Advertisement API response:", result)
 
       if (result.success) {
         toast.success(result.message)
@@ -337,26 +344,8 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="position">Advertisement Position</Label>
-              <select
-                id="position"
-                value={formData.position}
-                onChange={(e) => {
-                  const newPosition = e.target.value as "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
-                  setFormData((prev) => ({
-                    ...prev,
-                    position: newPosition,
-                    order: prev.order,
-                  }))
-                }}
-                className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all" className="text-gray-900">All Positions</option>
-                <option value="homepage" className="text-gray-900">Homepage Slider Only</option>
-                <option value="category" className="text-gray-900">Category Section Only</option>
-                <option value="bottomofhomepage" className="text-gray-900">Bottom of Homepage Only</option>
-                <option value="cart" className="text-gray-900">Cart Page Only</option>
-              </select>
-              <p className="text-xs text-gray-500"> "All Positions" allows the ad to appear in any available slot</p>
+              <div className="w-full p-2 border rounded-md bg-gray-50 text-gray-700">Homepage Slider Only</div>
+              <p className="text-xs text-gray-500">All advertisements will appear on the homepage slider.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="deviceType">Device Type</Label>
@@ -371,10 +360,18 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                 }
                 className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="all" className="text-gray-900">All Devices</option>
-                <option value="desktop" className="text-gray-900">Desktop Only</option>
-                <option value="tablet" className="text-gray-900">Tablet Only</option>
-                <option value="mobile" className="text-gray-900">Mobile Only</option>
+                <option value="all" className="text-gray-900">
+                  All Devices
+                </option>
+                <option value="desktop" className="text-gray-900">
+                  Desktop Only
+                </option>
+                <option value="tablet" className="text-gray-900">
+                  Tablet Only
+                </option>
+                <option value="mobile" className="text-gray-900">
+                  Mobile Only
+                </option>
               </select>
               <p className="text-xs text-gray-500">"All Devices" automatically optimizes for each screen size</p>
             </div>

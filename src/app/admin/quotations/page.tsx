@@ -194,76 +194,84 @@ export default function AdminQuotationsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 lg:p-8 space-y-6">
+    <div className="p-3 md:p-6 lg:p-8 space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold">Product Quotations</h1>
-          <p className="text-gray-600 mt-1">Manage all quotation requests and seller interactions</p>
+          <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">Product Quotations</h1>
+          <p className="text-gray-600 mt-1 text-sm md:text-base">
+            Manage all quotation requests and seller interactions
+          </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="w-fit bg-transparent"
+        >
           <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
           Refresh
         </Button>
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-gray-600">Total Quotations</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-gray-600">Total Quotations</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{statistics.total}</div>
+            <div className="text-lg md:text-2xl font-bold">{statistics.total}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-yellow-600">Pending</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-yellow-600">Pending</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{statistics.pending}</div>
+            <div className="text-lg md:text-2xl font-bold text-yellow-600">{statistics.pending}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-600">Responded</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-blue-600">Responded</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{statistics.responded}</div>
+            <div className="text-lg md:text-2xl font-bold text-blue-600">{statistics.responded}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-green-600">Accepted</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-green-600">Accepted</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{statistics.accepted}</div>
+            <div className="text-lg md:text-2xl font-bold text-green-600">{statistics.accepted}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-red-600">Rejected</CardTitle>
+            <CardTitle className="text-xs md:text-sm font-medium text-red-600">Rejected</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">{statistics.rejected}</div>
+            <div className="text-lg md:text-2xl font-bold text-red-600">{statistics.rejected}</div>
           </CardContent>
         </Card>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col md:flex-row gap-3 md:gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
           <Input
             placeholder="Search by product, customer name, email, or phone..."
-            className="pl-10"
+            className="pl-10 text-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-full sm:w-48">
+          <SelectTrigger className="w-full md:w-48">
             <SelectValue placeholder="Filter by status" />
           </SelectTrigger>
           <SelectContent>
@@ -276,9 +284,371 @@ export default function AdminQuotationsPage() {
         </Select>
       </div>
 
-      {/* Quotations Table */}
+      {/* Quotations Display */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Mobile Card Layout */}
+        <div className="block lg:hidden">
+          {quotations.length > 0 ? (
+            <div className="divide-y divide-gray-200">
+              {quotations.map((quotation) => (
+                <div key={quotation._id} className="p-4 hover:bg-gray-50">
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-gray-900 text-sm truncate">{quotation.productTitle}</h3>
+                        <p className="text-xs text-gray-600 mt-1">{quotation.customerName}</p>
+                        <p className="text-xs text-gray-500 truncate">{quotation.customerEmail}</p>
+                      </div>
+                      {getStatusBadge(quotation.status)}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <span className="text-gray-600 text-xs">Requested:</span>
+                        <div className="font-medium">{formatCurrency(quotation.requestedPrice)}</div>
+                      </div>
+                      <div>
+                        <span className="text-gray-600 text-xs">Quoted:</span>
+                        <div className="font-medium text-blue-600">
+                          {quotation.sellerQuotedPrice ? formatCurrency(quotation.sellerQuotedPrice) : "-"}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-2 border-t">
+                      <div className="text-xs text-gray-500">{formatDate(quotation.createdAt)}</div>
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs h-8 bg-transparent"
+                            onClick={() => setSelectedQuotation(quotation)}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />
+                            View Details
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-[95vw] md:max-w-4xl max-h-[90vh] overflow-y-auto">
+                          {selectedQuotation && (
+                            <div className="space-y-6 py-4">
+                              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-100">
+                                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                                  <div className="space-y-2">
+                                    <h2 className="text-xl font-bold text-gray-900 truncate">
+                                      {selectedQuotation.productTitle}
+                                    </h2>
+                                    <div className="flex items-center gap-3">
+                                      {getStatusBadge(selectedQuotation.status)}
+                                      <span className="text-sm text-gray-500">
+                                        ID: {selectedQuotation._id.slice(-8)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-sm text-gray-600">Created</div>
+                                    <div className="font-semibold text-gray-900">
+                                      {formatDate(selectedQuotation.createdAt)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Left Column */}
+                                <div className="space-y-6">
+                                  {/* Product Information */}
+                                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                      <h3 className="font-semibold text-lg text-gray-900">Product Information</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between items-start">
+                                        <span className="text-sm font-medium text-gray-600">Product Title:</span>
+                                        <span className="text-sm text-gray-900 text-right max-w-xs">
+                                          {selectedQuotation.productTitle}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm font-medium text-gray-600">Product ID:</span>
+                                        <span className="text-sm font-mono text-gray-700">
+                                          {selectedQuotation.productId}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm font-medium text-gray-600">Seller ID:</span>
+                                        <span className="text-sm font-mono text-gray-700">
+                                          {selectedQuotation.sellerId}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Customer Information */}
+                                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                      <h3 className="font-semibold text-lg text-gray-900">Customer Information</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                      <div className="flex justify-between">
+                                        <span className="text-sm font-medium text-gray-600">Name:</span>
+                                        <span className="text-sm text-gray-900 font-medium">
+                                          {selectedQuotation.customerName}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm font-medium text-gray-600">Email:</span>
+                                        <span className="text-sm text-blue-600 hover:text-blue-800">
+                                          {selectedQuotation.customerEmail}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm font-medium text-gray-600">Phone:</span>
+                                        <span className="text-sm text-gray-900 font-mono">
+                                          {selectedQuotation.customerPhone}
+                                        </span>
+                                      </div>
+                                      {selectedQuotation.userId && (
+                                        <div className="flex justify-between">
+                                          <span className="text-sm font-medium text-gray-600">User ID:</span>
+                                          <span className="text-sm font-mono text-gray-700">
+                                            {selectedQuotation.userId}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Right Column */}
+                                <div className="space-y-6">
+                                  {/* Pricing Information */}
+                                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                      <h3 className="font-semibold text-lg text-gray-900">Pricing Details</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                      <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                                        <div className="text-sm font-medium text-blue-800 mb-1">Customer Requested</div>
+                                        <div className="text-2xl font-bold text-blue-900">
+                                          {formatCurrency(selectedQuotation.requestedPrice)}
+                                        </div>
+                                      </div>
+                                      {selectedQuotation.sellerQuotedPrice && (
+                                        <div className="bg-green-50 p-4 rounded-lg border border-green-100">
+                                          <div className="text-sm font-medium text-green-800 mb-1">Seller Quoted</div>
+                                          <div className="text-2xl font-bold text-green-900">
+                                            {formatCurrency(selectedQuotation.sellerQuotedPrice)}
+                                          </div>
+                                          {selectedQuotation.sellerQuotedPrice !== selectedQuotation.requestedPrice && (
+                                            <div className="text-sm text-green-700 mt-1">
+                                              {selectedQuotation.sellerQuotedPrice > selectedQuotation.requestedPrice
+                                                ? `+${formatCurrency(selectedQuotation.sellerQuotedPrice - selectedQuotation.requestedPrice)} higher`
+                                                : `${formatCurrency(selectedQuotation.requestedPrice - selectedQuotation.sellerQuotedPrice)} lower`}
+                                            </div>
+                                          )}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* Timeline */}
+                                  <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                      <h3 className="font-semibold text-lg text-gray-900">Timeline</h3>
+                                    </div>
+                                    <div className="space-y-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+                                        <div>
+                                          <div className="text-sm font-medium text-gray-900">Request Created</div>
+                                          <div className="text-xs text-gray-600">
+                                            {formatDate(selectedQuotation.createdAt)}
+                                          </div>
+                                        </div>
+                                      </div>
+                                      {selectedQuotation.updatedAt !== selectedQuotation.createdAt && (
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                          <div>
+                                            <div className="text-sm font-medium text-gray-900">Last Updated</div>
+                                            <div className="text-xs text-gray-600">
+                                              {formatDate(selectedQuotation.updatedAt)}
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {(selectedQuotation.message ||
+                                selectedQuotation.sellerResponse ||
+                                selectedQuotation.rejectionReason) && (
+                                <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                                  <div className="flex items-center gap-2 mb-6">
+                                    <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                                    <h3 className="font-semibold text-lg text-gray-900">Conversation History</h3>
+                                  </div>
+                                  <div className="space-y-4">
+                                    {selectedQuotation.message && (
+                                      <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                            <span className="text-xs font-semibold text-blue-700">C</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-400">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="font-medium text-blue-800">Customer Message</span>
+                                              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                                                Initial Request
+                                              </span>
+                                            </div>
+                                            <p className="text-blue-700 text-sm leading-relaxed">
+                                              {selectedQuotation.message}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {selectedQuotation.sellerResponse && (
+                                      <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                          <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                            <span className="text-xs font-semibold text-green-700">S</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-400">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="font-medium text-green-800">Seller Response</span>
+                                              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                                                Quote Provided
+                                              </span>
+                                            </div>
+                                            <p className="text-green-700 text-sm leading-relaxed">
+                                              {selectedQuotation.sellerResponse}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                    {selectedQuotation.rejectionReason && (
+                                      <div className="flex gap-4">
+                                        <div className="flex-shrink-0">
+                                          <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                            <span className="text-xs font-semibold text-red-700">S</span>
+                                          </div>
+                                        </div>
+                                        <div className="flex-1">
+                                          <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-400">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="font-medium text-red-800">Rejection Reason</span>
+                                              <span className="text-xs text-red-600 bg-red-100 px-2 py-1 rounded">
+                                                Request Declined
+                                              </span>
+                                            </div>
+                                            <p className="text-red-700 text-sm leading-relaxed">
+                                              {selectedQuotation.rejectionReason}
+                                            </p>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-xl p-6 shadow-sm">
+                                <div className="flex items-center gap-2 mb-6">
+                                  <div className="w-2 h-2 bg-slate-500 rounded-full"></div>
+                                  <h3 className="font-semibold text-lg text-gray-900">Admin Management</h3>
+                                </div>
+                                <div className="space-y-4">
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      Admin Notes (Optional)
+                                    </label>
+                                    <Textarea
+                                      placeholder="Add internal notes about this quotation request..."
+                                      value={adminNotes}
+                                      onChange={(e) => setAdminNotes(e.target.value)}
+                                      rows={3}
+                                      className="resize-none"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-3">
+                                      Update Status
+                                    </label>
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                                      <Button
+                                        variant={selectedQuotation.status === "pending" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(selectedQuotation._id, "pending")}
+                                        disabled={selectedQuotation.status === "pending"}
+                                        className="w-full"
+                                      >
+                                        Pending
+                                      </Button>
+                                      <Button
+                                        variant={selectedQuotation.status === "responded" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(selectedQuotation._id, "responded")}
+                                        disabled={selectedQuotation.status === "responded"}
+                                        className="w-full"
+                                      >
+                                        Responded
+                                      </Button>
+                                      <Button
+                                        variant={selectedQuotation.status === "accepted" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(selectedQuotation._id, "accepted")}
+                                        disabled={selectedQuotation.status === "accepted"}
+                                        className="w-full"
+                                      >
+                                        Accepted
+                                      </Button>
+                                      <Button
+                                        variant={selectedQuotation.status === "rejected" ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => handleStatusUpdate(selectedQuotation._id, "rejected")}
+                                        disabled={selectedQuotation.status === "rejected"}
+                                        className="w-full"
+                                      >
+                                        Rejected
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="p-6 text-center text-gray-500">
+              {searchTerm || statusFilter !== "all"
+                ? "No quotations found matching your filters."
+                : "No quotation requests found."}
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Table Layout */}
+        <div className="hidden lg:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
@@ -671,12 +1041,13 @@ export default function AdminQuotationsPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
           <Button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
           >
             Previous
           </Button>
@@ -688,6 +1059,7 @@ export default function AdminQuotationsPage() {
             disabled={currentPage === totalPages}
             variant="outline"
             size="sm"
+            className="w-full sm:w-auto"
           >
             Next
           </Button>

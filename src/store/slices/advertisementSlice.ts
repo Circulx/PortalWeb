@@ -12,7 +12,7 @@ export interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
-  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+  position: "homepage" | "other" // Updated to support other positions
   startDate?: string
   endDate?: string
 }
@@ -37,13 +37,15 @@ const initialState: AdvertisementState = {
   isInitialized: false,
 }
 
-// Ultra-fast fetch with aggressive caching and immediate response
 export const fetchAdvertisements = createAsyncThunk(
   "advertisements/fetchAdvertisements",
-  async ({ deviceType, position }: { deviceType: string; position?: string }, { getState, rejectWithValue }) => {
+  async (
+    { deviceType, position = "all" }: { deviceType: string; position?: string },
+    { getState, rejectWithValue },
+  ) => {
     const state = getState() as { advertisements: AdvertisementState }
 
-    const cacheValidityDuration = 10 * 60 * 1000
+    const cacheValidityDuration = 5 * 60 * 1000 // Reduced cache duration to 5 minutes
     const now = Date.now()
 
     // Check if we have valid cached data - return immediately
@@ -55,30 +57,32 @@ export const fetchAdvertisements = createAsyncThunk(
       (state.advertisements.deviceType === deviceType || state.advertisements.deviceType === "all") &&
       state.advertisements.status === "succeeded"
     ) {
-      // Return cached data immediately - no network request
+      console.log("[v0] Using cached advertisements:", state.advertisements.advertisements.length)
       return {
         advertisements: state.advertisements.advertisements,
         fromCache: true,
         deviceType,
+        position,
         responseTime: 0,
       }
     }
 
     const startTime = Date.now()
+    console.log("[v0] Fetching ALL advertisements for:", { deviceType, position })
 
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 1000)
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // Increased timeout to 5 seconds
 
-      const url = `/api/advertisements/active?deviceType=${deviceType}${position ? `&position=${position}` : ''}`
+      const url = `/api/advertisements/active?deviceType=${deviceType}&position=all`
+      console.log("[v0] Fetching from URL:", url)
+
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          "Cache-Control": "public, max-age=180", // Reduced to 3 minutes
+          "Cache-Control": "no-cache", // Force fresh data
           Accept: "application/json",
         },
-        // Add priority hint for faster loading
-        priority: "high" as any,
       })
 
       clearTimeout(timeoutId)
@@ -89,44 +93,41 @@ export const fetchAdvertisements = createAsyncThunk(
       }
 
       const result = await response.json()
+      console.log("[v0] API Response:", result)
+      console.log("[v0] Total advertisements received:", result.data?.length || 0)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch advertisements")
       }
 
-      console.log(`Advertisements fetched in ${responseTime}ms`)
+      console.log(`[v0] ALL advertisements fetched in ${responseTime}ms:`, result.data?.length || 0)
 
       return {
         advertisements: result.data || [],
         fromCache: false,
         deviceType,
+        position: "all", // Always set position to "all"
         responseTime,
       }
     } catch (error) {
       const responseTime = Date.now() - startTime
+      console.error(`[v0] Advertisement fetch failed after ${responseTime}ms:`, error)
 
       if (error instanceof Error && error.name === "AbortError") {
-        console.warn(`Advertisement fetch timeout after ${responseTime}ms`)
+        console.warn(`[v0] Advertisement fetch timeout after ${responseTime}ms`)
 
         if (state.advertisements.advertisements.length > 0) {
           return {
             advertisements: state.advertisements.advertisements,
             fromCache: true,
             deviceType,
+            position: "all",
             responseTime,
           }
-        }
-
-        return {
-          advertisements: [],
-          fromCache: false,
-          deviceType,
-          responseTime,
         }
       }
 
       const errorMessage = error instanceof Error ? error.message : "Unknown error"
-      console.error(`Advertisement fetch failed after ${responseTime}ms:`, errorMessage)
       return rejectWithValue(errorMessage)
     }
   },
@@ -148,7 +149,10 @@ const advertisementSlice = createSlice({
       state.isInitialized = true
     },
     // Preload action for instant loading
-    preloadAdvertisements: (state, action: PayloadAction<{ advertisements: Advertisement[]; deviceType?: string }>) => {
+    preloadAdvertisements: (
+      state,
+      action: PayloadAction<{ advertisements: Advertisement[]; deviceType?: string; position?: string }>,
+    ) => {
       state.advertisements = action.payload.advertisements
       state.status = "succeeded"
       state.isInitialized = true
@@ -182,6 +186,7 @@ const advertisementSlice = createSlice({
             advertisements: Advertisement[]
             fromCache: boolean
             deviceType?: string
+            position?: string
             responseTime?: number
           }>,
         ) => {

@@ -14,7 +14,7 @@ const SliderSkeleton = () => (
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="flex flex-col items-center space-y-4">
         <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-        <p className="text-blue-600 text-sm">Loading advertisements...</p>
+        <p className="text-blue-600 text-sm"></p>
       </div>
     </div>
   </div>
@@ -30,13 +30,20 @@ export default function SimpleSlider() {
   const { advertisements, status, error, isInitialized } = useSelector((state: RootState) => state.advertisements)
 
   useEffect(() => {
-    console.log("SimpleSlider Debug:", {
+    console.log("[v0] SimpleSlider Debug:", {
       advertisementsCount: advertisements.length,
       status,
       isInitialized,
-      advertisements: advertisements.map((ad) => ({ id: ad._id, title: ad.title })),
+      deviceType,
+      advertisements: advertisements.map((ad) => ({
+        id: ad._id,
+        title: ad.title,
+        position: ad.position,
+        deviceType: ad.deviceType,
+        isActive: ad.isActive,
+      })),
     })
-  }, [advertisements, status, isInitialized])
+  }, [advertisements, status, isInitialized, deviceType])
 
   // Optimized device type detection with memoization
   const getDeviceType = useCallback(() => {
@@ -55,20 +62,42 @@ export default function SimpleSlider() {
   }, [])
 
   const slides = useMemo(() => {
-    console.log("Creating slides - advertisements count:", advertisements.length)
-
-    // Filter advertisements for homepage position
-    const homepageAds = advertisements.filter(ad => 
-      ad.isActive && 
-      ad.position === "homepage" &&
-      (ad.deviceType === deviceType || ad.deviceType === "all")
+    console.log("[v0] Creating slides - advertisements count:", advertisements.length)
+    console.log(
+      "[v0] All advertisements:",
+      advertisements.map((ad) => ({
+        id: ad._id,
+        title: ad.title,
+        position: ad.position,
+        deviceType: ad.deviceType,
+        isActive: ad.isActive,
+      })),
     )
 
-    console.log("Homepage filtered ads:", homepageAds.length)
+    const allAds = advertisements.filter((ad) => {
+      const isActive = ad.isActive
+      const isDeviceMatch = ad.deviceType === deviceType || ad.deviceType === "all"
 
-    // Only show actual advertisements from database, no default slides
-    if (homepageAds.length > 0) {
-      const dbSlides = homepageAds.map((ad) => ({
+      console.log("[v0] Advertisement filter check:", {
+        id: ad._id,
+        title: ad.title,
+        isActive,
+        position: ad.position,
+        deviceType: ad.deviceType,
+        currentDeviceType: deviceType,
+        isDeviceMatch,
+        passes: isActive && isDeviceMatch,
+      })
+
+      // Only filter by active status and device type, ignore position
+      return isActive && isDeviceMatch
+    })
+
+    console.log("[v0] All filtered ads:", allAds.length)
+
+    // Show all advertisements from database
+    if (allAds.length > 0) {
+      const dbSlides = allAds.map((ad) => ({
         id: ad._id,
         title: ad.title,
         subtitle: ad.subtitle,
@@ -76,12 +105,11 @@ export default function SimpleSlider() {
         image: getImageSource(ad),
         linkUrl: ad.linkUrl,
       }))
-      console.log("Using database slides:", dbSlides)
+      console.log("[v0] Using all database slides:", dbSlides)
       return dbSlides
     }
 
-    // Return empty array instead of default slides
-    console.log("No homepage advertisements available, showing empty slider")
+    console.log("[v0] No advertisements available")
     return []
   }, [advertisements, getImageSource, deviceType])
 
@@ -89,8 +117,16 @@ export default function SimpleSlider() {
     const initialDeviceType = getDeviceType()
     setDeviceType(initialDeviceType)
 
-    console.log("Fetching advertisements for device type:", initialDeviceType)
-    dispatch(fetchAdvertisements({ deviceType: initialDeviceType, position: "homepage" }))
+    console.log("[v0] Fetching ALL advertisements for device type:", initialDeviceType)
+    dispatch(fetchAdvertisements({ deviceType: initialDeviceType, position: "all" }))
+      .unwrap()
+      .then((result) => {
+        console.log("[v0] Advertisement fetch successful:", result)
+        console.log("[v0] Total advertisements received:", result.advertisements?.length || 0)
+      })
+      .catch((error) => {
+        console.error("[v0] Advertisement fetch failed:", error)
+      })
       .finally(() => {
         setIsInitializing(false)
       })
@@ -101,8 +137,8 @@ export default function SimpleSlider() {
       const newDeviceType = getDeviceType()
       if (newDeviceType !== deviceType) {
         setDeviceType(newDeviceType)
-        console.log("Device type changed, fetching for:", newDeviceType)
-        dispatch(fetchAdvertisements({ deviceType: newDeviceType, position: "homepage" }))
+        console.log("[v0] Device type changed, fetching ALL ads for:", newDeviceType)
+        dispatch(fetchAdvertisements({ deviceType: newDeviceType, position: "all" }))
       }
     }
 
@@ -144,20 +180,51 @@ export default function SimpleSlider() {
   }
 
   if (status === "failed" && advertisements.length === 0) {
-    console.warn("Failed to load advertisements:", error)
+    console.warn("[v0] Failed to load advertisements:", error)
     return (
       <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex flex-col items-center space-y-4">
-            <p className="text-gray-600 text-sm">No advertisements available</p>
+            <p className="text-gray-600 text-sm">Unable to load advertisements</p>
+            <button
+              onClick={() => {
+                console.log("[v0] Retrying advertisement fetch")
+                dispatch(fetchAdvertisements({ deviceType }))
+              }}
+              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+            >
+              Retry
+            </button>
           </div>
         </div>
       </div>
     )
   }
 
-  // Don't render anything if no advertisements are available
   if (slides.length === 0) {
+    console.log("[v0] No slides to display, current state:", {
+      advertisementsTotal: advertisements.length,
+      status,
+      deviceType,
+      isInitialized,
+    })
+
+    // Show a minimal placeholder for debugging
+    if (process.env.NODE_ENV === "development") {
+      return (
+        <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-yellow-50 to-yellow-100">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <p className="text-yellow-800 text-sm mb-2">No advertisements available</p>
+              <p className="text-yellow-600 text-xs">
+                Device: {deviceType} | Total ads: {advertisements.length}
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return null
   }
 
