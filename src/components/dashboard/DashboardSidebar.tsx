@@ -2,13 +2,14 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { User, MapPin, ShoppingCart, Heart, ClipboardList, Lock, X } from "lucide-react"
+import { User, MapPin, ShoppingCart, Heart, ClipboardList, Lock, X, MessageSquare } from "lucide-react"
 
 const navigation = [
   { name: "My Account", href: "/dashboard", icon: User },
   { name: "Address", href: "/dashboard/address", icon: MapPin },
   { name: "My Cart", href: "/dashboard/cart", icon: ShoppingCart },
   { name: "Wishlist", href: "/dashboard/wishlist", icon: Heart },
+  { name: "My Quotations", href: "/dashboard/quotations", icon: MessageSquare },
   { name: "Order History", href: "/dashboard/orders", icon: ClipboardList },
   { name: "Change Password", href: "/dashboard/password", icon: Lock },
 ]

@@ -25,7 +25,6 @@ interface Product {
   category_name?: string
   sub_category_name?: string
   status?: string
-  features?: string[]
 }
 
 const productSchema = new mongoose.Schema({
@@ -59,7 +58,6 @@ const productSchema = new mongoose.Schema({
   is_draft: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
   status: { type: String, enum: ["Pending", "Approved", "Flagged"], default: "Pending" },
-  features: [String],
 })
 
 // Auto-increment product_id

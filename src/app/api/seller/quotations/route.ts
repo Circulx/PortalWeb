@@ -38,11 +38,11 @@ export async function GET(request: NextRequest) {
       .limit(limit)
       .lean()
 
-    // Format the data
     const formattedRequests = quotationRequests.map((request) => ({
-      _id: request._id.toString(),
+      _id: (request._id as string | { toString(): string }).toString(),
       productId: request.productId,
       productTitle: request.productTitle,
+      userId: request.userId || null,
       customerName: request.customerName,
       customerEmail: request.customerEmail,
       customerPhone: request.customerPhone,

@@ -8,15 +8,11 @@ import { LazyPromotionSection } from "@/components/layout/lazy-promotion-section
 import PromotionalBanner from "@/components/layout/promotional-banner"
 import CategoryGrid from "@/components/categories/category-grid"
 import DeliveryPoster from "@/components/layout/delivery-poster"
-import IdlePopup from "@/components/layout/idle-popup"
-import AdvertisementPreloader from "@/components/home/advertisement-preloader"
+import IdlePopup from "@/components/layout/idle-popup";
 
 export default function Home() {
   return (
     <main className="min-h-screen">
-      {/* Preload advertisements for faster loading */}
-      <AdvertisementPreloader />
-
       {/* Hero Section - Load immediately with highest priority - NO lazy loading for critical content */}
       <LazySimpleSlider />
 
@@ -42,8 +38,10 @@ export default function Home() {
         <LazyProductGrid />
       </LazySection>
 
-      {/* Promotional Banner - Load immediately */}
-      <PromotionalBanner />
+      {/* Promotional Banner - Reduced delay */}
+      <LazySection delay={125} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
+        <PromotionalBanner />
+      </LazySection>
 
       {/* Promotion Section - Optimized loading */}
       <LazySection delay={175} threshold={0.2} rootMargin="125px" fallback={<SectionSkeleton type="features" />}>

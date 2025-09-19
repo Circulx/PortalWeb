@@ -6,6 +6,7 @@ export interface IQuotationRequest {
   productId: string
   productTitle: string
   sellerId: string
+  userId?: string
   customerName: string
   customerEmail: string
   customerPhone: string
@@ -14,6 +15,7 @@ export interface IQuotationRequest {
   status: "pending" | "responded" | "accepted" | "rejected"
   sellerResponse?: string
   sellerQuotedPrice?: number
+  rejectionReason?: string
   createdAt: Date
   updatedAt: Date
 }
@@ -23,6 +25,7 @@ const QuotationRequestSchema = new Schema<IQuotationRequest>(
     productId: { type: String, required: true, index: true },
     productTitle: { type: String, required: true },
     sellerId: { type: String, required: true, index: true },
+    userId: { type: String, index: true },
     customerName: { type: String, required: true },
     customerEmail: { type: String, required: true },
     customerPhone: { type: String, required: true },
@@ -35,6 +38,7 @@ const QuotationRequestSchema = new Schema<IQuotationRequest>(
     },
     sellerResponse: { type: String },
     sellerQuotedPrice: { type: Number },
+    rejectionReason: { type: String },
   },
   { timestamps: true },
 )
@@ -42,6 +46,8 @@ const QuotationRequestSchema = new Schema<IQuotationRequest>(
 // Create indexes for better query performance
 QuotationRequestSchema.index({ sellerId: 1, createdAt: -1 })
 QuotationRequestSchema.index({ productId: 1, createdAt: -1 })
+QuotationRequestSchema.index({ userId: 1, createdAt: -1 })
+QuotationRequestSchema.index({ status: 1, createdAt: -1 })
 
 export default function getQuotationRequestModel(connection: mongoose.Connection) {
   return (

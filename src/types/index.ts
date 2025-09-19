@@ -64,5 +64,4 @@ export interface ProductFormData {
   category_name: string
   sub_category_name?: string
   is_draft?: boolean
-  features?: string[]
 }

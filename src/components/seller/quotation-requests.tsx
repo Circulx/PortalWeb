@@ -6,8 +6,21 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { MessageSquare, Phone, Mail, Calendar, IndianRupee, Loader2, Send } from "lucide-react"
+import {
+  MessageSquare,
+  Phone,
+  Mail,
+  Calendar,
+  IndianRupee,
+  Loader2,
+  Send,
+  Eye,
+  Handshake,
+  Clock,
+  XCircle,
+} from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
 interface QuotationRequest {
@@ -22,6 +35,7 @@ interface QuotationRequest {
   status: "pending" | "responded" | "accepted" | "rejected"
   sellerResponse?: string
   sellerQuotedPrice?: number
+  rejectionReason?: string
   createdAt: string
   updatedAt: string
 }
@@ -62,15 +76,30 @@ export default function QuotationRequests() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "responded":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800 border-blue-200"
       case "accepted":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800 border-green-200"
       case "rejected":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800 border-red-200"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case "pending":
+        return <Clock className="w-4 h-4" />
+      case "responded":
+        return <MessageSquare className="w-4 h-4" />
+      case "accepted":
+        return <Handshake className="w-4 h-4" />
+      case "rejected":
+        return <XCircle className="w-4 h-4" />
+      default:
+        return <Clock className="w-4 h-4" />
     }
   }
 
@@ -147,18 +176,47 @@ export default function QuotationRequests() {
     )
   }
 
+  const pendingCount = requests.filter((r) => r.status === "pending").length
+  const respondedCount = requests.filter((r) => r.status === "responded").length
+  const acceptedCount = requests.filter((r) => r.status === "accepted").length
+  const rejectedCount = requests.filter((r) => r.status === "rejected").length
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-orange-600" />
-          Quotation Requests
-          {requests.length > 0 && (
-            <Badge variant="secondary" className="ml-2">
-              {requests.length}
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-orange-600" />
+            Quotation Requests
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="text-sm">
+              {requests.length} Total
             </Badge>
-          )}
-        </CardTitle>
+            <Badge className="bg-green-100 text-green-800 border-green-200">{acceptedCount} Deals Done</Badge>
+          </div>
+        </div>
+
+        {requests.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-yellow-700">{pendingCount}</div>
+              <div className="text-sm text-yellow-600">Pending</div>
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-blue-700">{respondedCount}</div>
+              <div className="text-sm text-blue-600">Responded</div>
+            </div>
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-green-700">{acceptedCount}</div>
+              <div className="text-sm text-green-600">Accepted</div>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-red-700">{rejectedCount}</div>
+              <div className="text-sm text-red-600">Rejected</div>
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent>
         {requests.length === 0 ? (
@@ -168,131 +226,236 @@ export default function QuotationRequests() {
             <p className="text-sm">Customers will be able to request quotes for your products</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {requests.map((request) => (
-              <div key={request._id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h4 className="font-semibold text-lg">{request.productTitle}</h4>
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
-                      </span>
-                    </div>
-                  </div>
-                  <Badge className={getStatusColor(request.status)}>
-                    {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                  </Badge>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                  <div>
-                    <p className="font-medium">{request.customerName}</p>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Mail className="h-4 w-4" />
-                      {request.customerEmail}
-                    </div>
-                    <div className="flex items-center gap-1 text-sm text-gray-600">
-                      <Phone className="h-4 w-4" />
-                      {request.customerPhone}
-                    </div>
-                  </div>
-                  <div className="text-right md:text-left">
-                    <div className="flex items-center gap-1 text-lg font-semibold text-green-600">
-                      <IndianRupee className="h-5 w-5" />
-                      {formatCurrency(request.requestedPrice)}
-                    </div>
-                    <p className="text-sm text-gray-600">Requested Price</p>
-                  </div>
-                </div>
-
-                {request.message && (
-                  <div className="bg-gray-50 rounded p-3 mb-3">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Customer Message:</p>
-                    <p className="text-sm text-gray-600">{request.message}</p>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => handleContactCustomer(request)}>
-                    <Mail className="h-4 w-4 mr-1" />
-                    Contact Customer
-                  </Button>
-                  {request.status === "pending" && (
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          size="sm"
-                          className="bg-orange-600 hover:bg-orange-700"
-                          onClick={() => setSelectedRequest(request)}
-                        >
-                          <Send className="h-4 w-4 mr-1" />
-                          Send Quote
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Send Quote Response</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-4">
-                          <div>
-                            <p className="text-sm font-medium mb-2">Product: {request.productTitle}</p>
-                            <p className="text-sm text-gray-600">Customer: {request.customerName}</p>
-                            <p className="text-sm text-gray-600">
-                              Requested Price: {formatCurrency(request.requestedPrice)}
-                            </p>
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium">Your Quoted Price (₹)</label>
-                            <Input
-                              type="number"
-                              placeholder="Enter your quoted price"
-                              value={quotePrice}
-                              onChange={(e) => setQuotePrice(e.target.value)}
-                            />
-                          </div>
-
-                          <div>
-                            <label className="text-sm font-medium">Message (Optional)</label>
-                            <Textarea
-                              placeholder="Add any additional details or terms..."
-                              value={quoteMessage}
-                              onChange={(e) => setQuoteMessage(e.target.value)}
-                              rows={3}
-                            />
-                          </div>
-
-                          <div className="flex gap-2 justify-end">
-                            <Button variant="outline" onClick={() => setSelectedRequest(null)}>
-                              Cancel
-                            </Button>
-                            <Button
-                              onClick={handleSendQuote}
-                              disabled={!quotePrice || submitting}
-                              className="bg-orange-600 hover:bg-orange-700"
-                            >
-                              {submitting ? (
-                                <>
-                                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                                  Sending...
-                                </>
-                              ) : (
-                                <>
-                                  <Send className="h-4 w-4 mr-1" />
-                                  Send Quote
-                                </>
-                              )}
-                            </Button>
-                          </div>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold">Product & Customer</TableHead>
+                  <TableHead className="font-semibold">Requested Price</TableHead>
+                  <TableHead className="font-semibold">Your Quote</TableHead>
+                  <TableHead className="font-semibold">Status</TableHead>
+                  <TableHead className="font-semibold">Date</TableHead>
+                  <TableHead className="font-semibold text-center">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {requests.map((request) => (
+                  <TableRow key={request._id} className="hover:bg-gray-50">
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="font-medium text-gray-900">{request.productTitle}</div>
+                        <div className="text-sm text-gray-600">{request.customerName}</div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <Mail className="w-3 h-3" />
+                          {request.customerEmail}
                         </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
-                </div>
-              </div>
-            ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 font-semibold text-blue-600">
+                        <IndianRupee className="w-4 h-4" />
+                        {formatCurrency(request.requestedPrice)}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {request.sellerQuotedPrice ? (
+                        <div className="flex items-center gap-1 font-semibold text-green-600">
+                          <IndianRupee className="w-4 h-4" />
+                          {formatCurrency(request.sellerQuotedPrice)}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={`${getStatusColor(request.status)} flex items-center gap-1 w-fit`}>
+                        {getStatusIcon(request.status)}
+                        {request.status === "accepted"
+                          ? "Deal Done"
+                          : request.status.charAt(0).toUpperCase() + request.status.slice(1)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1 text-sm text-gray-600">
+                        <Calendar className="w-4 h-4" />
+                        {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle className="flex items-center gap-2">
+                                <MessageSquare className="w-5 h-5 text-orange-600" />
+                                Quotation Request Details
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-6">
+                              <div className="grid md:grid-cols-2 gap-4">
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold text-gray-900">Product & Request</h4>
+                                  <div className="space-y-2">
+                                    <p className="font-medium">{request.productTitle}</p>
+                                    <div className="flex items-center gap-2 text-lg font-semibold text-blue-600">
+                                      <IndianRupee className="w-5 h-5" />
+                                      {formatCurrency(request.requestedPrice)}
+                                    </div>
+                                    {request.message && (
+                                      <div className="bg-gray-50 p-3 rounded">
+                                        <p className="text-sm font-medium text-gray-700 mb-1">Customer Message:</p>
+                                        <p className="text-sm text-gray-600">{request.message}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                  <h4 className="font-semibold text-gray-900">Customer Details</h4>
+                                  <div className="space-y-2 text-sm">
+                                    <p className="font-medium">{request.customerName}</p>
+                                    <div className="flex items-center gap-2">
+                                      <Mail className="w-4 h-4 text-gray-500" />
+                                      {request.customerEmail}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Phone className="w-4 h-4 text-gray-500" />
+                                      {request.customerPhone}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="w-4 h-4 text-gray-500" />
+                                      {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {request.status === "accepted" && (
+                                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <Handshake className="w-5 h-5 text-green-600" />
+                                    <div>
+                                      <p className="text-sm text-green-800 font-medium">
+                                        🎉 Deal Done! Customer accepted your quote of{" "}
+                                        {formatCurrency(request.sellerQuotedPrice || 0)}
+                                      </p>
+                                      <p className="text-xs text-green-700 mt-1">
+                                        Contact the customer to proceed with the order.
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {request.status === "rejected" && (
+                                <div className="bg-red-50 border border-red-200 p-4 rounded-lg">
+                                  <div className="flex items-center gap-2">
+                                    <XCircle className="w-5 h-5 text-red-600" />
+                                    <div>
+                                      <p className="text-sm text-red-800 font-medium">Customer rejected your quote</p>
+                                      {request.rejectionReason && (
+                                        <p className="text-sm text-red-700 mt-1">
+                                          <span className="font-medium">Reason:</span> {request.rejectionReason}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="flex gap-2">
+                                <Button size="sm" variant="outline" onClick={() => handleContactCustomer(request)}>
+                                  <Mail className="h-4 w-4 mr-1" />
+                                  Contact Customer
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        {request.status === "pending" && (
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                className="bg-orange-600 hover:bg-orange-700"
+                                onClick={() => setSelectedRequest(request)}
+                              >
+                                <Send className="h-4 w-4 mr-1" />
+                                Send Quote
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Send Quote Response</DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4">
+                                <div>
+                                  <p className="text-sm font-medium mb-2">Product: {request.productTitle}</p>
+                                  <p className="text-sm text-gray-600">Customer: {request.customerName}</p>
+                                  <p className="text-sm text-gray-600">
+                                    Requested Price: {formatCurrency(request.requestedPrice)}
+                                  </p>
+                                </div>
+
+                                <div>
+                                  <label className="text-sm font-medium">Your Quoted Price (₹)</label>
+                                  <Input
+                                    type="number"
+                                    placeholder="Enter your quoted price"
+                                    value={quotePrice}
+                                    onChange={(e) => setQuotePrice(e.target.value)}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-sm font-medium">Message (Optional)</label>
+                                  <Textarea
+                                    placeholder="Add any additional details or terms..."
+                                    value={quoteMessage}
+                                    onChange={(e) => setQuoteMessage(e.target.value)}
+                                    rows={3}
+                                  />
+                                </div>
+
+                                <div className="flex gap-2 justify-end">
+                                  <Button variant="outline" onClick={() => setSelectedRequest(null)}>
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    onClick={handleSendQuote}
+                                    disabled={!quotePrice || submitting}
+                                    className="bg-orange-600 hover:bg-orange-700"
+                                  >
+                                    {submitting ? (
+                                      <>
+                                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                        Sending...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Send className="h-4 w-4 mr-1" />
+                                        Send Quote
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         )}
       </CardContent>

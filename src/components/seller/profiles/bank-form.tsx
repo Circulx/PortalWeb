@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { FormInput } from "@/components/ui/form-input"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileUpload } from "./file-upload"
 import { saveBankDetails } from "@/actions/profile"
@@ -28,20 +28,9 @@ export interface BankDetails {
 }
 
 const bankSchema = z.object({
-  accountHolderName: z
-    .string()
-    .min(2, "Account holder name is required")
-    .regex(/^[a-zA-Z\s.'-]+$/, "Account holder name can only contain letters, spaces, periods, apostrophes, and hyphens"),
-  accountNumber: z
-    .string()
-    .min(8, "Account number must be at least 8 digits")
-    .max(20, "Account number cannot exceed 20 digits")
-    .regex(/^[0-9]+$/, "Account number can only contain digits"),
-  ifscCode: z
-    .string()
-    .min(11, "IFSC code must be 11 characters")
-    .max(11, "IFSC code must be 11 characters")
-    .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "IFSC code must be in format: 4 letters, 0, then 6 alphanumeric characters"),
+  accountHolderName: z.string().min(2, "Account holder name is required"),
+  accountNumber: z.string().min(8, "Valid account number required"),
+  ifscCode: z.string().min(11, "Valid IFSC code required").max(11, "IFSC code must be 11 characters"),
   bankName: z.string().min(2, "Bank name is required"),
   branch: z.string().min(2, "Branch name is required"),
   city: z.string().min(2, "City is required"),
@@ -199,7 +188,7 @@ export function BankForm({ initialData, onSaved }: BankFormProps) {
                   Account Holder Name<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., John Doe" {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., John Doe" {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -215,7 +204,7 @@ export function BankForm({ initialData, onSaved }: BankFormProps) {
                   Account Number<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., 12345678901234" {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., 12345678901234" {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -232,7 +221,7 @@ export function BankForm({ initialData, onSaved }: BankFormProps) {
                 </FormLabel>
                 <div className="relative">
                   <FormControl>
-                    <FormInput
+                    <Input
                       placeholder="e.g., SBIN0001234"
                       {...field}
                       onChange={(e) => {
@@ -266,7 +255,7 @@ export function BankForm({ initialData, onSaved }: BankFormProps) {
                     Bank Name<span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <FormInput placeholder="e.g., State Bank of India" {...field} disabled={!isEditing} />
+                    <Input placeholder="e.g., State Bank of India" {...field} disabled={!isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -282,7 +271,7 @@ export function BankForm({ initialData, onSaved }: BankFormProps) {
                     Branch<span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <FormInput placeholder="e.g., Main Branch" {...field} disabled={!isEditing} />
+                    <Input placeholder="e.g., Main Branch" {...field} disabled={!isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -298,7 +287,7 @@ export function BankForm({ initialData, onSaved }: BankFormProps) {
                     City<span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <FormInput placeholder="e.g., Mumbai" {...field} disabled={!isEditing} />
+                    <Input placeholder="e.g., Mumbai" {...field} disabled={!isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

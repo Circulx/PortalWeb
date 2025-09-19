@@ -1,12 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
 import getQuotationRequestModel from "@/models/profile/quotation"
+import { getCurrentUser } from "@/actions/auth"
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { productId, productTitle, sellerId, customerName, customerEmail, customerPhone, requestedPrice, message } =
       body
+
+    console.log("[v0] Getting current user...")
+    const currentUser = await getCurrentUser()
+    console.log("[v0] Current user:", currentUser)
 
     // Validate required fields
     if (
@@ -41,8 +46,7 @@ export async function POST(request: NextRequest) {
     const connection = await connectProfileDB()
     const QuotationRequest = getQuotationRequestModel(connection)
 
-    // Create new quotation request
-    const quotationRequest = new QuotationRequest({
+    const quotationRequestData: any = {
       productId,
       productTitle,
       sellerId,
@@ -52,16 +56,33 @@ export async function POST(request: NextRequest) {
       requestedPrice,
       message: message || "",
       status: "pending",
-    })
+    }
 
-    await quotationRequest.save()
+    if (currentUser && currentUser.id) {
+      quotationRequestData.userId = currentUser.id
+      console.log("[v0] Adding userId to quotation request:", currentUser.id)
+    } else {
+      console.log("[v0] No current user found, quotation will be saved without userId")
+    }
+
+    console.log("[v0] Quotation request data before saving:", quotationRequestData)
+
+    const quotationRequest = new QuotationRequest(quotationRequestData)
+    const savedQuotation = await quotationRequest.save()
+
+    console.log("[v0] Saved quotation request:", {
+      id: savedQuotation._id,
+      userId: savedQuotation.userId,
+      status: savedQuotation.status,
+    })
 
     return NextResponse.json({
       success: true,
       message: "Quotation request sent successfully",
       data: {
-        id: quotationRequest._id,
-        status: quotationRequest.status,
+        id: savedQuotation._id,
+        status: savedQuotation.status,
+        userId: savedQuotation.userId || null,
       },
     })
   } catch (error) {

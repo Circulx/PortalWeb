@@ -5,35 +5,14 @@ import type React from "react"
 import { useState, useEffect } from "react"
 import { signUp } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
-import { FormInput } from "@/components/ui/form-input"
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
 import { ContactModal } from "./contact-modal"
 import { useSearchParams } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
 
 interface SignUpFormProps {
   onSuccess: (message: string) => void
   onSignIn: () => void
 }
-
-const signUpSchema = z.object({
-  name: z
-    .string()
-    .min(2, "Full name must be at least 2 characters")
-    .regex(/^[a-zA-Z\s.'-]+$/, "Full name can only contain letters, spaces, periods, apostrophes, and hyphens"),
-  email: z
-    .string()
-    .email("Please enter a valid email address")
-    .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Please enter a valid email format"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters"),
-  gstNumber: z
-    .string()
-    .optional()
-})
 
 export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   const [error, setError] = useState("")
@@ -44,16 +23,6 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   const [gstError, setGstError] = useState("")
 
   const searchParams = useSearchParams()
-
-  const form = useForm<z.infer<typeof signUpSchema>>({
-    resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      gstNumber: ""
-    }
-  })
 
   useEffect(() => {
     // Check if user is signing up as seller from URL params
@@ -87,29 +56,23 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     }
   }
 
-  async function onSubmit(values: z.infer<typeof signUpSchema>) {
+  async function handleSubmit(formData: FormData) {
     setIsLoading(true)
     setError("")
     setGstError("")
 
     // Validate GST number for sellers before submission
     if (userType === "seller") {
-      if (values.gstNumber && !validateGSTNumber(values.gstNumber)) {
+      const gstNumber = formData.get("gstNumber") as string
+      if (gstNumber && !validateGSTNumber(gstNumber)) {
         setGstError("Please enter a valid GST number")
         setIsLoading(false)
         return
       }
     }
 
-    // Create FormData for the signUp action
-    const formData = new FormData()
-    formData.append("name", values.name)
-    formData.append("email", values.email)
-    formData.append("password", values.password)
+    // Add user type to form data
     formData.append("userType", userType)
-    if (values.gstNumber) {
-      formData.append("gstNumber", values.gstNumber)
-    }
 
     const result = await signUp(formData)
 
@@ -137,92 +100,58 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
         </h1>
         <p className="text-gray-400 px-14"></p>
       </div>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-gray-50 px-1 py-1">Full Name</FormLabel>
-                <FormControl>
-                  <FormInput {...field} className="h-9 px-8 bg-white text-black rounded-lg" />
-                </FormControl>
-                <FormMessage className="text-gray-200 px-1" />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
+      <form action={handleSubmit} className="space-y-2">
+        <div>
+          <p className="text-gray-50 px-1 py-1">Full Name</p>
+          <Input id="name" name="name" required className="h-9 px-8 bg-white text-black  rounded-lg" />
+        </div>
+        <div>
+          <p className="text-gray-50 px-1 py-1">Email</p>
+          <Input
+            id="email"
             name="email"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-gray-50 px-1 py-1">Email</FormLabel>
-                <FormControl>
-                  <FormInput
-                    {...field}
-                    type="email"
-                    placeholder=""
-                    className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
-                  />
-                </FormControl>
-                <FormMessage className="text-gray-200 px-1" />
-              </FormItem>
-            )}
+            type="email"
+            required
+            placeholder=""
+            className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
           />
-          <FormField
-            control={form.control}
+        </div>
+        <div>
+          <p className="text-gray-50 px-1 py-1">Password</p>
+          <Input
+            id="password"
             name="password"
-            render={({ field }) => (
-              <FormItem className="space-y-1">
-                <FormLabel className="text-gray-50 px-1 py-1">Password</FormLabel>
-                <FormControl>
-                  <FormInput
-                    {...field}
-                    type="password"
-                    placeholder=""
-                    className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
-                  />
-                </FormControl>
-                <FormMessage className="text-gray-200 px-1" />
-              </FormItem>
-            )}
+            type="password"
+            required
+            placeholder=""
+            className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
           />
-          {isSellerSignup && (
-            <FormField
-              control={form.control}
+        </div>
+        {isSellerSignup && (
+          <div>
+            <p className="text-gray-50 px-1 py-1">GST Number</p>
+            <Input
+              id="gstNumber"
               name="gstNumber"
-              render={({ field }) => (
-                <FormItem className="space-y-1">
-                  <FormLabel className="text-gray-50 px-1 py-1">GST Number</FormLabel>
-                  <FormControl>
-                    <FormInput
-                      {...field}
-                      placeholder="22AAAAA0000A1Z5"
-                      className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
-                      onChange={(e) => {
-                        field.onChange(e)
-                        handleGSTChange(e)
-                      }}
-                      maxLength={15}
-                    />
-                  </FormControl>
-                  {gstError && <p className="text-sm text-red-400 mt-1 px-1">{gstError}</p>}
-                  <p className="text-xs text-gray-300 mt-1 px-1">Enter 15-character GST number</p>
-                </FormItem>
-              )}
+              required
+              placeholder="22AAAAA0000A1Z5"
+              className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
+              onChange={handleGSTChange}
+              maxLength={15}
             />
-          )}
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          <Button
-            type="submit"
-            className="w-full h-9 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-lg"
-            disabled={isLoading}
-          >
-            {isLoading ? "Creating account..." : "Sign up"}
-          </Button>
-        </form>
-      </Form>
+            {gstError && <p className="text-sm text-red-400 mt-1 px-1">{gstError}</p>}
+            <p className="text-xs text-gray-300 mt-1 px-1">Enter 15-character GST number</p>
+          </div>
+        )}
+        {error && <p className="text-sm text-red-500">{error}</p>}
+        <Button
+          type="submit"
+          className="w-full h-9 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-lg"
+          disabled={isLoading}
+        >
+          {isLoading ? "Creating account..." : "Sign up"}
+        </Button>
+      </form>
       <div className="text-center text-sm text-gray-100">
         Already have an account?{" "}
         <button onClick={onSignIn} className="text-gray-100 hover:text-purple-300">

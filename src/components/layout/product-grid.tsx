@@ -8,7 +8,6 @@ import type { AppDispatch, RootState } from "@/store"
 import { fetchProducts, fetchProductsByCategory } from "@/store/slices/productSlice"
 import { LazySection } from "./lazy-section"
 import { SectionSkeleton } from "./section-skeleton"
-import SingleAdvertisement from "./single-advertisement"
 
 // Optimized loading skeleton component
 const Skeleton = memo(({ className = "", ...props }: { className?: string; [key: string]: any }) => {
@@ -303,14 +302,6 @@ function ProductGrid() {
 
     return (
       <>
-        {/* Homepage Advertisement Slot */}
-        {firstCategory && (
-          <SingleAdvertisement 
-            position="homepage" 
-            className="mb-8"
-          />
-        )}
-        
         {/* Load first category immediately */}
         {firstCategory && (
           <div className="mb-12">
@@ -327,30 +318,15 @@ function ProductGrid() {
             ))}
           </div>
         )}
-          {/* Category Advertisement */}
-          {firstCategory && (
-           <SingleAdvertisement 
-             position="category" 
-             className="mb-8"
-           />
-         )}
-        
+
         {/* Lazy load remaining categories */}
         {remainingCategories.map(([category, subcategories]) => (
           <LazyCategorySection key={category} category={category} subcategories={subcategories} />
         ))}
-        {/* Bottom of Homepage Advertisement */}
-        {firstCategory && (
-          <SingleAdvertisement 
-            position="bottomofhomepage" 
-            className="mb-8"
-          />
-        )}
-        
       </>
     )
   }, [categorySubcategoryProducts, isLoading, initialLoadComplete])
-          
+
   return (
     <div className="w-full px-4 py-8">
       {error && (
