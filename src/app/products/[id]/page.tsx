@@ -2,11 +2,9 @@ import { connectProfileDB } from "@/lib/profileDb"
 import { notFound } from "next/navigation"
 import mongoose from "mongoose"
 import ProductDescription from "./product-description"
-import ProductActions from "./product-actions"
 import ProductReviews from "./product-reviews"
 import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
-import PincodeCheck from "@/components/product/pincode-check"
 import RequestQuoteButton from "@/components/product/request-quote-button"
 
 // Define the product interface
@@ -271,119 +269,156 @@ export default async function ProductPage({ params }: { params: { id: string } }
         {/* Toast container for notifications */}
         <Toaster />
 
-        <div className="grid md:grid-cols-2 gap-8">
-          {/* Product Image Gallery - Made sticky */}
-          <div className="relative">
+        <div className="grid lg:grid-cols-12 gap-8">
+          {/* Left Column - Product Image (4 columns) */}
+          <div className="lg:col-span-4">
             <div className="sticky top-[80px] z-10">
-              <div className="flex gap-4">
-                {/* Thumbnails column - Only show if there are multiple images */}
-                {productImages.length > 1 && (
-                  <div className="hidden sm:flex flex-col gap-3 w-20">
-                    {productImages.map((img, index) => (
-                      <div
-                        key={index}
-                        className={`border ${index === 0 ? "border-blue-500" : "border-gray-200"} rounded-md overflow-hidden cursor-pointer hover:border-blue-300 transition-all`}
-                      >
-                        <img
-                          src={img || "/placeholder.svg"}
-                          alt={`${product.title} thumbnail ${index + 1}`}
-                          className="w-full h-20 object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Main product image container with wishlist button */}
-                <ProductActions
-                  productId={id}
-                  title={product.title}
-                  price={priceCalculation.finalPrice}
-                  imageUrl={product.image_link || "/placeholder.svg"}
-                  discount={product.discount}
-                  sellerId={Number(product.seller_id) || Number(product.emailId) || product.product_id}
-                  stock={product.stock}
-                  units={product.units}
-                  productImages={productImages}
-                />
-              </div>
-
-              {/* Mobile thumbnails - Only show if there are multiple images */}
-              {productImages.length > 1 && (
-                <div className="sm:hidden flex gap-2 mt-4 overflow-x-auto pb-2">
-                  {productImages.map((img, index) => (
-                    <div
-                      key={index}
-                      className={`border ${index === 0 ? "border-blue-500" : "border-gray-200"} rounded-md overflow-hidden flex-shrink-0 w-20 h-20 cursor-pointer`}
-                    >
-                      <img
-                        src={img || "/placeholder.svg"}
-                        alt={`${product.title} thumbnail ${index + 1}`}
-                        className="w-full h-full object-cover"
+              <div className="relative">
+                {/* Warranty Badge */}
+                <div className="absolute top-4 left-4 z-20">
+                  <div className="bg-black text-white px-3 py-2 rounded-full text-xs font-semibold flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clipRule="evenodd"
                       />
-                    </div>
-                  ))}
+                    </svg>
+                    WARRANTY 6 MONTHS GUARANTEE
+                  </div>
                 </div>
-              )}
+
+                {/* Wishlist Button */}
+                <div className="absolute top-4 right-4 z-20">
+                  <button className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors">
+                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Main Product Image */}
+                <div className="bg-gray-50 rounded-lg overflow-hidden">
+                  <img
+                    src={productImages[0] || "/placeholder.svg"}
+                    alt={product.title}
+                    className="w-full h-96 object-contain"
+                  />
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-3 mt-4">
+                  <button className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
+                      />
+                    </svg>
+                    ADD TO CART
+                  </button>
+                  <button className="bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 10V3L4 14h7v7l9-11h-7z"
+                      />
+                    </svg>
+                    BUY NOW
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Product Info */}
-          <div>
+          {/* Center Column - Product Details (5 columns) */}
+          <div className="lg:col-span-5">
             {/* Product Title */}
-            <h1 className="text-3xl font-bold mb-2">{product.title}</h1>
+            <h1 className="text-2xl font-bold mb-3 leading-tight">{product.title}</h1>
 
-            {/* Ratings - Now showing real data from database */}
-            <div className="flex items-center gap-2 mb-2">
+            {/* Ratings */}
+            <div className="flex items-center gap-2 mb-4">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <svg
                     key={star}
-                    xmlns="http://www.w3.org/2000/svg"
-                    className={`h-5 w-5 ${star <= Math.floor(reviewData.averageRating) ? "text-yellow-400" : "text-gray-300"}`}
-                    viewBox="0 0 20 20"
+                    className={`h-4 w-4 ${star <= Math.floor(reviewData.averageRating) ? "text-yellow-400" : "text-gray-300"}`}
                     fill="currentColor"
+                    viewBox="0 0 20 20"
                   >
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 ))}
               </div>
               <span className="text-sm text-gray-600">
-                {reviewData.averageRating > 0 ? reviewData.averageRating : 0} Ratings & {reviewData.totalReviews}{" "}
-                Reviews
+                {reviewData.totalReviews} Ratings & {reviewData.totalReviews} Reviews
               </span>
             </div>
 
-            {/* Price - Clean display without calculation breakdown */}
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-2xl font-bold text-green-900">{priceCalculation.finalPrice.toFixed(2)}</span>
+            {/* Price */}
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl font-bold text-green-600">₹{priceCalculation.finalPrice.toFixed(2)}</span>
               {product.discount && product.discount > 0 && (
                 <>
                   <span className="text-lg text-gray-500 line-through">
                     ₹{priceCalculation.priceWithGST.toFixed(2)}
                   </span>
-                  <span className="text-lg text-green-500">{product.discount}% off</span>
+                  <span className="text-lg text-green-500 font-semibold">{product.discount}% off</span>
                 </>
               )}
             </div>
 
             {/* Availability */}
-            <p className="text-gray-500 mb-6">
-              Available: {product.stock} {product.units}
+            <p className="text-gray-600 mb-6">
+              Available: <span className="font-semibold">{product.stock} pcs</span>
             </p>
 
-            {/* Product Description with Read More functionality */}
-            <ProductDescription description={description} />
+            {/* About This Product */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">About This Product</h3>
+              <ProductDescription description={description} />
+            </div>
 
-            {/* Pincode Checker */}
-            <PincodeCheck className="my-6" />
-
-            {/* Request Quote section */}
-            <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-semibold text-lg text-orange-800">Need a Better Price?</h3>
+            {/* Product Specifications */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-3">Product Specifications</h3>
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <tbody>
+                    <tr className="border-b">
+                      <td className="py-3 px-4 bg-gray-50 font-medium w-1/3">Brand</td>
+                      <td className="py-3 px-4">{product.seller_name || "circulx_seller_profile_1"}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="py-3 px-4 bg-gray-50 font-medium">Model</td>
+                      <td className="py-3 px-4">Standard Model</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="py-3 px-4 bg-gray-50 font-medium">SKU</td>
+                      <td className="py-3 px-4">{product.SKU || "SKU-ABC-123"}</td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 bg-gray-50 font-medium">Category</td>
+                      <td className="py-3 px-4">{product.category_name || "Power Tools"}</td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-              <p className="text-sm text-orange-700 mb-3">
+            </div>
+
+            {/* Need a Better Price section */}
+            <div className="bg-orange-50 rounded-lg p-6 border border-orange-200">
+              <h3 className="text-xl font-semibold mb-3 text-orange-800">Need a Better Price?</h3>
+              <p className="text-orange-700 mb-4 leading-relaxed">
                 Request a custom quotation from the seller and get the best deal for your requirements.
               </p>
               <RequestQuoteButton
@@ -393,143 +428,156 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 currentPrice={priceCalculation.finalPrice}
               />
             </div>
+          </div>
 
-            {/* Features */}
-            <div className="mb-6">
-              <h3 className="font-semibold text-lg mb-3">Feature</h3>
-              <ul className="grid gap-2">
-                <li className="flex items-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>Free 1 Year Warranty</span>
+          {/* Right Column - Features & Seller Info (3 columns) */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Features Card */}
+            <div className="bg-white border rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4">Features</h3>
+              <ul className="space-y-3">
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-sm">Free 1 Year Warranty</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>Free Shipping & Fasted Delivery</span>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
+                    </svg>
+                  </div>
+                  <span className="text-sm">Free Shipping & Fast Delivery</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>100% Money-back guarantee</span>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 01-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-sm">100% Money-back guarantee</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>24/7 Customer support</span>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M9 9a1 1 0 000 2v3a1 1 0 01-1 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-sm">24/7 Customer support</span>
                 </li>
-                <li className="flex items-center gap-2">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5 text-orange-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <span>Secure payment method</span>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-sm">Secure payment method</span>
                 </li>
               </ul>
             </div>
 
-            {/* Product Details */}
-            <div className="border-t pt-6 mb-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h3 className="font-semibold mb-3">SKU</h3>
-                  <p>{product.SKU || "1112"}</p>
+            {/* Seller Info Card */}
+            <div className="bg-white border rounded-lg p-4">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-lg">
+                  C
                 </div>
                 <div>
-                  <h3 className="font-semibold mb-3">CATEGORY</h3>
-                  <p>{product.category_name || "Electrical Appliance"}</p>
+                  <h3 className="font-semibold">{product.seller_name || "circulx_seller_profile_1"}</h3>
+                  <p className="text-sm text-gray-600">{product.location || "Delhi"}</p>
+                  <p className="text-xs text-gray-500">GST: Not provided</p>
                 </div>
               </div>
-            </div>
 
-            {/* Seller Information */}
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="font-semibold mb-3">Seller information:</h3>
-              <div className="grid gap-2">
+              {/* Seller Rating */}
+              <div className="flex items-center gap-2 mb-4">
                 <div className="flex">
-                  <span className="font-medium w-28">Seller Name:</span>
-                  <span>{product.seller_name || "AB Industrial Supplies"}</span>
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <svg key={star} className="h-4 w-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  ))}
                 </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Location:</span>
-                  <span>{product.location || "Singapore"}</span>
-                </div>
-                <div className="flex">
-                  <span className="font-medium w-28">Ratings:</span>
-                  <div className="flex items-center">
-                    <span className="mr-1">({reviewData.averageRating}/5</span>
-                    <span className="text-sm">based on {reviewData.totalReviews} reviews)</span>
-                  </div>
-                </div>
+                <span className="text-sm text-gray-600">0/5 (0 reviews)</span>
               </div>
+
+              {/* Seller Badges */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  TrustSEAL Verified
+                </span>
+                <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                  Leading Supplier
+                </span>
+                <span className="inline-flex items-center px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                  Verified Exporter
+                </span>
+                <span className="inline-flex items-center px-2 py-1 bg-teal-100 text-teal-700 text-xs rounded-full">
+                  Manufacturer
+                </span>
+              </div>
+
+              {/* Contact Buttons */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button className="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-1 transition-colors">
+                  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                  View Mobile Number
+                </button>
+                <button className="border border-teal-500 text-teal-600 hover:bg-teal-50 py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-1 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
+                  Contact Supplier
+                </button>
+              </div>
+
+              {/* Response Rate */}
+              <p className="text-center text-sm text-gray-600">86% Response Rate</p>
             </div>
           </div>
         </div>
 
         {/* Product Reviews Section */}
-        <ProductReviews
-          reviews={reviewData.reviews}
-          averageRating={reviewData.averageRating}
-          totalReviews={reviewData.totalReviews}
-        />
+        <div className="mt-12">
+          <ProductReviews
+            reviews={reviewData.reviews}
+            averageRating={reviewData.averageRating}
+            totalReviews={reviewData.totalReviews}
+          />
+        </div>
       </div>
     )
   } catch (error) {
