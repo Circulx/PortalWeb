@@ -57,7 +57,7 @@ export default function Footer() {
           <div>
             <h3 className="font-semibold mb-4 text-white">Support</h3>
             <div className="space-y-3">
-              <Link href="/community-guidelines" className="block text-white hover:text-gray-300">
+              <Link href="/shipping-policy" className="block text-white hover:text-gray-300">
                 Shipping Policy
               </Link>
               <Link href="/careers" className="block text-white hover:text-gray-300">
