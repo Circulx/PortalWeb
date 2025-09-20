@@ -45,61 +45,12 @@ interface Product {
 }
 
 interface BrowsingHistoryProduct {
-  product_id: number
-  title: string
-  image_link: string
+  productId: string
+  title?: string
+  image?: string
+  category?: string
+  viewedAt: Date
 }
-
-const browsingHistory: BrowsingHistoryProduct[] = [
-  {
-    product_id: 1,
-    title: "Wireless Headphones",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 2,
-    title: "Smartphone",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 3,
-    title: "Laptop",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 4,
-    title: "Smartwatch",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 5,
-    title: "Bluetooth Speaker",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 6,
-    title: "Gaming Console",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 7,
-    title: "Digital Camera",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-  {
-    product_id: 8,
-    title: "Tablet",
-    image_link:
-      "https://images.unsplash.com/photo-1736173155834-6cd98d8dc9fe?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
-  },
-]
 
 interface FeatureCardProps {
   icon: React.ReactNode
@@ -164,6 +115,9 @@ export default function Cart() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isCheckingUser, setIsCheckingUser] = useState(true)
   const [moqStatus, setMoqStatus] = useState({ isValid: false, message: "", shortfall: 5000 })
+  const [browsingHistory, setBrowsingHistory] = useState<BrowsingHistoryProduct[]>([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const historyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const checkUser = async () => {
@@ -179,6 +133,30 @@ export default function Cart() {
 
     checkUser()
   }, [])
+
+  useEffect(() => {
+    const fetchBrowsingHistory = async () => {
+      if (!currentUser) {
+        setBrowsingHistory([])
+        return
+      }
+
+      setIsLoadingHistory(true)
+      try {
+        const response = await axios.get("/api/browsing-history?limit=8")
+        if (response.data && response.data.items) {
+          setBrowsingHistory(response.data.items)
+        }
+      } catch (error) {
+        console.error("Error fetching browsing history:", error)
+        setBrowsingHistory([])
+      } finally {
+        setIsLoadingHistory(false)
+      }
+    }
+
+    fetchBrowsingHistory()
+  }, [currentUser])
 
   useEffect(() => {
     const validateStock = async () => {
@@ -325,8 +303,6 @@ export default function Cart() {
     const newMoqStatus = validateMOQ(cartTotal)
     setMoqStatus(newMoqStatus)
   }, [cartItems])
-
-  const historyRef = useRef<HTMLDivElement>(null)
 
   const scrollLeft = () => {
     if (historyRef.current) {
@@ -648,80 +624,81 @@ export default function Cart() {
         </div>
       </div>
 
-      <div className="mt-16 sm:mt-20 flex justify-center">
-        <div className="w-full max-w-[1280px] flex flex-col md:flex-row bg-[#FDCC0D] rounded-[20px] overflow-hidden">
-          <div className="w-full md:w-1/2 h-[250px] md:h-auto relative">
-            <svg
-              className="w-full h-full object-cover"
-              viewBox="0 0 795 421"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              xmlnsXlink="http://www.w3.org/1999/xlink"
-            >
-              <rect width="835" height="421" transform="matrix(-1 0 0 1 795 0)" fill="url(#pattern0_1411_15703)" />
-              <defs>
-                <pattern id="pattern0_1411_15703" patternContentUnits="objectBoundingBox" width="1" height="1">
-                  <use xlinkHref="#image0_1411_15703" transform="matrix(0.00166667 0 0 0.00330562 0 -0.161124)" />
-                </pattern>
-                <image id="image0_1411_15703" width="600" height="400" />
-              </defs>
-            </svg>
-          </div>
-          <div className="w-full md:w-1/2 flex flex-col justify-center p-6 md:p-10">
-            <h3 className="text-3xl md:text-4xl lg:text-6xl font-bold text-white mb-4">
-              Get a free <br className="hidden md:block" /> demo
-            </h3>
-            <p className="text-white text-sm md:text-base mb-6">
-              Lorem Neque porro quisquam est qui <br className="hidden md:block" /> dolorem ipsum quia dolor sit
-            </p>
-            <button className="bg-[#14BA6D] text-white py-3 px-8 rounded-lg text-sm md:text-base font-medium self-start">
-              Explore now
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="mt-16 sm:mt-20 max-w-[1440px] mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
           <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 sm:mb-0">Your browsing history</h2>
-          <div className="underline text-sm">
-            <p>Page 1 of 2</p>
-          </div>
+          {browsingHistory.length > 0 && (
+            <div className="underline text-sm">
+              <p>Showing {browsingHistory.length} recent items</p>
+            </div>
+          )}
         </div>
-        <div className="relative">
-          <div
-            ref={historyRef}
-            className="flex overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 gap-4 pb-4"
-          >
-            {browsingHistory.map((product) => (
-              <div key={product.product_id} className="flex-shrink-0 w-[180px] sm:w-[220px] md:w-[262px] bg-white">
-                <div className="relative aspect-square w-full">
-                  <Image
-                    src={product.image_link || "/placeholder.svg"}
-                    alt={product.title}
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-                <h3 className="text-base md:text-lg pt-3 font-semibold px-2">{product.title}</h3>
-              </div>
-            ))}
+
+        {isLoadingHistory ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+            <span className="ml-2 text-gray-600">Loading browsing history...</span>
           </div>
-          <button
-            onClick={scrollLeft}
-            className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
-            aria-label="Previous product"
-          >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
-          </button>
-          <button
-            onClick={scrollRight}
-            className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
-            aria-label="Next product"
-          >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
-          </button>
-        </div>
+        ) : browsingHistory.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-lg">
+              {currentUser
+                ? "No browsing history yet. Start exploring products!"
+                : "Sign in to see your browsing history"}
+            </p>
+            {!currentUser && (
+              <Button variant="outline" onClick={() => setIsAuthModalOpen(true)} className="mt-4 bg-transparent">
+                Sign In
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="relative">
+            <div
+              ref={historyRef}
+              className="flex overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 gap-4 pb-4"
+            >
+              {browsingHistory.map((item) => (
+                <Link
+                  key={item.productId}
+                  href={`/products/${item.productId}`}
+                  className="flex-shrink-0 w-[180px] sm:w-[220px] md:w-[262px] bg-white hover:shadow-lg transition-shadow duration-200"
+                >
+                  <div className="relative aspect-square w-full">
+                    <Image
+                      src={item.image || "/placeholder.svg"}
+                      alt={item.title || "Product"}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-base md:text-lg pt-3 font-semibold px-2 line-clamp-2">
+                    {item.title || "Product"}
+                  </h3>
+                  {item.category && <p className="text-sm text-gray-500 px-2 pb-2">{item.category}</p>}
+                </Link>
+              ))}
+            </div>
+            {browsingHistory.length > 0 && (
+              <>
+                <button
+                  onClick={scrollLeft}
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+                  aria-label="Previous product"
+                >
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+                </button>
+                <button
+                  onClick={scrollRight}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+                  aria-label="Next product"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="w-full py-8 mt-16 mb-8">
