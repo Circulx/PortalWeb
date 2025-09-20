@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import mongoose from "mongoose"
 import ProductDescription from "./product-description"
 import ProductReviews from "./product-reviews"
+import ProductActions from "./product-actions"
 import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
 import RequestQuoteButton from "@/components/product/request-quote-button"
@@ -288,54 +289,18 @@ export default async function ProductPage({ params }: { params: { id: string } }
                   </div>
                 </div>
 
-                {/* Wishlist Button */}
-                <div className="absolute top-4 right-4 z-20">
-                  <button className="bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Main Product Image */}
-                <div className="bg-gray-50 rounded-lg overflow-hidden">
-                  <img
-                    src={productImages[0] || "/placeholder.svg"}
-                    alt={product.title}
-                    className="w-full h-96 object-contain"
-                  />
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <button className="bg-orange-500 hover:bg-orange-600 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
-                      />
-                    </svg>
-                    ADD TO CART
-                  </button>
-                  <button className="bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z"
-                      />
-                    </svg>
-                    BUY NOW
-                  </button>
-                </div>
+                {/* Product Actions Component */}
+                <ProductActions
+                  productId={id}
+                  title={product.title}
+                  price={priceCalculation.finalPrice}
+                  imageUrl={productImages[0] || "/placeholder.svg"}
+                  discount={product.discount}
+                  sellerId={Number(product.seller_id) || Number(product.product_id) || 0}
+                  stock={product.stock}
+                  units={product.units}
+                  productImages={productImages}
+                />
               </div>
             </div>
           </div>
@@ -461,7 +426,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
                     <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                       <path
                         fillRule="evenodd"
-                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 01-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 100-2h5a1 1 0 011 1v5a1 1 0 01-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
                         clipRule="evenodd"
                       />
                     </svg>
