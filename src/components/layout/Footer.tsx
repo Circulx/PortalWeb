@@ -60,7 +60,7 @@ export default function Footer() {
               <Link href="/shipping-policy" className="block text-white hover:text-gray-300">
                 Shipping Policy
               </Link>
-              <Link href="/careers" className="block text-white hover:text-gray-300">
+              <Link href="/refund-policy" className="block text-white hover:text-gray-300">
                 Refund/Return policy
               </Link>
               <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
