@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { FormInput } from "@/components/ui/form-input"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { ContactDetails } from "@/types/profile"
 import { saveContactDetails } from "@/actions/profile"
@@ -14,19 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Loader2, Edit } from "lucide-react"
 
 const contactSchema = z.object({
-  contactName: z
-    .string()
-    .min(2, "Contact name is required")
-    .regex(/^[a-zA-Z\s.'-]+$/, "Contact name can only contain letters, spaces, periods, apostrophes, and hyphens"),
-  phoneNumber: z
-    .string()
-    .min(10, "Phone number must be exactly 10 digits")
-    .max(10, "Phone number must be exactly 10 digits")
-    .regex(/^[1-9][\d]{9}$/, "Phone number must be exactly 10 digits and cannot start with 0"),
-  emailId: z
-    .string()
-    .email("Please enter a valid email address")
-    .regex(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Please enter a valid email format"),
+  contactName: z.string().min(2, "Contact name is required"),
+  phoneNumber: z.string().min(10, "Valid phone number required"),
+  emailId: z.string().email("Valid email is required"),
   pickupTime: z.string().optional(), // Made optional
 })
 
@@ -124,7 +114,7 @@ export function ContactForm({ initialData, onSaved }: ContactFormProps) {
                   Contact Name<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., John Doe" {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., John Doe" {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -140,7 +130,7 @@ export function ContactForm({ initialData, onSaved }: ContactFormProps) {
                   Phone Number<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., 9876543210" {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., 9876543210" {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -156,7 +146,7 @@ export function ContactForm({ initialData, onSaved }: ContactFormProps) {
                   Email ID<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., john.doe@example.com" {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., john.doe@example.com" {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

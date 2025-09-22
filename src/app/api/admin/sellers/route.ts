@@ -126,53 +126,6 @@ export async function POST(request: Request) {
   try {
     const values = await request.json()
 
-    // Validate Legal Entity Name and Trade Name with regex
-    const alphanumericRegex = /^[a-zA-Z0-9\s]+$/
-    
-    if (!alphanumericRegex.test(values.legalEntityName)) {
-      return NextResponse.json({ error: "Legal Entity Name can only contain letters, numbers, and spaces" }, { status: 400 })
-    }
-    
-    if (!alphanumericRegex.test(values.tradeName)) {
-      return NextResponse.json({ error: "Trade Name can only contain letters, numbers, and spaces" }, { status: 400 })
-    }
-
-    // Validate Contact Name with regex
-    const nameRegex = /^[a-zA-Z\s.'-]+$/
-    if (!nameRegex.test(values.name)) {
-      return NextResponse.json({ error: "Name can only contain letters, spaces, periods, apostrophes, and hyphens" }, { status: 400 })
-    }
-
-    // Validate Phone Number with regex
-    const phoneRegex = /^[1-9][\d]{9}$/
-    if (!phoneRegex.test(values.phoneNumber)) {
-      return NextResponse.json({ error: "Phone number must be exactly 10 digits and cannot start with 0" }, { status: 400 })
-    }
-
-    // Validate Email with regex
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-    if (!emailRegex.test(values.emailId)) {
-      return NextResponse.json({ error: "Please enter a valid email format" }, { status: 400 })
-    }
-
-    // Validate Account Holder Name with regex
-    const accountHolderNameRegex = /^[a-zA-Z\s.'-]+$/
-    if (!accountHolderNameRegex.test(values.accountHolderName)) {
-      return NextResponse.json({ error: "Account holder name can only contain letters, spaces, periods, apostrophes, and hyphens" }, { status: 400 })
-    }
-
-    // Validate Account Number with regex
-    const accountNumberRegex = /^[0-9]+$/
-    if (!accountNumberRegex.test(values.accountNumber) || values.accountNumber.length < 8 || values.accountNumber.length > 20) {
-      return NextResponse.json({ error: "Account number must be 8-20 digits only" }, { status: 400 })
-    }
-
-    // Validate IFSC Code with regex
-    const ifscRegex = /^[A-Z]{4}0[A-Z0-9]{6}$/
-    if (!ifscRegex.test(values.ifscCode)) {
-      return NextResponse.json({ error: "IFSC code must be in format: 4 letters, 0, then 6 alphanumeric characters" }, { status: 400 })
-    }
-
     // Connect to the PROFILE_DB database
     const db = await connectProfileDB()
 

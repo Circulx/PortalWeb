@@ -6,7 +6,7 @@ import * as z from "zod"
 import { useState, useEffect } from "react"
 import { toast } from "sonner"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
-import { FormInput } from "@/components/ui/form-input"
+import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { BusinessDetails } from "@/types/profile"
 import { saveBusinessDetails } from "@/actions/profile"
@@ -17,11 +17,8 @@ const businessSchema = z.object({
   legalEntityName: z
     .string()
     .min(2, "Legal entity name is required")
-    .regex(/^[a-zA-Z0-9\s]+$/, "Legal entity name can only contain letters, numbers, and spaces"),
-  tradeName: z
-    .string()
-    .min(2, "Trade name is required")
-    .regex(/^[a-zA-Z0-9\s]+$/, "Trade name can only contain letters, numbers, and spaces"),
+    .regex(/^[a-zA-Z0-9\s]+$/, "Legal entity name can only contain alphanumeric characters and spaces"),
+  tradeName: z.string().min(2, "Trade name is required"),
   gstin: z.string().min(15, "Valid GSTIN required").max(15, "GSTIN must be 15 characters"),
   country: z.string().min(2, "Country is required"),
   pincode: z.string().min(6, "Valid pincode required"),
@@ -129,7 +126,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
                   Legal Entity Name<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., ABC Enterprises Pvt. Ltd." {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., ABC Enterprises Pvt. Ltd." {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -145,7 +142,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
                   Trade Name<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., ABC Store" {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., ABC Store" {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,7 +158,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
                   GSTIN<span className="text-red-500">*</span>
                 </FormLabel>
                 <FormControl>
-                  <FormInput placeholder="e.g., 22AAAAA0000A1Z5" {...field} disabled={!isEditing} />
+                  <Input placeholder="e.g., 22AAAAA0000A1Z5" {...field} disabled={!isEditing} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -178,7 +175,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
                     Country<span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <FormInput placeholder="e.g., India" {...field} disabled={!isEditing} />
+                    <Input placeholder="e.g., India" {...field} disabled={!isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -194,7 +191,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
                     Pincode<span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <FormInput placeholder="e.g., 400001" {...field} disabled={!isEditing} />
+                    <Input placeholder="e.g., 400001" {...field} disabled={!isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -212,7 +209,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
                     State<span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <FormInput placeholder="e.g., Maharashtra" {...field} disabled={!isEditing} />
+                    <Input placeholder="e.g., Maharashtra" {...field} disabled={!isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -228,7 +225,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
                     City<span className="text-red-500">*</span>
                   </FormLabel>
                   <FormControl>
-                    <FormInput placeholder="e.g., Mumbai" {...field} disabled={!isEditing} />
+                    <Input placeholder="e.g., Mumbai" {...field} disabled={!isEditing} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

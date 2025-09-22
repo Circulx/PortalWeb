@@ -12,7 +12,7 @@ import WishlistProvider from "@/components/providers/WishlistProvider"
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <Provider store={store}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <CartProvider>
           <WishlistProvider>
             {children}

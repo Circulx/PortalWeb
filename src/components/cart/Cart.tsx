@@ -12,11 +12,10 @@ import { useState, useEffect, useRef } from "react"
 import axios from "axios"
 import ProductCard from "@/components/layout/product-card"
 import "swiper/css"
-import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle, Heart, ShoppingCart } from "lucide-react"
+import { Truck, RefreshCw, Lock, Phone, ChevronLeft, ChevronRight, Trash2, AlertCircle } from "lucide-react"
 import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
-import { useWishlistSync } from "@/hooks/useWishlistSync"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { validateMOQ } from "@/lib/moq"
@@ -45,10 +44,12 @@ interface Product {
   sub_category_name: string
 }
 
-interface BrowsingHistoryItem {
+interface BrowsingHistoryProduct {
   productId: string
   title?: string
   image?: string
+  category?: string
+  viewedAt: Date
 }
 
 interface FeatureCardProps {
@@ -102,149 +103,6 @@ const features = [
   },
 ]
 
-// Component for browsing history cards that matches the product card style
-function BrowsingHistoryCard({ item }: { item: BrowsingHistoryItem }) {
-  const [productData, setProductData] = useState<Product | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const { addItem: addToCart } = useCartSync()
-  const { addItem: addToWishlist, removeItem: removeFromWishlist } = useWishlistSync()
-  const { toast } = useToast()
-  const wishlistItems = useSelector((state: RootState) => state.wishlist.items)
-  const isWishlisted = wishlistItems.some((wishItem) => wishItem.id === item.productId)
-
-  // Fetch full product data
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const response = await axios.get("/api/products")
-        const products: Product[] = response.data
-        const product = products.find((p) => p.product_id.toString() === item.productId)
-        setProductData(product || null)
-      } catch (error) {
-        console.error("Error fetching product:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
-    fetchProduct()
-  }, [item.productId])
-
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (!productData) return
-
-    addToCart({
-      item: {
-        id: item.productId,
-        title: productData.title,
-        image_link: productData.image_link,
-        price: productData.price,
-        discount: productData.discount || 0,
-        seller_id: productData.product_id,
-        units: productData.units || "units",
-        quantity: 1,
-      },
-      stock: productData.stock,
-    })
-
-    toast({
-      title: "Added to cart",
-      description: `${productData.title} has been added to your cart.`,
-    })
-  }
-
-  const handleToggleWishlist = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    
-    if (!productData) return
-
-    try {
-      if (isWishlisted) {
-        await removeFromWishlist(item.productId)
-        toast({
-          title: "Removed from wishlist",
-          description: `${productData.title} has been removed from your wishlist.`,
-        })
-      } else {
-        await addToWishlist({
-          id: item.productId,
-          title: productData.title,
-          image_link: productData.image_link,
-          price: productData.price,
-          discount: productData.discount || 0,
-          seller_id: productData.product_id,
-          units: undefined,
-          stock: 0,
-        })
-        toast({
-          title: "Added to wishlist",
-          description: `${productData.title} has been added to your wishlist.`,
-        })
-      }
-    } catch (error) {
-      console.error("Error toggling wishlist:", error)
-      toast({
-        title: "Error",
-        description: "Failed to update wishlist. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex-shrink-0 w-[262px] bg-white border border-gray-200 rounded-lg p-4">
-        <div className="animate-pulse">
-          <div className="bg-gray-200 h-48 rounded mb-4"></div>
-          <div className="bg-gray-200 h-4 rounded mb-2"></div>
-          <div className="bg-gray-200 h-4 rounded w-2/3"></div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!productData) {
-    return (
-      <Link href={`/products/${item.productId}`} className="flex-shrink-0 w-[280px] bg-white border border-gray-200 rounded-lg p-4">
-        <div className="relative h-48 mb-4">
-          <Image
-            src={item.image || "/placeholder.svg"}
-            alt={item.title || "Product"}
-            fill
-            className="object-contain rounded"
-          />
-        </div>
-        <h3 className="font-medium text-gray-900 mb-2 line-clamp-2">{item.title || "Product"}</h3>
-        <p className="text-sm text-gray-500">Product details unavailable</p>
-      </Link>
-    )
-  }
-
-  return (
-    <div className="flex-shrink-0 w-[262px]">
-      <ProductCard
-        title={productData.title}
-        company={productData.seller_name}
-        location={productData.location}
-        price={productData.price}
-        discount={productData.discount}
-        image_link={productData.image_link}
-        href={`/products/${productData.product_id}`}
-        rating={productData.rating}
-        originalPrice={productData.price + (productData.discount || 0)}
-        hoverImage={productData.image_link}
-        seller_id={productData.seller_id || 0}
-        stock={productData.stock}
-        units={productData.units}
-      />
-    </div>
-  )
-}
-
 export default function Cart() {
   const router = useRouter()
   const dispatch = useDispatch()
@@ -257,6 +115,9 @@ export default function Cart() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [isCheckingUser, setIsCheckingUser] = useState(true)
   const [moqStatus, setMoqStatus] = useState({ isValid: false, message: "", shortfall: 5000 })
+  const [browsingHistory, setBrowsingHistory] = useState<BrowsingHistoryProduct[]>([])
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const historyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const checkUser = async () => {
@@ -272,6 +133,30 @@ export default function Cart() {
 
     checkUser()
   }, [])
+
+  useEffect(() => {
+    const fetchBrowsingHistory = async () => {
+      if (!currentUser) {
+        setBrowsingHistory([])
+        return
+      }
+
+      setIsLoadingHistory(true)
+      try {
+        const response = await axios.get("/api/browsing-history?limit=8")
+        if (response.data && response.data.items) {
+          setBrowsingHistory(response.data.items)
+        }
+      } catch (error) {
+        console.error("Error fetching browsing history:", error)
+        setBrowsingHistory([])
+      } finally {
+        setIsLoadingHistory(false)
+      }
+    }
+
+    fetchBrowsingHistory()
+  }, [currentUser])
 
   useEffect(() => {
     const validateStock = async () => {
@@ -332,12 +217,6 @@ export default function Cart() {
     const timeoutId = setTimeout(validateStock, 1000)
     return () => clearTimeout(timeoutId)
   }, [cartItems.length, cartInitialized, dispatch, toast])
-
-  useEffect(() => {
-    const cartTotal = calculateCartSubTotal()
-    const newMoqStatus = validateMOQ(cartTotal)
-    setMoqStatus(newMoqStatus)
-  }, [cartItems])
 
   const { increaseQuantity, decreaseQuantity, removeItem, clearCart } = useCartSync()
 
@@ -403,8 +282,6 @@ export default function Cart() {
   }
 
   const [recommendedProducts, setRecommendedProducts] = useState<Product[]>([])
-  const [historyItems, setHistoryItems] = useState<BrowsingHistoryItem[]>([])
-  const historyRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const fetchRecommendedProducts = async () => {
@@ -421,37 +298,23 @@ export default function Cart() {
     fetchRecommendedProducts()
   }, [])
 
-  // Load browsing history (user -> API, guest -> localStorage)
   useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const res = await fetch("/api/browsing-history?limit=16")
-        const data = await res.json()
-        if (Array.isArray(data.items) && data.items.length > 0) {
-          const items = data.items.map((x: any) => ({
-            productId: x.productId,
-            title: x.title,
-            image: x.image,
-          }))
-          setHistoryItems(items)
-          return
-        }
-      } catch (_err) {
-        // fall back to guest storage
-      }
+    const cartTotal = calculateCartSubTotal()
+    const newMoqStatus = validateMOQ(cartTotal)
+    setMoqStatus(newMoqStatus)
+  }, [cartItems])
 
-      try {
-        const key = "guest_browsing_history"
-        const guest = JSON.parse(localStorage.getItem(key) || "[]") as Array<any>
-        const items = guest.map((x) => ({ productId: String(x.productId), title: x.title, image: x.image }))
-        setHistoryItems(items)
-      } catch (_e) {
-        setHistoryItems([])
-      }
+  const scrollLeft = () => {
+    if (historyRef.current) {
+      historyRef.current.scrollBy({ left: -300, behavior: "smooth" })
     }
+  }
 
-    loadHistory()
-  }, [])
+  const scrollRight = () => {
+    if (historyRef.current) {
+      historyRef.current.scrollBy({ left: 300, behavior: "smooth" })
+    }
+  }
 
   const calculateSubTotal = (price: number, quantity: number) => {
     return (price || 0) * (quantity || 0)
@@ -761,69 +624,82 @@ export default function Cart() {
         </div>
       </div>
 
-      <div className="mt-16 sm:mt-20 flex justify-center">
-        <div className="w-full max-w-[1280px] flex flex-col md:flex-row bg-[#FDCC0D] rounded-[20px] overflow-hidden">
-          <div className="w-full md:w-1/2 h-[250px] md:h-auto relative">
-            <svg
-              className="w-full h-full object-cover"
-              viewBox="0 0 795 421"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              xmlnsXlink="http://www.w3.org/1999/xlink"
-            >
-              <rect width="835" height="421" transform="matrix(-1 0 0 1 795 0)" fill="url(#pattern0_1411_15703)" />
-              <defs>
-                <pattern id="pattern0_1411_15703" patternContentUnits="objectBoundingBox" width="1" height="1">
-                  <use xlinkHref="#image0_1411_15703" transform="matrix(0.00166667 0 0 0.00330562 0 -0.161124)" />
-                </pattern>
-                <image id="image0_1411_15703" width="600" height="400" />
-              </defs>
-            </svg>
-          </div>
-          <div className="w-full md:w-1/2 flex flex-col justify-center p-6 md:p-10">
-            <h3 className="text-3xl md:text-4xl lg:text-6xl font-bold text-white mb-4">
-              Get a free <br className="hidden md:block" /> demo
-            </h3>
-            <p className="text-white text-sm md:text-base mb-6">
-              Lorem Neque porro quisquam est qui <br className="hidden md:block" /> dolorem ipsum quia dolor sit
-            </p>
-            <button className="bg-[#14BA6D] text-white py-3 px-8 rounded-lg text-sm md:text-base font-medium self-start">
-              Explore now
-            </button>
-          </div>
+      <div className="mt-16 sm:mt-20 max-w-[1440px] mx-auto">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-2 sm:mb-0">Your browsing history</h2>
+          {browsingHistory.length > 0 && (
+            <div className="underline text-sm">
+              <p>Showing {browsingHistory.length} recent items</p>
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Browsing History Section - slider aligned like Recommended */}
-      {historyItems.length > 0 && (
-      <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">Your browsing history</h2>
-        <div className="relative">
-          <div
-            ref={historyRef}
-            className="flex overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 gap-4 pb-4"
-          >
-            {historyItems.map((item) => (
-              <BrowsingHistoryCard key={item.productId} item={item} />
-            ))}
+        {isLoadingHistory ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+            <span className="ml-2 text-gray-600">Loading browsing history...</span>
           </div>
-          <button
-            onClick={() => historyRef.current?.scrollBy({ left: -300, behavior: 'smooth' })}
-            className="absolute left-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
-            aria-label="Previous product"
-          >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
-          </button>
-          <button
-            onClick={() => historyRef.current?.scrollBy({ left: 300, behavior: 'smooth' })}
-            className="absolute right-0 top-1/2 -translate-y-1/2 bg-white bg-opacity-70 hover:bg-opacity-90 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
-            aria-label="Next product"
-          >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
-          </button>
-        </div>
+        ) : browsingHistory.length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-gray-500 text-lg">
+              {currentUser
+                ? "No browsing history yet. Start exploring products!"
+                : "Sign in to see your browsing history"}
+            </p>
+            {!currentUser && (
+              <Button variant="outline" onClick={() => setIsAuthModalOpen(true)} className="mt-4 bg-transparent">
+                Sign In
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="relative">
+            <div
+              ref={historyRef}
+              className="flex overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300 gap-4 pb-4"
+            >
+              {browsingHistory.map((item) => (
+                <Link
+                  key={item.productId}
+                  href={`/products/${item.productId}`}
+                  className="flex-shrink-0 w-[180px] sm:w-[220px] md:w-[262px] bg-white hover:shadow-lg transition-shadow duration-200"
+                >
+                  <div className="relative aspect-square w-full">
+                    <Image
+                      src={item.image || "/placeholder.svg"}
+                      alt={item.title || "Product"}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <h3 className="text-base md:text-lg pt-3 font-semibold px-2 line-clamp-2">
+                    {item.title || "Product"}
+                  </h3>
+                  {item.category && <p className="text-sm text-gray-500 px-2 pb-2">{item.category}</p>}
+                </Link>
+              ))}
+            </div>
+            {browsingHistory.length > 0 && (
+              <>
+                <button
+                  onClick={scrollLeft}
+                  className="absolute left-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+                  aria-label="Previous product"
+                >
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+                </button>
+                <button
+                  onClick={scrollRight}
+                  className="absolute right-0 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-75 rounded-full p-2 shadow-md transition-all duration-200 focus:outline-none z-10"
+                  aria-label="Next product"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
-      )}
 
       <div className="w-full py-8 mt-16 mb-8">
         <div className="rounded-2xl py-6 px-4 sm:px-6 md:px-8 lg:px-12 w-full max-w-full">

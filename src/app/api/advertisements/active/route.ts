@@ -14,34 +14,24 @@ const CACHE_DURATION = 5 * 60 * 1000
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-  
+
   try {
     const { searchParams } = new URL(request.url)
     const deviceType = searchParams.get("deviceType") || "all"
     const position = searchParams.get("position") || "all"
 
-    // Check if we have valid cached data for this device type and position
-    if (
-      advertisementCache &&
-      (advertisementCache.deviceType === deviceType || advertisementCache.deviceType === "all") &&
-      (advertisementCache.position === position || advertisementCache.position === "all") &&
-      Date.now() - advertisementCache.timestamp < CACHE_DURATION
-    ) {
+    console.log("[v0] API: Fetching advertisements for:", { deviceType, position })
+
+    if (advertisementCache && Date.now() - advertisementCache.timestamp < CACHE_DURATION) {
       const responseTime = Date.now() - startTime
-      console.log(`Returning cached advertisements for device type: ${deviceType}, position: ${position} in ${responseTime}ms`)
-      
-      // Filter by device type and position if needed
-      let filteredData = advertisementCache.data
-      if (deviceType !== "all" && advertisementCache.deviceType === "all") {
-        filteredData = filteredData.filter((ad) => 
-          ad.deviceType === deviceType || ad.deviceType === "all"
-        )
-      }
-      if (position !== "all" && advertisementCache.position === "all") {
-        filteredData = filteredData.filter((ad) => 
-          ad.position === position || ad.position === "all"
-        )
-      }
+      console.log(`[v0] API: Returning cached advertisements in ${responseTime}ms`)
+
+      // Filter cached data by device type and position
+      const filteredData = advertisementCache.data.filter((ad) => {
+        const deviceMatch = deviceType === "all" || ad.deviceType === deviceType || ad.deviceType === "all"
+        const positionMatch = position === "all" || ad.position === position || ad.position === "all"
+        return deviceMatch && positionMatch
+      })
 
       return NextResponse.json({
         success: true,
@@ -52,7 +42,7 @@ export async function GET(request: NextRequest) {
       })
     }
 
-    console.log(`Fetching fresh advertisements for device type: ${deviceType}, position: ${position}`)
+    console.log(`[v0] API: Fetching fresh advertisements from database`)
 
     const connection = await connectProfileDB()
     const Advertisement = connection.models.Advertisement
@@ -74,43 +64,54 @@ export async function GET(request: NextRequest) {
       },
     ]
 
-    // Device type filter
-    if (deviceType !== "all") {
-      filter.deviceType = { $in: [deviceType, "all"] }
-    }
-
-    // Position filter
-    if (position !== "all") {
-      filter.position = { $in: [position, "all"] }
-    }
+    console.log("[v0] API: Database filter:", JSON.stringify(filter, null, 2))
 
     const advertisements = await Advertisement.find(filter)
       .select("title subtitle description imageUrl imageData linkUrl order deviceType position isActive")
       .sort({ order: 1, createdAt: -1 })
-      .limit(10)
+      .limit(50) // Increased limit to get more advertisements
       .lean()
       .exec()
 
     const responseTime = Date.now() - startTime
-    console.log(`Found ${advertisements.length} advertisements for device type: ${deviceType}, position: ${position} in ${responseTime}ms`)
+    console.log(`[v0] API: Found ${advertisements.length} advertisements in ${responseTime}ms`)
 
-    // Update cache
+    advertisements.forEach((ad, index) => {
+      console.log(`[v0] API: Ad ${index + 1}:`, {
+        id: ad._id,
+        title: ad.title,
+        position: ad.position,
+        deviceType: ad.deviceType,
+        isActive: ad.isActive,
+      })
+    })
+
+    // Update cache with all advertisements
     advertisementCache = {
       data: advertisements,
       timestamp: Date.now(),
-      deviceType: deviceType,
-      position: position,
+      deviceType: "all",
+      position: "all",
     }
+
+    // Filter for response
+    const filteredData = advertisements.filter((ad) => {
+      const deviceMatch = deviceType === "all" || ad.deviceType === deviceType || ad.deviceType === "all"
+      const positionMatch = position === "all" || ad.position === position || ad.position === "all"
+      return deviceMatch && positionMatch
+    })
+
+    console.log(`[v0] API: Returning ${filteredData.length} filtered advertisements`)
 
     return NextResponse.json({
       success: true,
-      data: advertisements,
-      count: advertisements.length,
+      data: filteredData,
+      count: filteredData.length,
       cached: false,
       responseTime: responseTime,
     })
   } catch (error) {
-    console.error("Error fetching active advertisements:", error)
+    console.error("[v0] API: Error fetching active advertisements:", error)
     return NextResponse.json(
       {
         success: false,
