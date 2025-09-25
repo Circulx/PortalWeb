@@ -24,7 +24,7 @@ interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
-  position: "homepage"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
   startDate?: string
   endDate?: string
   createdAt: string
@@ -49,7 +49,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
     isActive: true,
     order: 0,
     deviceType: "all" as "all" | "desktop" | "mobile" | "tablet",
-    position: "homepage" as const,
+    position: "all" as "homepage" | "category" | "bottomofhomepage" | "cart" | "all",
     startDate: "",
     endDate: "",
   })
@@ -69,7 +69,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
         // Set order to 0 for single advertisement positions (not used)
         order: advertisement.order,
         deviceType: advertisement.deviceType,
-        position: "homepage",
+        position: advertisement.position,
         startDate: advertisement.startDate ? advertisement.startDate.split("T")[0] : "",
         endDate: advertisement.endDate ? advertisement.endDate.split("T")[0] : "",
       })
@@ -86,7 +86,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
         isActive: true,
         order: 0,
         deviceType: "all",
-        position: "homepage",
+        position: "all",
         startDate: "",
         endDate: "",
       })
@@ -150,12 +150,16 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
 
       const method = advertisement ? "PUT" : "POST"
 
+      const requestBody = advertisement
+        ? formData // For PUT requests, send form data directly
+        : formData // For POST requests, also send form data directly
+
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(requestBody),
       })
 
       const result = await response.json()
@@ -344,8 +348,34 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="position">Advertisement Position</Label>
-              <div className="w-full p-2 border rounded-md bg-gray-50 text-gray-700">Homepage Slider Only</div>
-              <p className="text-xs text-gray-500">All advertisements will appear on the homepage slider.</p>
+              <select
+                id="position"
+                value={formData.position}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    position: e.target.value as "homepage" | "category" | "bottomofhomepage" | "cart" | "all",
+                  }))
+                }
+                className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all" className="text-gray-900">
+                  All Pages
+                </option>
+                <option value="homepage" className="text-gray-900">
+                  Homepage Slider
+                </option>
+                <option value="category" className="text-gray-900">
+                  Category Section
+                </option>
+                <option value="bottomofhomepage" className="text-gray-900">
+                  Bottom of Homepage
+                </option>
+                <option value="cart" className="text-gray-900">
+                  Cart Page
+                </option>
+              </select>
+              <p className="text-xs text-gray-500">Choose where this advertisement will be displayed</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="deviceType">Device Type</Label>

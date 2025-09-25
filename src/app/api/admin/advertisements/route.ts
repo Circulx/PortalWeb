@@ -111,7 +111,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    console.log("Creating advertisement with data:", body)
+    console.log("[v0] Creating advertisement with data:", {
+      ...body,
+      imageData: body.imageData ? "base64 data present" : "no base64 data",
+    })
 
     // Only validate required fields - title, subtitle, description are now optional
     const { imageUrl, imageData } = body
@@ -126,7 +129,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new advertisement with optional fields
     const advertisement = new Advertisement({
       title: body.title || "", // Default to empty string if not provided
       subtitle: body.subtitle || "", // Default to empty string if not provided
@@ -137,13 +139,13 @@ export async function POST(request: NextRequest) {
       isActive: body.isActive !== undefined ? body.isActive : true,
       order: body.order || 1,
       deviceType: body.deviceType || "all",
-      position: "homepage",
-      startDate: body.startDate || null,
-      endDate: body.endDate || null,
+      position: body.position || "all", // Use position from form data
+      startDate: body.startDate ? new Date(body.startDate) : null,
+      endDate: body.endDate ? new Date(body.endDate) : null,
     })
 
     const savedAdvertisement = await advertisement.save()
-    console.log("Advertisement saved successfully:", savedAdvertisement._id)
+    console.log("[v0] Advertisement saved successfully with position:", savedAdvertisement.position)
 
     return NextResponse.json({
       success: true,
@@ -215,9 +217,9 @@ export async function PUT(request: NextRequest) {
           isActive: updateData.isActive !== undefined ? updateData.isActive : true,
           order: updateData.order || 1,
           deviceType: updateData.deviceType || "all",
-          position: "homepage",
-          startDate: updateData.startDate || null,
-          endDate: updateData.endDate || null,
+          position: updateData.position || "all", // Use position from form data
+          startDate: updateData.startDate ? new Date(updateData.startDate) : null,
+          endDate: updateData.endDate ? new Date(updateData.endDate) : null,
           updatedAt: new Date(),
         },
       },

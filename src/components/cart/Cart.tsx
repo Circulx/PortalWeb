@@ -19,6 +19,7 @@ import { useCartSync } from "@/hooks/useCartSync"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 import { validateMOQ } from "@/lib/moq"
+import CartAdvertisement from "./CartAdvertisement"
 
 interface Product {
   product_id: number
@@ -598,6 +599,8 @@ export default function Cart() {
           </div>
         </div>
       )}
+
+      {displayItems.length > 0 && <CartAdvertisement />}
 
       <div className="mt-16 sm:mt-24 lg:mt-32 max-w-[1120px] mx-auto">
         <h2 className="text-xl sm:text-2xl lg:text-3xl font-semibold mb-6 text-center">
