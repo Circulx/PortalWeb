@@ -185,16 +185,8 @@ export default function SimpleSlider() {
       <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="flex flex-col items-center space-y-4">
-            <p className="text-gray-600 text-sm">Unable to load advertisements</p>
-            <button
-              onClick={() => {
-                console.log("[v0] Retrying advertisement fetch")
-                dispatch(fetchAdvertisements({ deviceType }))
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
-            >
-              Retry
-            </button>
+            
+            
           </div>
         </div>
       </div>
