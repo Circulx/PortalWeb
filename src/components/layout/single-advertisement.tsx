@@ -20,8 +20,17 @@ export default function SingleAdvertisement({
   const [currentSlide, setCurrentSlide] = useState(0)
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [currentDeviceType, setCurrentDeviceType] = useState<string>("desktop")
+  const [isClosed, setIsClosed] = useState(false)
 
   const { advertisements, status } = useSelector((state: RootState) => state.advertisements)
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const closedKey = `ad-closed-${position}`
+      const wasClosed = sessionStorage.getItem(closedKey) === "true"
+      setIsClosed(wasClosed)
+    }
+  }, [position])
 
   // Determine device type
   useEffect(() => {
@@ -60,8 +69,16 @@ export default function SingleAdvertisement({
     setCurrentSlide(index)
   }, [])
 
-  // Don't render if no ads or not loaded
-  if (filteredAds.length === 0 || status !== "succeeded") {
+  const handleClose = useCallback(() => {
+    setIsClosed(true)
+    if (typeof window !== "undefined") {
+      const closedKey = `ad-closed-${position}`
+      sessionStorage.setItem(closedKey, "true")
+    }
+  }, [position])
+
+  // Don't render if advertisement is closed or no ads or not loaded
+  if (isClosed || filteredAds.length === 0 || status !== "succeeded") {
     return null
   }
 
@@ -73,6 +90,7 @@ export default function SingleAdvertisement({
   }
 
   const shouldUseFullWidth = position === "bottomofhomepage" || position === "cart"
+  const shouldShowCloseButton = position === "bottomofhomepage" || position === "cart"
 
   return (
     <div className={`${shouldUseFullWidth ? "w-full" : "w-full"} ${className}`}>
@@ -80,6 +98,19 @@ export default function SingleAdvertisement({
         className={`${shouldUseFullWidth ? "relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" : "relative w-full"}`}
       >
         <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
+          {shouldShowCloseButton && (
+            <button
+              onClick={handleClose}
+              className="absolute top-2 right-2 z-30 w-8 h-8 bg-black/50 hover:bg-black/70 rounded-full transition-all duration-300 backdrop-blur-sm flex items-center justify-center group"
+              aria-label="Close advertisement"
+            >
+              <div className="relative w-4 h-4">
+                <div className="absolute top-1/2 left-1/2 w-3 h-0.5 bg-white transform -translate-x-1/2 -translate-y-1/2 rotate-45"></div>
+                <div className="absolute top-1/2 left-1/2 w-3 h-0.5 bg-white transform -translate-x-1/2 -translate-y-1/2 -rotate-45"></div>
+              </div>
+            </button>
+          )}
+
           {filteredAds.map((currentAd, index) => {
             const imageSource = getImageSource(currentAd)
             const isCurrentSlide = index === currentSlide
@@ -220,9 +251,10 @@ export default function SingleAdvertisement({
           )}
         </div>
 
+        
       </div>
 
-     
+      
     </div>
   )
 }
