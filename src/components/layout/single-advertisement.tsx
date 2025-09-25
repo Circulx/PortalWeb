@@ -1,28 +1,28 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
-import type { Advertisement } from "@/store/slices/advertisementSlice"
 
 interface SingleAdvertisementProps {
-  position?: "homepage" | "category" | "bottomofhomepage"
+  position?: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
   className?: string
   deviceType?: "desktop" | "mobile" | "tablet" | "all"
 }
 
-export default function SingleAdvertisement({ 
+export default function SingleAdvertisement({
   position = "homepage",
   className = "",
-  deviceType
+  deviceType,
 }: SingleAdvertisementProps) {
-  const [imageError, setImageError] = useState(false)
+  const [currentSlide, setCurrentSlide] = useState(0)
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({})
   const [currentDeviceType, setCurrentDeviceType] = useState<string>("desktop")
-  
+
   const { advertisements, status } = useSelector((state: RootState) => state.advertisements)
-  
+
   // Determine device type
   useEffect(() => {
     if (deviceType) {
@@ -35,179 +35,194 @@ export default function SingleAdvertisement({
     }
   }, [deviceType])
 
-  // Filter advertisements for the current device type and position
-  const filteredAds = advertisements.filter(ad => 
-    ad.isActive && 
-    (ad.deviceType === currentDeviceType || ad.deviceType === "all") &&
-    ad.position === position
+  const filteredAds = advertisements.filter(
+    (ad) =>
+      ad.isActive &&
+      (ad.deviceType === currentDeviceType || ad.deviceType === "all") &&
+      (ad.position === position || ad.position === "all"),
   )
 
-  // Get the first available advertisement (no slides, just one ad)
-  const currentAd = filteredAds[0]
+  const handleImageError = useCallback((adId: string) => {
+    setImageErrors((prev) => ({ ...prev, [adId]: true }))
+  }, [])
+
+  useEffect(() => {
+    if (filteredAds.length <= 1) return
+
+    const timer = setInterval(() => {
+      setCurrentSlide((prevSlide) => (prevSlide + 1) % filteredAds.length)
+    }, 5000)
+
+    return () => clearInterval(timer)
+  }, [filteredAds.length])
+
+  const goToSlide = useCallback((index: number) => {
+    setCurrentSlide(index)
+  }, [])
 
   // Don't render if no ads or not loaded
-  if (filteredAds.length === 0 || status !== "succeeded" || !currentAd) {
+  if (filteredAds.length === 0 || status !== "succeeded") {
     return null
   }
 
   // Get image source with fallback
-  const getImageSource = () => {
-    if (currentAd.imageData) return currentAd.imageData
-    if (currentAd.imageUrl) return currentAd.imageUrl
-    return "/placeholder.svg?height=200&width=800"
+  const getImageSource = (ad: any) => {
+    if (ad.imageData) return ad.imageData
+    if (ad.imageUrl) return ad.imageUrl
+    return "/placeholder.svg?height=400&width=1200"
   }
 
-  const imageSource = getImageSource()
-
-  // Determine styling based on position
-  const getPositionStyles = () => {
-    switch (position) {
-      case "homepage":
-        return "w-full h-[200px] bg-gradient-to-r from-blue-50 to-blue-100"
-      case "category":
-        return "w-full h-[150px] bg-gradient-to-r from-green-50 to-green-100"
-      case "bottomofhomepage":
-        return "w-full h-[250px] bg-gradient-to-r from-purple-50 to-purple-100"
-      default:
-        return "w-full h-[200px] bg-gradient-to-r from-gray-50 to-gray-100"
-    }
-  }
-
-  const getBorderStyles = () => {
-    switch (position) {
-      case "homepage":
-        return "border-blue-200"
-      case "category":
-        return "border-green-200"
-      case "bottomofhomepage":
-        return "border-purple-200"
-      default:
-        return "border-gray-200"
-    }
-  }
+  const shouldUseFullWidth = position === "bottomofhomepage" || position === "cart"
 
   return (
-    <div className={`relative w-full mb-6 ${className}`}>
-      {/* Advertisement Container */}
-      <div className={`relative ${getPositionStyles()} rounded-lg overflow-hidden border ${getBorderStyles()} shadow-sm`}>
-        {/* Advertisement Content */}
-        <div className="relative w-full h-full">
-          {currentAd.linkUrl ? (
-            <Link href={currentAd.linkUrl} className="block w-full h-full">
-              <div className="relative w-full h-full">
-                {!imageError ? (
-                  imageSource.startsWith("http") && typeof window !== "undefined" && !imageSource.startsWith(window.location.origin) ? (
-                    <img
-                      src={imageSource}
-                      alt={currentAd.title || "Advertisement"}
-                      className="w-full h-full object-cover"
-                      onError={() => setImageError(true)}
-                      loading="lazy"
-                    />
+    <div className={`${shouldUseFullWidth ? "w-full" : "w-full"} ${className}`}>
+      <div
+        className={`${shouldUseFullWidth ? "relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" : "relative w-full"}`}
+      >
+        <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
+          {filteredAds.map((currentAd, index) => {
+            const imageSource = getImageSource(currentAd)
+            const isCurrentSlide = index === currentSlide
+
+            const SlideContent = () => (
+              <div
+                className={`absolute top-0 left-0 w-full h-full transition-opacity duration-700 ${
+                  isCurrentSlide ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                {/* Image container */}
+                <div className="absolute inset-0 w-full h-full">
+                  {!imageErrors[currentAd._id] ? (
+                    imageSource.startsWith("http") &&
+                    typeof window !== "undefined" &&
+                    !imageSource.startsWith(window.location.origin) ? (
+                      <img
+                        src={imageSource || "/placeholder.svg"}
+                        alt={currentAd.title || "Advertisement"}
+                        className="w-full h-full object-cover"
+                        onError={() => handleImageError(currentAd._id)}
+                        loading={index === 0 ? "eager" : "lazy"}
+                      />
+                    ) : (
+                      <Image
+                        src={imageSource || "/placeholder.svg"}
+                        alt={currentAd.title || "Advertisement"}
+                        fill
+                        className="object-cover"
+                        onError={() => handleImageError(currentAd._id)}
+                        priority={index === 0}
+                        unoptimized={imageSource.startsWith("data:")}
+                        sizes="100vw"
+                        quality={80}
+                        placeholder="blur"
+                        blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5drrMNN91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+                      />
+                    )
                   ) : (
-                    <Image
-                      src={imageSource}
-                      alt={currentAd.title || "Advertisement"}
-                      fill
-                      className="object-cover"
-                      onError={() => setImageError(true)}
-                      priority={false}
-                      unoptimized={imageSource.startsWith("data:")}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
-                      quality={80}
-                      placeholder="blur"
-                      blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5drrMNN91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                    />
-                  )
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-400">Image not available</span>
-                  </div>
-                )}
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <span className="text-gray-400">Image not available</span>
+                    </div>
+                  )}
+
+                  {/* Gradient overlay for text readability */}
+                  {(currentAd.title || currentAd.subtitle || currentAd.description) && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent sm:from-black/60 sm:via-black/40" />
+                  )}
+                </div>
 
                 {/* Content overlay */}
-                {(currentAd.title || currentAd.subtitle || currentAd.description) && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
-                )}
-
-                {/* Text content */}
-                <div className="absolute inset-0 flex items-center">
-                  <div className="px-6 text-white">
-                    {currentAd.title && (
-                      <h3 className="text-xl font-bold mb-2">{currentAd.title}</h3>
-                    )}
-                    {currentAd.subtitle && (
-                      <p className="text-lg mb-2 opacity-90">{currentAd.subtitle}</p>
-                    )}
-                    {currentAd.description && (
-                      <p className="text-sm opacity-80 line-clamp-2">{currentAd.description}</p>
-                    )}
-                  </div>
+                <div className="relative h-full container mx-auto px-4 flex items-center">
+                  {(currentAd.title || currentAd.subtitle || currentAd.description) && (
+                    <div className="w-full sm:w-2/3 md:w-1/2 lg:w-2/5 text-left z-10 p-4 md:p-6 rounded-lg bg-white/10 backdrop-blur-sm">
+                      {currentAd.title && (
+                        <h2 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 text-white drop-shadow-md">
+                          {currentAd.title}
+                        </h2>
+                      )}
+                      {currentAd.subtitle && (
+                        <div className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 text-white drop-shadow-lg">
+                          {currentAd.subtitle}
+                        </div>
+                      )}
+                      {currentAd.description && (
+                        <p className="text-base sm:text-lg text-white/90 drop-shadow-md mb-4">
+                          {currentAd.description}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-            </Link>
-          ) : (
-            <div className="relative w-full h-full">
-              {!imageError ? (
-                imageSource.startsWith("http") && typeof window !== "undefined" && !imageSource.startsWith(window.location.origin) ? (
-                  <img
-                    src={imageSource}
-                    alt={currentAd.title || "Advertisement"}
-                    className="w-full h-full object-cover"
-                    onError={() => setImageError(true)}
-                    loading="lazy"
-                  />
+            )
+
+            return (
+              <div key={currentAd._id} className="h-full">
+                {currentAd.linkUrl ? (
+                  <Link href={currentAd.linkUrl}>
+                    <SlideContent />
+                  </Link>
                 ) : (
-                  <Image
-                    src={imageSource}
-                    alt={currentAd.title || "Advertisement"}
-                    fill
-                    className="object-cover"
-                    onError={() => setImageError(true)}
-                    priority={false}
-                    unoptimized={imageSource.startsWith("data:")}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 100vw, 100vw"
-                    quality={80}
-                    placeholder="blur"
-                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5drrMNN91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
-                  />
-                )
-              ) : (
-                <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                  <span className="text-gray-400">Image not available</span>
-                </div>
-              )}
-
-              {/* Content overlay */}
-              {(currentAd.title || currentAd.subtitle || currentAd.description) && (
-                <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent" />
-              )}
-
-              {/* Text content */}
-              <div className="absolute inset-0 flex items-center">
-                <div className="px-6 text-white">
-                  {currentAd.title && (
-                    <h3 className="text-xl font-bold mb-2">{currentAd.title}</h3>
-                  )}
-                  {currentAd.subtitle && (
-                    <p className="text-lg mb-2 opacity-90">{currentAd.subtitle}</p>
-                  )}
-                  {currentAd.description && (
-                    <p className="text-sm opacity-80 line-clamp-2">{currentAd.description}</p>
-                  )}
-                </div>
+                  <SlideContent />
+                )}
               </div>
+            )
+          })}
+
+          {filteredAds.length > 1 && (
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2 z-20">
+              {filteredAds.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => goToSlide(index)}
+                  className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                    currentSlide === index ? "bg-white" : "bg-white/30 hover:bg-white/50"
+                  }`}
+                  aria-label={`Go to slide ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
+
+          {filteredAds.length > 1 && (
+            <>
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  goToSlide((currentSlide - 1 + filteredAds.length) % filteredAds.length)
+                }}
+                className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/30 hover:bg-white/50 rounded-full transition-all duration-300 z-20 backdrop-blur-sm flex items-center justify-center group"
+                aria-label="Previous slide"
+              >
+                <div className="w-2 h-2 border-l-2 border-b-2 border-white transform rotate-45 group-hover:scale-110 transition-transform"></div>
+              </button>
+              <button
+                onClick={(e) => {
+                  e.preventDefault()
+                  goToSlide((currentSlide + 1) % filteredAds.length)
+                }}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-white/30 hover:bg-white/50 rounded-full transition-all duration-300 z-20 backdrop-blur-sm flex items-center justify-center group"
+                aria-label="Next slide"
+              >
+                <div className="w-2 h-2 border-r-2 border-t-2 border-white transform rotate-45 group-hover:scale-110 transition-transform"></div>
+              </button>
+            </>
+          )}
+
+          {filteredAds.length > 1 && (
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-white/20">
+              <div
+                className="h-full bg-white transition-all duration-500 ease-linear"
+                style={{
+                  width: `${((currentSlide + 1) / filteredAds.length) * 100}%`,
+                }}
+              />
             </div>
           )}
         </div>
+
       </div>
 
-      {/* Ad label */}
-      <div className="text-center mt-2">
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-          Advertisement
-        </span>
-      </div>
+     
     </div>
   )
 }
