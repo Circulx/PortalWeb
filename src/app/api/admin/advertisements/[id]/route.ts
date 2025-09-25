@@ -23,7 +23,7 @@ interface AdvertisementDocument {
   [key: string]: any // For any additional fields
 }
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verify admin authentication
     const user = await getCurrentUser()
@@ -39,7 +39,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       throw new Error("Advertisement model not found")
     }
 
-    const { id } = await params
+    const { id } = params
     console.log("Fetching advertisement with ID:", id)
 
     const advertisement = (await Advertisement.findById(id).lean()) as AdvertisementDocument | null
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verify admin authentication
     const user = await getCurrentUser()
@@ -87,14 +87,41 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       throw new Error("Advertisement model not found")
     }
 
-    const { id } = await params
+    const { id } = params
     const body = await request.json()
-    console.log("Updating advertisement with ID:", id, "Data:", body)
 
-    const updatedAdvertisement = (await Advertisement.findByIdAndUpdate(id, body, {
-      new: true,
-      runValidators: true,
-    }).lean()) as AdvertisementDocument | null
+    console.log("[v0] Updating advertisement with ID:", id)
+    console.log("[v0] Update data received:", {
+      ...body,
+      imageData: body.imageData ? "base64 data present" : "no base64 data",
+    })
+
+    const updateData = {
+      title: body.title || "",
+      subtitle: body.subtitle || "",
+      description: body.description || "",
+      imageUrl: body.imageUrl || "",
+      imageData: body.imageData || "",
+      linkUrl: body.linkUrl || "",
+      isActive: body.isActive !== undefined ? body.isActive : true,
+      order: body.order || 1,
+      deviceType: body.deviceType || "all",
+      position: body.position || "all", // Ensure position is saved
+      startDate: body.startDate ? new Date(body.startDate) : null,
+      endDate: body.endDate ? new Date(body.endDate) : null,
+      updatedAt: new Date(),
+    }
+
+    console.log("[v0] Processed update data:", updateData)
+
+    const updatedAdvertisement = (await Advertisement.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true,
+      },
+    ).lean()) as AdvertisementDocument | null
 
     if (!updatedAdvertisement) {
       return NextResponse.json(
@@ -106,10 +133,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       )
     }
 
-    console.log(
-      "Advertisement updated successfully:",
-      typeof updatedAdvertisement._id === "object" ? updatedAdvertisement._id.toString() : updatedAdvertisement._id,
-    )
+    console.log("[v0] Advertisement updated successfully with position:", updatedAdvertisement.position)
 
     return NextResponse.json({
       success: true,
@@ -129,7 +153,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
     // Verify admin authentication
     const user = await getCurrentUser()
@@ -145,7 +169,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       throw new Error("Advertisement model not found")
     }
 
-    const { id } = await params
+    const { id } = params
     console.log("Deleting advertisement with ID:", id)
 
     const deletedAdvertisement = (await Advertisement.findByIdAndDelete(id).lean()) as AdvertisementDocument | null

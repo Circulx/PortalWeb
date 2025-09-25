@@ -9,6 +9,7 @@ import CategoryGrid from "@/components/categories/category-grid"
 import DeliveryPoster from "@/components/layout/delivery-poster"
 import IdlePopup from "@/components/layout/idle-popup"
 import AdvertisementPreloader from "@/components/layout/advertisement-preloader"
+import SingleAdvertisement from "@/components/layout/single-advertisement"
 
 export default function Home() {
   return (
@@ -54,6 +55,10 @@ export default function Home() {
       <LazySection delay={100} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
         <LazyFeatureCard />
       </LazySection>
+
+      <div className="container mx-auto px-4 py-6">
+        <SingleAdvertisement position="bottomofhomepage" className="max-w-6xl mx-auto" />
+      </div>
     </main>
   )
 }

@@ -5,6 +5,7 @@ import type { IAddress } from "@/models/profile/address"
 import type { IBank } from "@/models/profile/bank"
 import type { IDocument } from "@/models/profile/document"
 import type { IProfileProgress } from "@/models/profile/progress"
+import { string } from "prop-types"
 
 const PROFILE_DB =
   process.env.PROFILE_DB ||
@@ -28,6 +29,7 @@ interface IAdvertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
   startDate?: Date
   endDate?: Date
 }
@@ -473,6 +475,10 @@ const AdvertisementSchema = new mongoose.Schema<IAdvertisement>(
       enum: ["all", "desktop", "mobile", "tablet"],
       default: "all",
     },
+    position: {
+      type:String,
+      enum: ["homepage", "category", "bottomofhomepage", "cart","all"],
+     },
     startDate: { type: Date, default: null },
     endDate: { type: Date, default: null },
   },
@@ -486,6 +492,7 @@ const AdvertisementSchema = new mongoose.Schema<IAdvertisement>(
 AdvertisementSchema.index({ isActive: 1, order: 1 })
 AdvertisementSchema.index({ startDate: 1, endDate: 1 })
 AdvertisementSchema.index({ deviceType: 1 })
+AddressSchema.index({position:1})
 
 // Define Review schema with enhanced orderItems structure
 const ReviewSchema = new mongoose.Schema<IReview>(
