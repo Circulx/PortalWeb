@@ -43,7 +43,7 @@ export default function ContactUsPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">Email Support</h3>
                       <p className="text-gray-600">Get help via email within 24 hours</p>
-                      <p className="text-[#FF5C00] font-medium">support@ind2b.com</p>
+                      <p className="text-[#FF5C00] font-medium"><a href="https://mail.google.com/mail/?view=cm&fs=1&to=support@ind2b.com" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:text-orange-600 underline">support@ind2b.com</a></p>
                     </div>
                   </div>
 
@@ -85,7 +85,7 @@ export default function ContactUsPage() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">Office Location</h3>
                       <p className="text-gray-600">Visit us at our headquarters</p>
-                      <p className="text-[#FF5C00] font-medium">Banglore-India</p>
+                      <p className="text-[#FF5C00] font-medium">Bangalore-India</p>
                     </div>
                   </div>
                 </div>
