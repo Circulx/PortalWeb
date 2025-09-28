@@ -37,7 +37,7 @@ export default function Footer() {
   return (
     <footer className="bg-black text-white pt-16 pb-8">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Logo and Description */}
           <div className="space-y-4">
             <Link href="/" className="inline-block">
@@ -52,7 +52,24 @@ export default function Footer() {
             </Link>
             <p className="text-sm text-white">© 2025 One step Ecommerce Solutions</p>
           </div>
-
+           {/* Protocol Links */}
+           <div>
+            <h3 className="font-semibold mb-4 text-white">IND2B</h3>
+            <div className="space-y-3">
+              <Link href="/documentation" className="block text-white hover:text-gray-300">
+                About Us
+              </Link>
+              <Link href="/medium" className="block text-white hover:text-gray-300">
+                Careers
+              </Link>
+              <Link href="/token-address" className="block text-white hover:text-gray-300">
+                Press
+              </Link>
+              <Link href="/audit" className="block text-white hover:text-gray-300">
+                Articles
+              </Link>
+            </div>
+          </div>
           {/* About Links */}
           <div>
             <h3 className="font-semibold mb-4 text-white">Support</h3>
@@ -60,7 +77,7 @@ export default function Footer() {
               <Link href="/shipping-policy" className="block text-white hover:text-gray-300">
                 Shipping Policy
               </Link>
-              <Link href="/careers" className="block text-white hover:text-gray-300">
+              <Link href="/refund-policy" className="block text-white hover:text-gray-300">
                 Refund/Return policy
               </Link>
               <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
@@ -69,39 +86,38 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Protocol Links */}
           <div>
             <h3 className="font-semibold mb-4 text-white">Supplier Tool</h3>
             <div className="space-y-3">
-              <Link href="/documentation" className="block text-white hover:text-gray-300">
-                Sell
+              <Link href="/sell" className="block text-white hover:text-gray-300">
+                Sell on IND2B
               </Link>
-              <Link href="/medium" className="block text-white hover:text-gray-300">
+              <Link href="/refund-policy" className="block text-white hover:text-gray-300">
                 Latest Buy
               </Link>
-              <Link href="/token-address" className="block text-white hover:text-gray-300">
+              <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
                 Learning Centre
               </Link>
-              <Link href="/audit" className="block text-white hover:text-gray-300">
+              <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
                 Audit
               </Link>
             </div>
           </div>
 
-          {/* Support Links */}
-          <div>
+         
+         <div>
             <h3 className="font-semibold mb-4 text-white">Buyer Tool</h3>
             <div className="space-y-3">
-              <Link href="/getting-started" className="block text-white hover:text-gray-300">
+              <Link href="/shipping-policy" className="block text-white hover:text-gray-300">
                 Requirements
               </Link>
-              <Link href="/faq" className="block text-white hover:text-gray-300">
+              <Link href="/refund-policy" className="block text-white hover:text-gray-300">
                 Products
               </Link>
-              <Link href="/privacy" className="block text-white hover:text-gray-300">
+              <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
                 Connect Supplier
               </Link>
-              <Link href="/terms" className="block text-white hover:text-gray-300">
+              <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
                 Terms
               </Link>
             </div>
