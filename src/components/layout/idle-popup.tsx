@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react"
 
 export default function IdlePopup() {
   const [isIdle, setIsIdle] = useState(false)
-  const idleTime = 15000 // 15 seconds
+  const idleTime = 5000 // 15 seconds
 
   const resetTimer = useCallback(() => {
     setIsIdle(false)
