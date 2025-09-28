@@ -1,7 +1,11 @@
 "use client"
 import { useState, useEffect } from "react"
+"use client"
+import { useState, useEffect } from "react"
 
 export default function IdlePopup() {
+  const [isIdle, setIsIdle] = useState(false)
+  const idleTime = 5000 // 5 seconds
   const [isIdle, setIsIdle] = useState(false)
   const idleTime = 5000 // 5 seconds
 
@@ -12,7 +16,16 @@ export default function IdlePopup() {
     }, idleTime)
 
     // Only listen for Escape key to close popup
+    // Only set the initial timer to show popup after idle time
+    const timeout = setTimeout(() => {
+      setIsIdle(true)
+    }, idleTime)
+
+    // Only listen for Escape key to close popup
     const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsIdle(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
       if (e.key === "Escape") setIsIdle(false)
     }
     window.addEventListener("keydown", onKeyDown)
@@ -22,10 +35,19 @@ export default function IdlePopup() {
       clearTimeout(timeout)
     }
   }, [])
+      window.removeEventListener("keydown", onKeyDown)
+      clearTimeout(timeout)
+    }
+  }, [])
 
+  if (!isIdle) return null
   if (!isIdle) return null
 
   // Theme
+  const ORANGE = "#FF6A00" // primary accent
+  const BLACK = "#111111"
+  const WHITE = "#FFFFFF"
+  const OVERLAY_BG = "rgba(0,0,0,0.55)"
   const ORANGE = "#FF6A00" // primary accent
   const BLACK = "#111111"
   const WHITE = "#FFFFFF"
@@ -60,8 +82,61 @@ export default function IdlePopup() {
           transform: "translateY(8px)",
           animation: "slideUp 240ms ease-out forwards",
           position: "relative", // Added relative positioning for close button
+          position: "relative", // Added relative positioning for close button
         }}
       >
+        <button
+          onClick={() => setIsIdle(false)}
+          style={{
+            position: "absolute",
+            top: "12px",
+            right: "12px",
+            zIndex: 10,
+            width: "32px",
+            height: "32px",
+            background: "rgba(0,0,0,0.5)",
+            borderRadius: "50%",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(0,0,0,0.7)"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(0,0,0,0.5)"
+          }}
+          aria-label="Close popup"
+        >
+          <div style={{ position: "relative", width: "16px", height: "16px" }}>
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "12px",
+                height: "2px",
+                background: WHITE,
+                transform: "translate(-50%, -50%) rotate(45deg)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "12px",
+                height: "2px",
+                background: WHITE,
+                transform: "translate(-50%, -50%) rotate(-45deg)",
+              }}
+            />
+          </div>
+        </button>
+
         <button
           onClick={() => setIsIdle(false)}
           style={{
@@ -169,6 +244,7 @@ export default function IdlePopup() {
             }}
           >
             Don't miss out on exclusive offers for our B2B partners!
+            Don't miss out on exclusive offers for our B2B partners!
           </h2>
 
           {/* Subtext */}
@@ -187,6 +263,7 @@ export default function IdlePopup() {
           <p
             style={{
               margin: "0 0 18px 0",
+              margin: "0 0 18px 0",
               color: "#333",
               fontSize: 14.5,
               lineHeight: 1.6,
@@ -194,13 +271,48 @@ export default function IdlePopup() {
           >
             Explore products with the lowest rates from across our range of products across all categories and across
             all brands
+            Explore products with the lowest rates from across our range of products across all categories and across
+            all brands
           </p>
 
+          <a
+            href="www.ind2b.com" // Replace with your actual URL
+            target="_blank"
+            rel="noopener noreferrer"
           <a
             href="https://www.ind2b.com/seller" // Replace with your actual URL
             target="_blank"
             rel="noopener noreferrer"
             style={{
+              display: "block",
+              width: "100%",
+              aspectRatio: "4/3",
+              borderRadius: "8px",
+              overflow: "hidden",
+              marginBottom: "16px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.02)"
+              e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.15)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)"
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"
+            }}
+          >
+            <img
+              src="/sell.jpg"
+              alt="B2B Partnership Advertisement"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          </a>
               display: "block",
               width: "100%",
               aspectRatio: "4/3",
@@ -246,5 +358,6 @@ export default function IdlePopup() {
         }
       `}</style>
     </div>
+  )
   )
 }
