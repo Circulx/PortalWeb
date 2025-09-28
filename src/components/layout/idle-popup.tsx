@@ -1,38 +1,27 @@
 "use client"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 
 export default function IdlePopup() {
   const [isIdle, setIsIdle] = useState(false)
-  const idleTime = 5000 // 15 seconds
-
-  const resetTimer = useCallback(() => {
-    setIsIdle(false)
-    clearTimeout((window as any).idleTimeout)
-    ;(window as any).idleTimeout = setTimeout(() => {
-      setIsIdle(true)
-    }, idleTime)
-  }, [])
+  const idleTime = 5000 // 5 seconds
 
   useEffect(() => {
-    const events = ["mousemove", "keydown", "scroll", "touchstart"]
-    events.forEach((event) => {
-      window.addEventListener(event, resetTimer, { passive: true })
-    })
-    resetTimer()
+    // Only set the initial timer to show popup after idle time
+    const timeout = setTimeout(() => {
+      setIsIdle(true)
+    }, idleTime)
 
+    // Only listen for Escape key to close popup
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") setIsIdle(false)
     }
     window.addEventListener("keydown", onKeyDown)
 
     return () => {
-      events.forEach((event) => {
-        window.removeEventListener(event, resetTimer)
-      })
       window.removeEventListener("keydown", onKeyDown)
-      clearTimeout((window as any).idleTimeout)
+      clearTimeout(timeout)
     }
-  }, [resetTimer])
+  }, [])
 
   if (!isIdle) return null
 
@@ -47,7 +36,6 @@ export default function IdlePopup() {
       role="dialog"
       aria-modal="true"
       aria-label="Idle notice"
-      onClick={() => setIsIdle(false)}
       style={{
         position: "fixed",
         inset: 0,
