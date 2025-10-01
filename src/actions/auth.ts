@@ -9,57 +9,17 @@ import jwt from "jsonwebtoken"
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
 function isValidGSTNumber(gstNumber: string): boolean {
-  // Remove spaces and convert to uppercase
   const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
 
-  // Check length
+  // Check length - GST must be 15 characters
   if (cleanGST.length !== 15) {
     return false
   }
 
-  // GST format: 2 digits (state code) + 10 alphanumeric (PAN) + 1 digit (entity number) + 1 alphabet (Z) + 1 alphanumeric (checksum)
-  const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/
+  // Basic GST format: 2 digits + 10 alphanumeric + 1 digit + Z + 1 alphanumeric
+  const gstRegex = /^[0-9]{2}[A-Z0-9]{10}[0-9][A-Z][0-9A-Z]$/
 
-  if (!gstRegex.test(cleanGST)) {
-    return false
-  }
-
-  // Additional validations
-  const stateCode = cleanGST.substring(0, 2)
-  const panPart = cleanGST.substring(2, 12)
-  const entityCode = cleanGST.substring(12, 13)
-  const checkDigit = cleanGST.substring(13, 14)
-  const defaultZ = cleanGST.substring(14, 15)
-
-  // Validate state code (01-37 are valid state codes in India)
-  const stateCodeNum = Number.parseInt(stateCode)
-  if (stateCodeNum < 1 || stateCodeNum > 37) {
-    return false
-  }
-
-  // Validate PAN format within GST (5 letters + 4 digits + 1 letter)
-  const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/
-  if (!panRegex.test(panPart)) {
-    return false
-  }
-
-  // Entity code should be 1-9 or A-Z (but not 0)
-  if (entityCode === "0") {
-    return false
-  }
-
-  // 14th character should be Z (default)
-  if (defaultZ !== "Z") {
-    return false
-  }
-
-  // Basic checksum validation (simplified)
-  const checksumChars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-  if (!checksumChars.includes(checkDigit)) {
-    return false
-  }
-
-  return true
+  return gstRegex.test(cleanGST)
 }
 
 export async function signIn(formData: FormData) {
