@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, LogOut } from "lucide-react"
+import { Heart, LogOut, Menu, X, Search } from "lucide-react"
 import { AuthModal } from "../auth/auth-modal"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -38,6 +38,8 @@ export default function Header({ user }: HeaderProps) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
   const [isClient, setIsClient] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false)
 
   // Get cart and wishlist counts from Redux store
   const cartItemsCount = useSelector((state: RootState) => state.cart.items.length)
@@ -190,8 +192,10 @@ export default function Header({ user }: HeaderProps) {
   return (
     <header className="w-full bg-white shadow-sm">
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+        {/* Main Header */}
         <div className="w-full px-2 sm:px-4 lg:px-6 pb-0.5 pt-1.5 sm:pb-1 sm:pt-2 bg-white">
           <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
+            {/* Logo */}
             <div className="flex-shrink-0">
               <Link href="/" className="flex items-center">
                 <Image
@@ -206,14 +210,35 @@ export default function Header({ user }: HeaderProps) {
               </Link>
             </div>
 
-            <div className="flex-1 max-w-xl lg:max-w-2xl mx-1 sm:mx-2">
+            {/* Search Bar - Hidden on mobile when menu is open */}
+            <div className={`flex-1 max-w-xl lg:max-w-2xl mx-1 sm:mx-2 ${isMobileMenuOpen ? 'hidden sm:block' : 'block'}`}>
               <EnhancedSearchBar />
             </div>
 
+            {/* Mobile Search Toggle */}
+            <button
+              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
+              className="sm:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Toggle search"
+            >
+              <Search className="w-5 h-5 text-gray-600" />
+            </button>
+
+            {/* Right Side Actions */}
             <div className="flex items-center gap-1 sm:gap-2 lg:gap-3 flex-shrink-0">
+              {/* Mobile Menu Toggle */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="sm:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
+                aria-label="Toggle menu"
+              >
+                {isMobileMenuOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
+              </button>
+
+              {/* Wishlist - Hidden on mobile when menu is open */}
               <Link
                 href="/dashboard/wishlist"
-                className="relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className={`relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors ${isMobileMenuOpen ? 'hidden sm:flex' : 'flex'}`}
               >
                 <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600 hover:text-red-500 transition-colors" />
                 {wishlistItemsCount > 0 && (
@@ -223,9 +248,10 @@ export default function Header({ user }: HeaderProps) {
                 )}
               </Link>
 
+              {/* Cart - Hidden on mobile when menu is open */}
               <Link
                 href="/cart"
-                className="relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className={`relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors ${isMobileMenuOpen ? 'hidden sm:flex' : 'flex'}`}
               >
                 <Image
                   src="/cart.webp"
@@ -242,44 +268,140 @@ export default function Header({ user }: HeaderProps) {
                 )}
               </Link>
 
-              {user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="h-7 sm:h-8 lg:h-10 px-1.5 sm:px-2 lg:px-3 flex items-center gap-1 sm:gap-1.5 lg:gap-2 border-gray-300 hover:border-gray-400 transition-colors bg-transparent min-w-0"
-                    >
-                      <Avatar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6">
-                        <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
-                        <AvatarFallback className="text-[10px] sm:text-xs lg:text-sm">{user.name[0]}</AvatarFallback>
-                      </Avatar>
-                      <span className="hidden sm:inline text-[10px] sm:text-xs lg:text-sm font-medium truncate max-w-16 lg:max-w-20">
-                        {user.name.split(" ")[0]}
-                      </span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={navigateToDashboard} className="cursor-pointer">
-                      Dashboard
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Sign Out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="h-7 sm:h-8 lg:h-10 px-2 sm:px-3 lg:px-6 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] sm:text-xs lg:text-base font-medium rounded-md transition-colors whitespace-nowrap min-w-0"
-                >
-                  Login
-                </Button>
-              )}
+              {/* User Menu/Login - Hidden on mobile when menu is open */}
+              <div className={isMobileMenuOpen ? 'hidden sm:block' : 'block'}>
+                {user ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="h-7 sm:h-8 lg:h-10 px-1.5 sm:px-2 lg:px-3 flex items-center gap-1 sm:gap-1.5 lg:gap-2 border-gray-300 hover:border-gray-400 transition-colors bg-transparent min-w-0"
+                      >
+                        <Avatar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6">
+                          <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
+                          <AvatarFallback className="text-[10px] sm:text-xs lg:text-sm">{user.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="hidden sm:inline text-[10px] sm:text-xs lg:text-sm font-medium truncate max-w-16 lg:max-w-20">
+                          {user.name.split(" ")[0]}
+                        </span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={navigateToDashboard} className="cursor-pointer">
+                        Dashboard
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                        <LogOut className="w-4 h-4 mr-2" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Button
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="h-7 sm:h-8 lg:h-10 px-2 sm:px-3 lg:px-6 bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] sm:text-xs lg:text-base font-medium rounded-md transition-colors whitespace-nowrap min-w-0"
+                  >
+                    Login
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
+        {/* Mobile Search Bar - Expanded */}
+        {isSearchExpanded && (
+          <div className="sm:hidden px-4 py-2 bg-white border-t border-gray-200">
+            <EnhancedSearchBar />
+          </div>
+        )}
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="sm:hidden bg-white border-t border-gray-200 shadow-lg">
+            <div className="px-4 py-4 space-y-4">
+              {/* Mobile User Actions */}
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/dashboard/wishlist"
+                  className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Heart className="w-5 h-5 text-gray-600" />
+                  <span className="text-sm font-medium">Wishlist</span>
+                  {wishlistItemsCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      {wishlistItemsCount > 99 ? "99+" : wishlistItemsCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <Link
+                  href="/cart"
+                  className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Image
+                    src="/cart.webp"
+                    alt="Shopping Cart"
+                    width={20}
+                    height={20}
+                    className="w-5 h-5"
+                  />
+                  <span className="text-sm font-medium">Cart</span>
+                  {cartItemsCount > 0 && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                      {cartItemsCount > 99 ? "99+" : cartItemsCount}
+                    </span>
+                  )}
+                </Link>
+              </div>
+
+              {/* Mobile User Menu */}
+              {user ? (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      navigateToDashboard()
+                      setIsMobileMenuOpen(false)
+                    }}
+                    className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left"
+                  >
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
+                      <AvatarFallback className="text-xs">{user.name[0]}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">{user.name}</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      signOut()
+                      setIsMobileMenuOpen(false)
+                    }}
+                    className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left text-red-600"
+                  >
+                    <LogOut className="w-5 h-5" />
+                    <span className="text-sm font-medium">Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setIsAuthModalOpen(true)
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                >
+                  Login
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Categories Bar - Improved Mobile Experience */}
         <div className="bg-orange-600 text-white overflow-hidden -mt-px">
           <div className="w-full px-2 sm:px-3 lg:px-4">
             <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5">
@@ -289,32 +411,51 @@ export default function Header({ user }: HeaderProps) {
 
               <div className="flex-1 overflow-hidden">
                 {isLoading ? (
-                  <div className="flex space-x-4 sm:space-x-6 animate-pulse">
+                  <div className="flex space-x-3 sm:space-x-4 lg:space-x-6 animate-pulse">
                     {Array.from({ length: 6 }).map((_, index) => (
-                      <div key={index} className="h-4 bg-orange-400 rounded w-16 sm:w-18 flex-shrink-0"></div>
+                      <div key={index} className="h-3 sm:h-4 bg-orange-400 rounded w-12 sm:w-16 lg:w-18 flex-shrink-0"></div>
                     ))}
                   </div>
                 ) : (
                   <div className="relative">
-                    <div
-                      className="flex space-x-4 sm:space-x-6 transition-transform duration-1000 ease-in-out"
-                      style={{
-                        transform:
-                          categories.length > CATEGORIES_PER_VIEW
-                            ? `translateX(-${(currentIndex * 100) / categories.length}%)`
-                            : "translateX(0)",
-                      }}
-                    >
-                      {categories.concat(categories).map((category, index) => (
-                        <Link
-                          key={`${category.name}-${index}`}
-                          href={`/categories/${encodeURIComponent(category.name)}`}
-                          className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap"
-                          onClick={(e) => handleCategoryClick(e, category.name)}
-                        >
-                          {category.name}
-                        </Link>
-                      ))}
+                    {/* Mobile: Horizontal scroll */}
+                    <div className="sm:hidden overflow-x-auto scrollbar-hide">
+                      <div className="flex space-x-4 pb-1">
+                        {categories.map((category, index) => (
+                          <Link
+                            key={`${category.name}-${index}`}
+                            href={`/categories/${encodeURIComponent(category.name)}`}
+                            className="text-xs hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap px-2 py-1 rounded hover:bg-orange-500"
+                            onClick={(e) => handleCategoryClick(e, category.name)}
+                          >
+                            {category.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Desktop: Auto-scrolling */}
+                    <div className="hidden sm:block">
+                      <div
+                        className="flex space-x-4 sm:space-x-6 transition-transform duration-1000 ease-in-out"
+                        style={{
+                          transform:
+                            categories.length > CATEGORIES_PER_VIEW
+                              ? `translateX(-${(currentIndex * 100) / categories.length}%)`
+                              : "translateX(0)",
+                        }}
+                      >
+                        {categories.concat(categories).map((category, index) => (
+                          <Link
+                            key={`${category.name}-${index}`}
+                            href={`/categories/${encodeURIComponent(category.name)}`}
+                            className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap"
+                            onClick={(e) => handleCategoryClick(e, category.name)}
+                          >
+                            {category.name}
+                          </Link>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 )}
