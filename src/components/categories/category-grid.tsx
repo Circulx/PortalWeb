@@ -18,27 +18,31 @@ export default function CategoryGrid() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [isMounted, setIsMounted] = useState(false)
 
   const CATEGORIES_PER_PAGE = 7
-  const AUTO_SCROLL_INTERVAL = 5000 // 5 seconds
+  const AUTO_SCROLL_INTERVAL = 5000
   const FEATURED_CATEGORIES_COUNT = 6
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     fetchCategories()
   }, [])
 
   useEffect(() => {
-    if (categories.length <= CATEGORIES_PER_PAGE) return
+    if (categories.length <= CATEGORIES_PER_PAGE || !isMounted) return
 
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => {
-        // Move one category at a time, creating infinite loop
         return (prevIndex + 1) % categories.length
       })
     }, AUTO_SCROLL_INTERVAL)
 
     return () => clearInterval(interval)
-  }, [categories.length])
+  }, [categories.length, isMounted])
 
   const fetchCategories = async () => {
     try {
@@ -91,7 +95,6 @@ export default function CategoryGrid() {
     )
   }
 
-  // Get current visible categories with infinite loop
   const getVisibleCategories = () => {
     const visibleCategories = []
     for (let i = 0; i < CATEGORIES_PER_PAGE; i++) {
@@ -104,13 +107,20 @@ export default function CategoryGrid() {
     return visibleCategories
   }
 
-  // Get top 6 categories with most products for featured section
   const getFeaturedCategories = () => {
     return [...categories].sort((a, b) => b.count - a.count).slice(0, FEATURED_CATEGORIES_COUNT)
   }
 
   const visibleCategories = getVisibleCategories()
   const featuredCategories = getFeaturedCategories()
+
+  if (!isMounted) {
+    return (
+      <div className="flex justify-center items-center py-20">
+        <Loader2 className="w-8 h-8 animate-spin text-green-900" />
+      </div>
+    )
+  }
 
   return (
     <section className="py-16 bg-gray-200">
@@ -125,30 +135,27 @@ export default function CategoryGrid() {
 
         {/* Categories Carousel */}
         <div className="w-[95%] mx-auto overflow-hidden mb-16">
-          <div
-            className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 sm:gap-4 md:gap-6 transition-all duration-1000 ease-in-out"
-            style={{
-              transform: categories.length > CATEGORIES_PER_PAGE ? "translateX(0)" : "none",
-            }}
-          >
-            {visibleCategories.map((category, index) => (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3 sm:gap-4 md:gap-6 transition-all duration-1000 ease-in-out">
+            {visibleCategories.map((category) => (
               <Link key={category.key} href={`/categories/${encodeURIComponent(category.name)}`} className="group">
                 <div className="flex flex-col items-center text-center transition-all duration-300 hover:scale-105">
-                  {/* Circular Image Container */}
-                  <div className="relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 xl:w-32 xl:h-32 mb-3 md:mb-4 rounded-full overflow-hidden bg-white shadow-lg group-hover:shadow-2xl transition-all duration-300 border-2 border-gray-300 group-hover:border-green-900">
+                  <div className="relative w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 mb-3 md:mb-4 rounded-full overflow-hidden bg-white shadow-lg group-hover:shadow-2xl transition-all duration-300 border-2 border-gray-300 group-hover:border-green-900">
                     <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-green-50 group-hover:to-green-100 transition-all duration-300" />
-                    <div className="relative w-full h-full flex items-center justify-center p-2 sm:p-3 md:p-4">
+                    <div className="relative w-full h-full flex items-center justify-center p-3 md:p-4">
                       <Image
                         src={category.sampleImage || "/placeholder.svg?height=80&width=80"}
                         alt={category.name}
                         width={80}
                         height={80}
                         className="object-contain transition-all duration-300 group-hover:scale-110 w-full h-full"
-                        sizes="(min-width: 1280px) 128px, (min-width: 1024px) 112px, (min-width: 768px) 96px, (min-width: 640px) 80px, 64px"
+                        sizes="(max-width: 640px) 80px, (max-width: 768px) 96px, (max-width: 1024px) 112px, 128px"
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = "/placeholder.svg?height=80&width=80"
+                        }}
                       />
                     </div>
-
-                    {/* Hover Overlay */}
                     <div className="absolute inset-0 bg-green-900 bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 rounded-full" />
                   </div>
 
@@ -191,39 +198,44 @@ export default function CategoryGrid() {
               <p className="text-gray-600">Explore our most popular product categories</p>
             </div>
 
-            {/* Featured Categories Grid - 2 rows x 3 columns */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {featuredCategories.map((category, index) => (
+              {featuredCategories.map((category) => (
                 <Link
                   key={`featured-${category.name}`}
                   href={`/categories/${encodeURIComponent(category.name)}`}
-                  className="group relative overflow-hidden rounded-lg bg-gray-100 aspect-[4/3] block transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
+                  className="group relative overflow-hidden rounded-lg bg-gray-100 block transition-all duration-300 hover:shadow-xl hover:scale-[1.02]"
                 >
-                  {/* Background Image */}
-                  <div className="absolute inset-0">
-                    <Image
-                      src={category.sampleImage || "/placeholder.svg?height=300&width=400"}
-                      alt={category.name}
-                      fill
-                      className="object-cover transition-all duration-500 group-hover:scale-110"
-                      sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
-                    />
+                  <div className="relative w-full" style={{ paddingBottom: "75%" }}>
+                    <div className="absolute inset-0">
+                      <Image
+                        src={category.sampleImage || "/placeholder.svg?height=300&width=400"}
+                        alt={category.name}
+                        fill
+                        className="object-cover transition-all duration-500 group-hover:scale-110"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        loading="lazy"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = "/placeholder.svg?height=300&width=400"
+                        }}
+                      />
+                    </div>
+
+                    {/* Overlay Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-all duration-300" />
+
+                    {/* Content */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
+                      <h4 className="text-white font-bold text-lg md:text-xl mb-1 group-hover:text-white transition-colors duration-300 leading-tight uppercase">
+                        {category.name}
+                      </h4>
+                      <p className="text-white/80 text-sm mb-2">Collection</p>
+                      <p className="text-white/70 text-xs">{category.count} products available</p>
+                    </div>
+
+                    {/* Hover Effect Overlay */}
+                    <div className="absolute inset-0 border-2 border-transparent group-hover:border-white/20 rounded-lg transition-all duration-300" />
                   </div>
-
-                  {/* Overlay Gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent group-hover:from-black/80 transition-all duration-300" />
-
-                  {/* Content */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6">
-                    <h4 className="text-white font-bold text-lg md:text-xl mb-1 group-hover:text-white transition-colors duration-300 leading-tight uppercase">
-                      {category.name}
-                    </h4>
-                    <p className="text-white/80 text-sm mb-2">Collection</p>
-                    <p className="text-white/70 text-xs">{category.count} products available</p>
-                  </div>
-
-                  {/* Hover Effect Overlay */}
-                  <div className="absolute inset-0 border-2 border-transparent group-hover:border-white/20 rounded-lg transition-all duration-300" />
                 </Link>
               ))}
             </div>
