@@ -1,53 +1,41 @@
-"use client";
-import { useState, useEffect, useCallback } from "react";
+"use client"
+import { useState, useEffect } from "react"
 
 export default function IdlePopup() {
-  const [isIdle, setIsIdle] = useState(false);
-  const idleTime = 10000; // 10 seconds
-
-  const resetTimer = useCallback(() => {
-    setIsIdle(false);
-    clearTimeout((window as any).idleTimeout);
-    (window as any).idleTimeout = setTimeout(() => {
-      setIsIdle(true);
-    }, idleTime);
-  }, []);
+  const [isIdle, setIsIdle] = useState(false)
+  const idleTime = 5000 // 5 seconds
 
   useEffect(() => {
-    const events = ["mousemove", "keydown", "scroll", "touchstart"];
-    events.forEach((event) => {
-      window.addEventListener(event, resetTimer, { passive: true });
-    });
-    resetTimer();
+    // Only set the initial timer to show popup after idle time
+    const timeout = setTimeout(() => {
+      setIsIdle(true)
+    }, idleTime)
 
+    // Only listen for Escape key to close popup
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsIdle(false);
-    };
-    window.addEventListener("keydown", onKeyDown);
+      if (e.key === "Escape") setIsIdle(false)
+    }
+    window.addEventListener("keydown", onKeyDown)
 
     return () => {
-      events.forEach((event) => {
-        window.removeEventListener(event, resetTimer);
-      });
-      window.removeEventListener("keydown", onKeyDown);
-      clearTimeout((window as any).idleTimeout);
-    };
-  }, [resetTimer]);
+      window.removeEventListener("keydown", onKeyDown)
+      clearTimeout(timeout)
+    }
+  }, [])
 
-  if (!isIdle) return null;
+  if (!isIdle) return null
 
   // Theme
-  const ORANGE = "#FF6A00"; // primary accent
-  const BLACK = "#111111";
-  const WHITE = "#FFFFFF";
-  const OVERLAY_BG = "rgba(0,0,0,0.55)";
+  const ORANGE = "#FF6A00" // primary accent
+  const BLACK = "#111111"
+  const WHITE = "#FFFFFF"
+  const OVERLAY_BG = "rgba(0,0,0,0.55)"
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Idle notice"
-      onClick={() => setIsIdle(false)}
       style={{
         position: "fixed",
         inset: 0,
@@ -71,8 +59,61 @@ export default function IdlePopup() {
           color: BLACK,
           transform: "translateY(8px)",
           animation: "slideUp 240ms ease-out forwards",
+          position: "relative", // Added relative positioning for close button
         }}
       >
+        <button
+          onClick={() => setIsIdle(false)}
+          style={{
+            position: "absolute",
+            top: "12px",
+            right: "12px",
+            zIndex: 10,
+            width: "32px",
+            height: "32px",
+            background: "rgba(0,0,0,0.5)",
+            borderRadius: "50%",
+            border: "none",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.3s ease",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(0,0,0,0.7)"
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "rgba(0,0,0,0.5)"
+          }}
+          aria-label="Close popup"
+        >
+          <div style={{ position: "relative", width: "16px", height: "16px" }}>
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "12px",
+                height: "2px",
+                background: WHITE,
+                transform: "translate(-50%, -50%) rotate(45deg)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                width: "12px",
+                height: "2px",
+                background: WHITE,
+                transform: "translate(-50%, -50%) rotate(-45deg)",
+              }}
+            />
+          </div>
+        </button>
+
         {/* Header accent bar */}
         <div
           style={{
@@ -127,7 +168,7 @@ export default function IdlePopup() {
               color: BLACK,
             }}
           >
-            Don’t miss out on exclusive offers for our B2B partners!
+            Don't miss out on exclusive offers for our B2B partners!
           </h2>
 
           {/* Subtext */}
@@ -145,28 +186,51 @@ export default function IdlePopup() {
           {/* Added text (kept) */}
           <p
             style={{
-              margin: "0 0 14px 0",
+              margin: "0 0 18px 0",
               color: "#333",
               fontSize: 14.5,
               lineHeight: 1.6,
             }}
           >
-            Explore products with the lowest rates from across our range of products across all categories and across all brands
+            Explore products with the lowest rates from across our range of products across all categories and across
+            all brands
           </p>
 
-          {/* Divider (optional to keep a clean end of content) */}
-          {/* You can remove this if you want tighter end spacing */}
-          {/* <div
+          <a
+            href="https://www.ind2b.com/seller" 
+            target="_blank"
+            rel="noopener noreferrer"
             style={{
-              height: 1,
-              background: "#EEE",
-              margin: "10px 0 0 0",
+              display: "block",
+              width: "100%",
+              aspectRatio: "4/3",
+              borderRadius: "8px",
+              overflow: "hidden",
+              marginBottom: "16px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease",
             }}
-          /> */}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "scale(1.02)"
+              e.currentTarget.style.boxShadow = "0 6px 16px rgba(0,0,0,0.15)"
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "scale(1)"
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.1)"
+            }}
+          >
+            <img
+              src="/sell.jpg"
+              alt="B2B Partnership Advertisement"
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+          </a>
         </div>
-
-        {/* Removed: Footnote + dismiss hint row */}
-        {/* Removed: Bottom black band */}
       </div>
 
       <style jsx global>{`
@@ -182,5 +246,5 @@ export default function IdlePopup() {
         }
       `}</style>
     </div>
-  );
+  )
 }

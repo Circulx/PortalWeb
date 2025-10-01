@@ -63,6 +63,7 @@
     "jsonwebtoken": "^9.0.2",
     "jspdf": "^3.0.2",
     "jspdf-autotable": "^5.0.2",
+    "link": "^2.1.1",
     "lucide-react": "^0.460.0",
     "mongodb": "^5.9.2",
     "mongoose": "^8.8.3",

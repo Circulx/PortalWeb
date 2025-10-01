@@ -7,6 +7,7 @@ import ProductActions from "./product-actions"
 import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
 import RequestQuoteButton from "@/components/product/request-quote-button"
+import SponsoredAdvertisement from "@/components/product/sponsored-advertisement"
 
 // Define the product interface
 interface Product {
@@ -532,6 +533,14 @@ export default async function ProductPage({ params }: { params: { id: string } }
               {/* Response Rate */}
               <p className="text-center text-sm text-gray-600">86% Response Rate</p>
             </div>
+
+            {/* Sponsored Advertisement */}
+            <SponsoredAdvertisement
+              imageUrl="/sell.png"
+              linkUrl="https://example.com/business-tools"
+              altText="Business Advertisement"
+              title="Sponsored"
+            />
           </div>
         </div>
 

@@ -10,6 +10,7 @@ import DeliveryPoster from "@/components/layout/delivery-poster"
 import IdlePopup from "@/components/layout/idle-popup"
 import AdvertisementPreloader from "@/components/layout/advertisement-preloader"
 import SingleAdvertisement from "@/components/layout/single-advertisement"
+import SellerSignupOffer from "@/components/home/seller-signup-offer"
 
 export default function Home() {
   return (
@@ -20,6 +21,8 @@ export default function Home() {
       <IdlePopup />
 
       <AdvertisementPreloader />
+
+      <SellerSignupOffer />
 
       {/* Brand Carousel - Reduced delay and optimized threshold 
       <LazySection delay={50} threshold={0.1} rootMargin="50px" fallback={<SectionSkeleton type="carousel" />}>
