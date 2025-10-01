@@ -9,7 +9,9 @@ const ShippingPolicyPage = () => {
           <div className="mb-12">
             <h1 className="text-4xl font-bold text-black mb-4 text-center">Shipping & Delivery Policy</h1>
             <p className="text-base text-black text-left">
-            The Shipping & Delivery Policy outlines the guidelines governing the shipment and delivery of goods between users of the Ind2B platform, which is accessible through <a href="https://www.ind2b.com" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:text-orange-600 underline">www.ind2b.com</a> and its associated mobile or web-based applications. This Policy applies to all users of the platform, including sellers, buyers, logistics partners, and service intermediaries who engage in transactions or fulfill orders through Ind2B. The provisions of this Policy are binding on all commercial transactions initiated on the platform, regardless of the product category, delivery destination, or logistics method chosen by the parties involved.
+            The Shipping & Delivery Policy outlines the guidelines governing the shipment and delivery of goods between users of the Ind2B platform, which is accessible through 
+            <a href="https://www.ind2b.com" target="_blank" rel="noopener noreferrer" className="text-orange-500 hover:text-orange-600 underline">www.ind2b.com</a>
+             and its associated mobile or web-based applications. This Policy applies to all users of the platform, including sellers, buyers, logistics partners, and service intermediaries who engage in transactions or fulfill orders through Ind2B. The provisions of this Policy are binding on all commercial transactions initiated on the platform, regardless of the product category, delivery destination, or logistics method chosen by the parties involved.
 
             </p>
           </div>
