@@ -8,7 +8,7 @@ import Link from "next/link"
 export default function PromotionSection() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
 
-  const youtubeVideoId = "xhH6ZPrHISI" // Updated to use the provided YouTube Shorts video ID
+  const youtubeVideoId = "wG6yqAFZk04?si=ZkkGNr4oGsRoDkpB" // Updated to use the provided YouTube Shorts video ID
 
   const handlePlayVideo = () => {
     setIsVideoPlaying(true)
@@ -38,7 +38,7 @@ export default function PromotionSection() {
                   <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"
                     style={{
-                      backgroundImage: "url('/hero.webp')",
+                      backgroundImage: "url('/promotion_banner.jpg')",
                     }}
                   >
                     <div className="absolute inset-0 bg-black bg-opacity-20 rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"></div>
