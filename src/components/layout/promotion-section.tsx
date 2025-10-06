@@ -36,7 +36,7 @@ export default function PromotionSection() {
                   <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"
                     style={{
-                      backgroundImage: "url('/hero.webp')",
+                      backgroundImage: "url('/promotion_banner.jpg')",
                     }}
                   >
                     <div className="absolute inset-0 bg-black bg-opacity-20 rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"></div>
@@ -65,12 +65,12 @@ export default function PromotionSection() {
                       controls
                       autoPlay
                       onEnded={handleVideoEnd}
-                      poster="/hero.webp"
+                      poster="/promotion_banner.jpg"
                       style={{ aspectRatio: "16/9" }}
                     >
                       <source src="/placeholder-video.mp4" type="video/mp4" />
                       <source
-                        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                        src="https://www.youtube.com/shorts/xhH6ZPrHISI"
                         type="video/mp4"
                       />
                       Your browser does not support the video tag.
