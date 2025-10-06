@@ -70,7 +70,7 @@ export default function PromotionSection() {
                     >
                       <source src="/placeholder-video.mp4" type="video/mp4" />
                       <source
-                        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+                        src="https://www.youtube.com/shorts/xhH6ZPrHISI"
                         type="video/mp4"
                       />
                       Your browser does not support the video tag.
