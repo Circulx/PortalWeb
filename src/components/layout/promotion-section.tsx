@@ -8,6 +8,8 @@ import Link from "next/link"
 export default function PromotionSection() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
 
+  const youtubeVideoId = "xhH6ZPrHISI" // Updated to use the provided YouTube Shorts video ID
+
   const handlePlayVideo = () => {
     setIsVideoPlaying(true)
   }
@@ -36,7 +38,7 @@ export default function PromotionSection() {
                   <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"
                     style={{
-                      backgroundImage: "url('/promotion_banner.jpg')",
+                      backgroundImage: "url('/hero.webp')",
                     }}
                   >
                     <div className="absolute inset-0 bg-black bg-opacity-20 rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"></div>
@@ -57,24 +59,16 @@ export default function PromotionSection() {
                   </div>
                 </>
               ) : (
-                /* Video Player */
                 <div className="absolute inset-0 flex items-center justify-center bg-black rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none">
-                  <div className="relative w-full h-full max-w-full max-h-full">
-                    <video
-                      className="w-full h-full object-contain md:object-cover rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"
-                      controls
-                      autoPlay
-                      onEnded={handleVideoEnd}
-                      poster="/promotion_banner.jpg"
+                  <div className="relative w-full h-full">
+                    <iframe
+                      className="w-full h-full rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"
+                      src={`https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&rel=0&modestbranding=1`}
+                      title="Promotional Video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
                       style={{ aspectRatio: "16/9" }}
-                    >
-                      <source src="/placeholder-video.mp4" type="video/mp4" />
-                      <source
-                        src="https://www.youtube.com/shorts/xhH6ZPrHISI"
-                        type="video/mp4"
-                      />
-                      Your browser does not support the video tag.
-                    </video>
+                    />
 
                     {/* Close button for video */}
                     <button
