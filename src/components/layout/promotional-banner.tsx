@@ -9,7 +9,7 @@
                 {
                 <div className="relative w-full">
                   <Image
-                    src="/promotion_banner.jpg"
+                    src="/Delivery Banner-2.webp"
                     alt="On Time Delivery - Professional delivery service"
                     width={1200}
                     height={224}
