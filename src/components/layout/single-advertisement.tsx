@@ -7,7 +7,7 @@ import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 
 interface SingleAdvertisementProps {
-  position?: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+  position?: "homepage" | "category" | "bottomofhomepage" | "cart" | "wishlist" | "all"
   className?: string
   deviceType?: "desktop" | "mobile" | "tablet" | "all"
 }
@@ -90,14 +90,18 @@ export default function SingleAdvertisement({
   }
 
   const shouldUseFullWidth = position === "bottomofhomepage" || position === "cart"
-  const shouldShowCloseButton = position === "bottomofhomepage" || position === "cart"
+  const shouldShowCloseButton = position === "bottomofhomepage" || position === "cart" || position === "wishlist"
+
+  const heightClass = position === "wishlist" ? "h-[150px] sm:h-[180px] md:h-[200px]" : "h-[300px] sm:h-[400px]"
 
   return (
     <div className={`${shouldUseFullWidth ? "w-full" : "w-full"} ${className}`}>
       <div
         className={`${shouldUseFullWidth ? "relative w-screen left-1/2 right-1/2 -ml-[50vw] -mr-[50vw]" : "relative w-full"}`}
       >
-        <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
+        <div
+          className={`relative w-full ${heightClass} overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg`}
+        >
           {shouldShowCloseButton && (
             <button
               onClick={handleClose}
@@ -250,11 +254,7 @@ export default function SingleAdvertisement({
             </div>
           )}
         </div>
-
-        
       </div>
-
-      
     </div>
   )
 }

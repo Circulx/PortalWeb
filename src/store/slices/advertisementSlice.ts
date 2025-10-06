@@ -12,7 +12,7 @@ export interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
-  position: "homepage" | "other" // Updated to support other positions
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "wishlist" | "all"
   startDate?: string
   endDate?: string
 }

@@ -9,6 +9,7 @@ import axios from "axios"
 import { useWishlistSync } from "@/hooks/useWishlistSync"
 import { useCartSync } from "@/hooks/useCartSync"
 import { toast } from "react-hot-toast"
+import SingleAdvertisement from "@/components/layout/single-advertisement"
 
 interface Product {
   product_id: number
@@ -152,66 +153,77 @@ export default function WishlistPage() {
   }
 
   return (
-    <Card className="flex flex-col relative justify-center max-w-4xl min-h-96 mx-auto p-6">
-      <h1 className="absolute top-4 text-2xl font-bold">Your Wishlist</h1>
-      {wishlistItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-64">
-          <p className="text-gray-600 text-center mb-4">Your wishlist is empty.</p>
-          <Button variant="outline" onClick={handleReturnToShop} className="bg-orange-300 hover:bg-green-600">
-            Browse Products
-          </Button>
-        </div>
-      ) : (
-        <div className="mt-10 space-y-4">
-          <div className="flex justify-end mb-4">
-            <Button variant="outline" onClick={handleAddAllToCart} className="bg-orange-300 hover:bg-green-600">
-              Add All to Cart
+    <div className="flex flex-col gap-6">
+      <Card className="flex flex-col relative justify-center max-w-4xl min-h-96 mx-auto p-6 w-full">
+        <h1 className="absolute top-4 text-2xl font-bold">Your Wishlist</h1>
+        {wishlistItems.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64">
+            <p className="text-gray-600 text-center mb-4">Your wishlist is empty.</p>
+            <Button variant="outline" onClick={handleReturnToShop} className="bg-orange-300 hover:bg-green-600">
+              Browse Products
             </Button>
           </div>
+        ) : (
+          <div className="mt-10 space-y-4">
+            <div className="flex justify-end mb-4">
+              <Button variant="outline" onClick={handleAddAllToCart} className="bg-orange-300 hover:bg-green-600">
+                Add All to Cart
+              </Button>
+            </div>
 
-          {wishlistItems.map((item) => (
-            <Card key={item.id} className="p-4">
-              <div className="flex gap-4 items-center">
-                <div className="relative w-20 h-20">
-                  <Image
-                    src={item.image_link || "/placeholder.svg"}
-                    alt={item.title}
-                    fill
-                    className="rounded-lg object-cover"
-                  />
+            {wishlistItems.map((item) => (
+              <Card key={item.id} className="p-4">
+                <div className="flex gap-4 items-center">
+                  <div className="relative w-20 h-20">
+                    <Image
+                      src={item.image_link || "/placeholder.svg"}
+                      alt={item.title}
+                      fill
+                      className="rounded-lg object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{item.title}</h3>
+                    <p className="text-gray-600">₹{item.price.toFixed(2)}</p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="hover:bg-red-600 hover:text-white bg-transparent"
+                    onClick={() => handleRemoveItem(item.id)}
+                  >
+                    Remove
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="hover:bg-green-600 hover:text-white bg-orange-300"
+                    onClick={() => handleAddToCart(item)}
+                  >
+                    Add to Cart
+                  </Button>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold">{item.title}</h3>
-                  <p className="text-gray-600">₹{item.price.toFixed(2)}</p>
-                </div>
-                <Button
-                  variant="outline"
-                  className="hover:bg-red-600 hover:text-white"
-                  onClick={() => handleRemoveItem(item.id)}
-                >
-                  Remove
-                </Button>
-                <Button
-                  variant="outline"
-                  className="hover:bg-green-600 hover:text-white bg-orange-300"
-                  onClick={() => handleAddToCart(item)}
-                >
-                  Add to Cart
-                </Button>
-              </div>
-            </Card>
-          ))}
-          <div className="flex justify-between items-center pt-4 border-t">
-            <p className="text-gray-600">Total</p>
-            <p className="text-2xl font-bold">₹{calculateTotal()}</p>
+              </Card>
+            ))}
+            <div className="flex justify-between items-center pt-4 border-t">
+              <p className="text-gray-600">Total</p>
+              <p className="text-2xl font-bold">₹{calculateTotal()}</p>
+            </div>
           </div>
+        )}
+        {wishlistItems.length > 0 && (
+          <Button variant="outline" onClick={handleReturnToShop} className="mt-4 bg-orange-300 hover:bg-green-600">
+            Return to Shop
+          </Button>
+        )}
+      </Card>
+
+      {wishlistItems.length > 0 && (
+        <div className="max-w-4xl mx-auto w-full">
+          <div className="mb-3">
+            <p className="text-xs text-gray-500 uppercase tracking-wide font-semibold">Sponsored</p>
+          </div>
+          <SingleAdvertisement position="wishlist" className="w-full" />
         </div>
       )}
-      {wishlistItems.length > 0 && (
-        <Button variant="outline" onClick={handleReturnToShop} className="mt-4 bg-orange-300 hover:bg-green-600">
-          Return to Shop
-        </Button>
-      )}
-    </Card>
+    </div>
   )
 }

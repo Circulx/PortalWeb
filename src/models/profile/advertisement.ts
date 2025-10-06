@@ -10,7 +10,7 @@ export interface IAdvertisement extends Document {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
-  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "wishlist" | "all"
   startDate?: Date
   endDate?: Date
   createdAt: Date
@@ -66,7 +66,7 @@ const AdvertisementSchema = new Schema<IAdvertisement>(
     },
     position: {
       type: String,
-      enum: ["homepage", "category", "bottomofhomepage", "cart", "all"],
+      enum: ["homepage", "category", "bottomofhomepage", "cart", "wishlist", "all"],
       default: "all",
     },
     startDate: {

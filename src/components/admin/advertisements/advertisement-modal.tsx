@@ -24,7 +24,7 @@ interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
-  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "wishlist" | "all"
   startDate?: string
   endDate?: string
   createdAt: string
@@ -49,7 +49,7 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
     isActive: true,
     order: 0,
     deviceType: "all" as "all" | "desktop" | "mobile" | "tablet",
-    position: "all" as "homepage" | "category" | "bottomofhomepage" | "cart" | "all",
+    position: "all" as "homepage" | "category" | "bottomofhomepage" | "cart" | "wishlist" | "all",
     startDate: "",
     endDate: "",
   })
@@ -354,7 +354,13 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    position: e.target.value as "homepage" | "category" | "bottomofhomepage" | "cart" | "all",
+                    position: e.target.value as
+                      | "homepage"
+                      | "category"
+                      | "bottomofhomepage"
+                      | "cart"
+                      | "wishlist"
+                      | "all",
                   }))
                 }
                 className="w-full p-2 border rounded-md bg-white text-gray-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -373,6 +379,9 @@ export function AdvertisementModal({ isOpen, onClose, onSuccess, advertisement }
                 </option>
                 <option value="cart" className="text-gray-900">
                   Cart Page
+                </option>
+                <option value="wishlist" className="text-gray-900">
+                  Wishlist Page
                 </option>
               </select>
               <p className="text-xs text-gray-500">Choose where this advertisement will be displayed</p>

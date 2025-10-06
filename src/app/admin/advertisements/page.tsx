@@ -19,7 +19,7 @@ interface Advertisement {
   isActive: boolean
   order: number
   deviceType: "all" | "desktop" | "mobile" | "tablet"
-  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "all"
+  position: "homepage" | "category" | "bottomofhomepage" | "cart" | "wishlist" | "all"
   startDate?: string
   endDate?: string
   createdAt: string
@@ -158,10 +158,17 @@ export default function AdvertisementsPage() {
   }
 
   const activeCount = advertisements?.filter((ad) => ad.isActive)?.length || 0
-  const homepageCount = advertisements?.filter((ad) => ad.isActive && (ad.position === "homepage" || ad.position === "all"))?.length || 0
-  const categoryCount = advertisements?.filter((ad) => ad.isActive && (ad.position === "category" || ad.position === "all"))?.length || 0
-  const bottomOfHomepageCount = advertisements?.filter((ad) => ad.isActive && (ad.position === "bottomofhomepage" || ad.position === "all"))?.length || 0
-  const cartCount = advertisements?.filter((ad) => ad.isActive && (ad.position === "cart" || ad.position === "all"))?.length || 0
+  const homepageCount =
+    advertisements?.filter((ad) => ad.isActive && (ad.position === "homepage" || ad.position === "all"))?.length || 0
+  const categoryCount =
+    advertisements?.filter((ad) => ad.isActive && (ad.position === "category" || ad.position === "all"))?.length || 0
+  const bottomOfHomepageCount =
+    advertisements?.filter((ad) => ad.isActive && (ad.position === "bottomofhomepage" || ad.position === "all"))
+      ?.length || 0
+  const cartCount =
+    advertisements?.filter((ad) => ad.isActive && (ad.position === "cart" || ad.position === "all"))?.length || 0
+  const wishlistCount =
+    advertisements?.filter((ad) => ad.isActive && (ad.position === "wishlist" || ad.position === "all"))?.length || 0
 
   return (
     <div className="p-4 md:p-6 lg:p-8 space-y-6">
@@ -177,7 +184,7 @@ export default function AdvertisementsPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Total Ads</CardTitle>
@@ -232,6 +239,15 @@ export default function AdvertisementsPage() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">Wishlist</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-pink-600">{wishlistCount}</div>
+            <p className="text-xs text-gray-500">Wishlist page ads</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600">Inactive</CardTitle>
           </CardHeader>
           <CardContent>
@@ -271,6 +287,7 @@ export default function AdvertisementsPage() {
                 <option value="category">Category Section</option>
                 <option value="bottomofhomepage">Bottom of Homepage</option>
                 <option value="cart">Cart Page</option>
+                <option value="wishlist">Wishlist Page</option>
               </select>
             </div>
             <div className="flex-1">
