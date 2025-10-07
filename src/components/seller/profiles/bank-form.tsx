@@ -28,9 +28,15 @@ export interface BankDetails {
 }
 
 const bankSchema = z.object({
-  accountHolderName: z.string().min(2, "Account holder name is required"),
-  accountNumber: z.string().min(8, "Valid account number required"),
-  ifscCode: z.string().min(11, "Valid IFSC code required").max(11, "IFSC code must be 11 characters"),
+  accountHolderName: z.string()
+    .min(1, "Account holder name is required")
+    .regex(/^[A-Za-z\s\.\'\-]+$/, "Account holder name can only contain letters, spaces, periods, apostrophes, and hyphens"),
+  
+  accountNumber: z.string()
+    .regex(/^\d{9,}$/, "Account number must be at least 9 digits"),
+  
+  ifscCode: z.string()
+    .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "IFSC code must be in format: 4 letters, 0, then 6 alphanumeric characters"),
   bankName: z.string().min(2, "Bank name is required"),
   branch: z.string().min(2, "Branch name is required"),
   city: z.string().min(2, "City is required"),
