@@ -27,12 +27,15 @@ export async function GET(req: NextRequest) {
     // If user is admin, fetch all orders
     if (user.type === "admin") {
       orders = await ordersCollection.find({}).sort({ createdAt: -1 }).toArray()
-    }
-    // If user is seller, fetch only their orders
-    else if (user.type === "seller") {
+    } else if (user.type === "seller") {
       orders = await ordersCollection
         .find({
-          "products.sellerId": user.id,
+          $or: [
+            { "products.seller_id": user.id },
+            { "products.seller_id": user.id.toString() },
+            { "products.sellerId": user.id },
+            { "products.sellerId": user.id.toString() },
+          ],
         })
         .sort({ createdAt: -1 })
         .toArray()
