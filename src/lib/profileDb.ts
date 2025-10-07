@@ -33,6 +33,15 @@ interface IAdvertisement {
   endDate?: Date
 }
 
+// PromotionSettings interface for managing promotion section
+interface IPromotionSettings {
+  videoId: string
+  bannerImageUrl?: string
+  bannerImageData?: string
+  isActive: boolean
+  updatedAt: Date
+}
+
 // Review interface with complete order items
 interface IReview {
   orderId: string
@@ -121,6 +130,24 @@ interface ICustomerPreferences {
   productUpdates: boolean
   offerNotifications: boolean
   orderUpdates: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+// BuyerAddress interface
+interface IBuyerAddress {
+  userId: string
+  firstName: string
+  lastName: string
+  companyName?: string
+  address: string
+  country: string
+  state: string
+  city: string
+  zipCode: string
+  email: string
+  phoneNumber: string
+  isDefault: boolean
   createdAt: Date
   updatedAt: Date
 }
@@ -487,13 +514,24 @@ const AdvertisementSchema = new mongoose.Schema<IAdvertisement>(
   },
 )
 
-// Add indexes for efficient querying
-AdvertisementSchema.index({ isActive: 1, order: 1 })
-AdvertisementSchema.index({ startDate: 1, endDate: 1 })
-AdvertisementSchema.index({ deviceType: 1 })
-AddressSchema.index({ position: 1 })
+const PromotionSettingsSchema = new mongoose.Schema<IPromotionSettings>(
+  {
+    videoId: { type: String, required: true },
+    bannerImageUrl: { type: String },
+    bannerImageData: { type: String },
+    isActive: { type: Boolean, default: true },
+    updatedAt: { type: Date, default: Date.now },
+  },
+  {
+    timestamps: true,
+    collection: "promotionsettings",
+  },
+)
 
-// Define Review schema with enhanced orderItems structure
+// Add indexes for efficient querying
+PromotionSettingsSchema.index({ isActive: 1 })
+
+// Review schema with enhanced orderItems structure
 const ReviewSchema = new mongoose.Schema<IReview>(
   {
     orderId: { type: String, required: true, index: true },
@@ -523,24 +561,6 @@ ReviewSchema.index({ createdAt: -1 })
 ReviewSchema.index({ rating: 1 })
 ReviewSchema.index({ status: 1, createdAt: -1 })
 ReviewSchema.index({ orderId: 1, userId: 1 }, { unique: true }) // Prevent duplicate reviews
-
-// BuyerAddress interface
-interface IBuyerAddress {
-  userId: string
-  firstName: string
-  lastName: string
-  companyName?: string
-  address: string
-  country: string
-  state: string
-  city: string
-  zipCode: string
-  email: string
-  phoneNumber: string
-  isDefault: boolean
-  createdAt: Date
-  updatedAt: Date
-}
 
 // Define BuyerAddress schema
 const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(
@@ -594,6 +614,7 @@ const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(
       required: true,
       trim: true,
       lowercase: true,
+      maxlength: 255,
     },
     phoneNumber: {
       type: String,
@@ -1011,6 +1032,10 @@ function registerModels(connection: Connection) {
     connection.model("CustomerPreferences", CustomerPreferencesSchema)
     console.log("Registered CustomerPreferences model")
   }
+  if (!connection.models.PromotionSettings) {
+    connection.model("PromotionSettings", PromotionSettingsSchema)
+    console.log("Registered PromotionSettings model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -1036,6 +1061,7 @@ export {
   WhatsAppCampaignSchema,
   WhatsAppCampaignLogSchema,
   CustomerPreferencesSchema,
+  PromotionSettingsSchema, // Export PromotionSettings schema
   PROFILE_DB,
 }
 

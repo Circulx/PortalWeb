@@ -2,13 +2,42 @@
 
 import { Play } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+
+interface PromotionSettings {
+  videoId: string
+  bannerImageUrl?: string
+  bannerImageData?: string
+  isActive: boolean
+}
 
 export default function PromotionSection() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
+  const [settings, setSettings] = useState<PromotionSettings | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  const youtubeVideoId = "wG6yqAFZk04?si=ZkkGNr4oGsRoDkpB" // Updated to use the provided YouTube Shorts video ID
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        const response = await fetch("/api/admin/promotion-settings")
+        const result = await response.json()
+
+        if (result.success && result.data) {
+          setSettings(result.data)
+        }
+      } catch (error) {
+        console.error("Error fetching promotion settings:", error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchSettings()
+  }, [])
+
+  const youtubeVideoId = settings?.videoId || "wG6yqAFZk04?si=ZkkGNr4oGsRoDkpB"
+  const bannerImage = settings?.bannerImageData || settings?.bannerImageUrl || "/promotion_banner.jpg"
 
   const handlePlayVideo = () => {
     setIsVideoPlaying(true)
@@ -16,6 +45,28 @@ export default function PromotionSection() {
 
   const handleVideoEnd = () => {
     setIsVideoPlaying(false)
+  }
+
+  if (loading) {
+    return (
+      <div className="w-full py-12 px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-8">
+            <p className="text-orange-500 font-semibold text-sm uppercase tracking-wide mb-2">PROMOTION</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">Live shopping | Explore top deals</h2>
+            <p className="text-gray-600 text-lg">Introducing the new collections</p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[300px] md:min-h-[400px] lg:min-h-[500px]">
+              <div className="bg-gray-200 animate-pulse"></div>
+              <div className="bg-gray-100 p-8 lg:p-12 flex items-center justify-center">
+                <div className="text-gray-400">Loading...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -38,7 +89,7 @@ export default function PromotionSection() {
                   <div
                     className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"
                     style={{
-                      backgroundImage: "url('/promotion_banner.jpg')",
+                      backgroundImage: `url('${bannerImage}')`, // Use dynamic banner image
                     }}
                   >
                     <div className="absolute inset-0 bg-black bg-opacity-20 rounded-tl-2xl rounded-bl-2xl lg:rounded-bl-2xl lg:rounded-tr-none lg:rounded-br-none"></div>

@@ -21,6 +21,7 @@ import {
   UserCheck,
   ShoppingBag,
   Settings,
+  Video,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -101,6 +102,11 @@ const sidebarItems = [
         href: "/admin/advertisements",
         title: "Advertisements",
         icon: ImageIcon,
+      },
+      {
+        href: "/admin/promotion-settings",
+        title: "Promotion Settings",
+        icon: Video,
       },
       {
         href: "/admin/whatsapp/campaigns",
