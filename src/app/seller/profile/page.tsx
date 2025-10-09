@@ -130,6 +130,9 @@ export default function ProfilePage() {
           // Update furthestStep if the clicked tab is further than the current furthestStep
           setFurthestStep((prev) => Math.max(prev, tabIndex))
 
+          // Scroll to top of the page when changing tabs
+          window.scrollTo({ top: 0, behavior: 'smooth' })
+
           // Generate a new key to force re-render of the form component
           setFormKey(Date.now())
           console.log("Tab change - Form key updated to:", Date.now())
@@ -148,18 +151,20 @@ export default function ProfilePage() {
     // Refresh the data from the server
     await fetchProfileData()
 
-    // After refreshing data, the activeTab should be updated to the next tab
-    // based on the server's currentStep value, which was updated in the server action
-
-    // Generate a new key to force re-render of the form component
+    // Scroll to top of the page
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+    
     setFormKey(Date.now())
     console.log("Form key updated to:", Date.now())
-  }, [fetchProfileData])
+  }, [fetchProfileData, activeTab])
 
   // Fetch data on initial mount
   useEffect(() => {
     fetchProfileData()
   }, [fetchProfileData])
+
+  
+
 
   // Memoize renderForm to prevent unnecessary re-renders
   const renderForm = useCallback(() => {
@@ -190,7 +195,8 @@ export default function ProfilePage() {
             initialData={profileData.document}
             onSuccess={() => {
               handleFormSaved()
-              setActiveTab("review")
+              // Note: handleFormSaved will automatically advance to the next tab (review)
+              // and scroll to top, so we don't need to manually set the tab here
             }}
           />
         )
