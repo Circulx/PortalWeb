@@ -36,7 +36,11 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
           if (currentUser.type === "admin") {
             router.push("/admin")
           } else if (currentUser.type === "seller") {
-            router.push("/seller/profile")
+            if (currentUser.onboardingStatus === "pending") {
+              router.push("/seller/light-onboarding")
+            } else {
+              router.push("/seller/profile")
+            }
           } else {
             router.push("/dashboard")
           }
@@ -68,16 +72,23 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
         if (currentUser.type === "admin") {
           window.location.href = "/admin"
         } else if (currentUser.type === "seller") {
-          // Redirect sellers to profile page instead of dashboard
-          window.location.href = "/seller/profile"
+          if (currentUser.onboardingStatus === "pending") {
+            window.location.href = "/seller/light-onboarding"
+          } else {
+            window.location.href = "/seller/profile"
+          }
         } else {
           window.location.href = "/dashboard"
         }
       } else {
         // User has the correct role
         if (currentUser.type === "seller" && requiredRole === "seller") {
-          // Redirect sellers to profile page after login
-          window.location.href = "/seller/profile"
+          // Check onboarding status and redirect accordingly
+          if (currentUser.onboardingStatus === "pending") {
+            window.location.href = "/seller/light-onboarding"
+          } else {
+            window.location.href = "/seller/profile"
+          }
         } else {
           // For other roles, refresh the page
           window.location.reload()

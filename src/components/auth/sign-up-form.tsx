@@ -82,7 +82,12 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       return
     }
 
-    onSuccess("User registered successfully. Please sign in.")
+    // If seller signup is successful, redirect to light onboarding
+    if (userType === "seller") {
+      onSuccess("Registration successful! Please sign in to continue with seller setup.")
+    } else {
+      onSuccess("User registered successfully. Please sign in.")
+    }
   }
 
   const handleContactClick = (type: "support" | "customer-care") => {
