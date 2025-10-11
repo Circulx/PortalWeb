@@ -177,15 +177,15 @@ export default function ProfilePage() {
 
     switch (activeTab) {
       case "business":
-        return <BusinessForm key={`business-${formKey}`} initialData={profileData.business} onSaved={handleFormSaved} />
+        return <BusinessForm key={`business-${formKey}`} initialData={profileData.business} onSaved={handleFormSaved} isPrefilledData={profileData.isPrefilledData} />
       case "contact":
         return <ContactForm key={`contact-${formKey}`} initialData={profileData.contact} onSaved={handleFormSaved} />
       case "category":
         return (
-          <CategoryBrandForm key={`category-${formKey}`} initialData={profileData.category} onSaved={handleFormSaved} />
+          <CategoryBrandForm key={`category-${formKey}`} initialData={profileData.category} onSaved={handleFormSaved} isPrefilledData={profileData.isPrefilledData} />
         )
       case "addresses":
-        return <AddressForm key={`addresses-${formKey}`} initialData={profileData.address} onSaved={handleFormSaved} />
+        return <AddressForm key={`addresses-${formKey}`} initialData={profileData.address} onSaved={handleFormSaved} isPrefilledData={profileData.isPrefilledData} />
       case "bank":
         return <BankForm key={`bank-${formKey}`} initialData={profileData.bank} onSaved={handleFormSaved} />
       case "documents":

@@ -164,6 +164,8 @@ export async function getCurrentUser() {
       name: user.name,
       email: user.email,
       type: user.type,
+      onboardingStatus: user.onboardingStatus,
+      lightOnboardingData: user.lightOnboardingData,
     }
 
     return plainUser

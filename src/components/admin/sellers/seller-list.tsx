@@ -20,7 +20,7 @@ interface Seller {
   email: string
   phone: string
   registeredDate: string
-  status: "Approved" | "Reject" | "Review"
+  status: "Approved" | "Reject" | "Review" | "Pending Completion"
 }
 
 export function SellerList() {
@@ -139,7 +139,7 @@ export function SellerList() {
 
   const currentPageData = getCurrentPageData()
 
-  const handleStatusChange = async (sellerId: string, status: "Approved" | "Reject" | "Review") => {
+  const handleStatusChange = async (sellerId: string, status: "Approved" | "Reject" | "Review" | "Pending Completion") => {
     try {
       const response = await fetch(`/api/admin/sellers/${sellerId}`, {
         method: "PATCH",
@@ -175,6 +175,7 @@ export function SellerList() {
     Approved: "bg-green-100 text-green-800 border-green-300",
     Reject: "bg-red-100 text-red-800 border-red-300",
     Review: "bg-amber-100 text-amber-800 border-amber-300",
+    "Pending Completion": "bg-blue-100 text-blue-800 border-blue-300",
   }
 
   return (
@@ -305,17 +306,19 @@ export function SellerList() {
                         defaultValue="Review"
                         value={seller.status || "Review"}
                         onValueChange={(value) =>
-                          handleStatusChange(seller._id, value as "Approved" | "Reject" | "Review")
+                          handleStatusChange(seller._id, value as "Approved" | "Reject" | "Review" | "Pending Completion")
                         }
                       >
                         <SelectTrigger
                           className={cn(
-                            "w-[130px] h-8 border-2",
+                            "w-[180px] h-8 border-2",
                             seller.status === "Approved"
                               ? statusColors.Approved
                               : seller.status === "Reject"
                                 ? statusColors.Reject
-                                : statusColors.Review,
+                                : seller.status === "Pending Completion"
+                                  ? statusColors["Pending Completion"]
+                                  : statusColors.Review,
                           )}
                         >
                           <SelectValue placeholder="Review" />
@@ -329,6 +332,9 @@ export function SellerList() {
                           </SelectItem>
                           <SelectItem className="bg-amber-100 text-amber-800 hover:bg-amber-200" value="Review">
                             Review
+                          </SelectItem>
+                          <SelectItem className="bg-blue-100 text-blue-800 hover:bg-blue-200" value="Pending Completion">
+                            Pending Completion
                           </SelectItem>
                         </SelectContent>
                       </Select>

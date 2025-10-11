@@ -310,8 +310,8 @@ const ProfileProgressSchema = new mongoose.Schema<IProfileProgress>(
     currentStep: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Approved", "Reject", "Review"],
-      default: "Review",
+      enum: ["Approved", "Reject", "Review", "Pending Completion"],
+      default: "Pending Completion",
     },
   },
   { timestamps: true },

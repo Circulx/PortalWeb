@@ -7,6 +7,13 @@ export interface IUser extends Document {
   password: string
   type: "admin" | "seller" | "customer"
   gstNumber?: string
+  onboardingStatus?: "pending" | "light_completed" | "full_completed"
+  lightOnboardingData?: {
+  businessName: string
+  gstNumber: string
+  address: string
+  categories: string[] 
+  }
   createdAt: Date
   updatedAt: Date
 }
@@ -33,6 +40,17 @@ const userSchema = new Schema<IUser>(
     },
     gstNumber: {
       type: String,
+    },
+    onboardingStatus: {
+      type: String,
+      enum: ["pending", "light_completed", "full_completed"],
+      default: "pending",
+    },
+    lightOnboardingData: {
+      businessName: { type: String },
+      gstNumber: { type: String },
+      address: { type: String },
+      categories: [{ type: String }], 
     },
   },
   {
