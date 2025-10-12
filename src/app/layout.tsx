@@ -10,6 +10,7 @@ import PageViewTracker from "@/components/analytics/PageViewTracker"
 import { Suspense } from "react"
 import Clarity from "@/components/analytics/Clarity"
 import Script from "next/script"
+import { OnboardingPopupHandler } from "@/components/onboarding-popup-handler"
 
 export const metadata: Metadata = {
   title: "IND2B",
@@ -64,6 +65,7 @@ export default async function RootLayout({
           </Suspense>
           <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14">{children}</main>
           <Footer />
+          <OnboardingPopupHandler />
         </Providers>
 
         <Script id="tawk-to-widget" strategy="afterInteractive">

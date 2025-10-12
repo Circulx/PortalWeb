@@ -1,11 +1,41 @@
 "use client"
 import { useState, useEffect } from "react"
+import { getCurrentUser } from "@/actions/auth"
 
 export default function IdlePopup() {
   const [isIdle, setIsIdle] = useState(false)
+  const [shouldShow, setShouldShow] = useState(false)
   const idleTime = 5000 // 5 seconds
 
   useEffect(() => {
+    const checkSellerOnboardingStatus = async () => {
+      try {
+        const user = await getCurrentUser()
+        if (user && user.type === "seller" && user.onboardingStatus === "light_completed") {
+          // Check if seller has completed the heavy form
+          const response = await fetch("/api/seller/profile-status")
+          if (response.ok) {
+            const data = await response.json()
+            // If status is still "Pending Completion", don't show idle popup
+            if (data.status === "Pending Completion") {
+              setShouldShow(false)
+              return
+            }
+          }
+        }
+        setShouldShow(true)
+      } catch (error) {
+        console.error("Error checking seller onboarding status:", error)
+        setShouldShow(true) // Default to showing if error
+      }
+    }
+
+    checkSellerOnboardingStatus()
+  }, [])
+
+  useEffect(() => {
+    if (!shouldShow) return
+
     // Only set the initial timer to show popup after idle time
     const timeout = setTimeout(() => {
       setIsIdle(true)
@@ -21,9 +51,9 @@ export default function IdlePopup() {
       window.removeEventListener("keydown", onKeyDown)
       clearTimeout(timeout)
     }
-  }, [])
+  }, [shouldShow])
 
-  if (!isIdle) return null
+  if (!isIdle || !shouldShow) return null
 
   // Theme
   const ORANGE = "#FF6A00" // primary accent

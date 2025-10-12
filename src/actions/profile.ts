@@ -2,6 +2,7 @@
 
 import { connectProfileDB } from "@/lib/profileDb"
 import { getCurrentUser } from "@/actions/auth"
+import { getUserModel } from "@/models/user"
 import { revalidatePath } from "next/cache"
 import type { TabType } from "@/types/profile"
 import {
@@ -543,14 +544,20 @@ export async function submitProfileForReview() {
     const db = await connectProfileDB()
     const ProfileProgress = db.model("ProfileProgress")
 
-    // Update the profile status to "submitted for review"
+    // Update the profile status to "Review"
     const progress = await safelyFindOne(ProfileProgress, { userId: user.id })
     if (progress) {
       await ProfileProgress.findByIdAndUpdate(progress._id, {
-        status: "submitted",
+        status: "Review", 
         submittedAt: new Date(),
       })
     }
+
+    // Update user's onboarding status to "full_completed"
+    const UserModel = await getUserModel()
+    await UserModel.findByIdAndUpdate(user.id, {
+      onboardingStatus: "full_completed"
+    })
 
     revalidatePath("/seller/profile")
 
@@ -632,12 +639,13 @@ export async function saveDocumentsAndComplete(formData: FormData) {
       })
     }
 
-    // Mark all steps as completed
+    // Mark all steps as completed and change status to "Review"
     const progress = await safelyFindOne(ProfileProgress, { userId: user.id })
     if (progress) {
       await ProfileProgress.findByIdAndUpdate(progress._id, {
         completedSteps: TAB_ORDER,
         currentStep: "documents",
+        status: "Review", 
         isCompleted: true,
       })
     } else {
@@ -645,9 +653,16 @@ export async function saveDocumentsAndComplete(formData: FormData) {
         userId: user.id,
         completedSteps: TAB_ORDER,
         currentStep: "documents",
+        status: "Review", 
         isCompleted: true,
       })
     }
+
+    // Update user's onboarding status to "full_completed"
+    const UserModel = await getUserModel()
+    await UserModel.findByIdAndUpdate(user.id, {
+      onboardingStatus: "full_completed"
+    })
 
     revalidatePath("/seller/profile")
 
