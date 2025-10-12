@@ -52,14 +52,14 @@ export default function Footer() {
             </Link>
             <p className="text-sm text-white">© 2025 One step Ecommerce Solutions</p>
           </div>
-           {/* Protocol Links */}
-           <div>
+          {/* Protocol Links */}
+          <div>
             <h3 className="font-semibold mb-4 text-white">IND2B</h3>
             <div className="space-y-3">
               <Link href="/documentation" className="block text-white hover:text-gray-300">
                 About Us
               </Link>
-              <Link href="/medium" className="block text-white hover:text-gray-300">
+              <Link href="/careers" className="block text-white hover:text-gray-300">
                 Careers
               </Link>
               <Link href="/token-address" className="block text-white hover:text-gray-300">
@@ -80,7 +80,7 @@ export default function Footer() {
               <Link href="/refund-policy" className="block text-white hover:text-gray-300">
                 Refund/Return policy
               </Link>
-              <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
+              <Link href="/buyer-protection" className="block text-white hover:text-gray-300">
                 Buyer Protection
               </Link>
             </div>
@@ -104,8 +104,7 @@ export default function Footer() {
             </div>
           </div>
 
-         
-         <div>
+          <div>
             <h3 className="font-semibold mb-4 text-white">Buyer Tool</h3>
             <div className="space-y-3">
               <Link href="/shipping-policy" className="block text-white hover:text-gray-300">

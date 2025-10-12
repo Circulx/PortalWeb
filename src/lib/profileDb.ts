@@ -134,6 +134,25 @@ interface ICustomerPreferences {
   updatedAt: Date
 }
 
+interface ICareer {
+  title: string
+  type: "full-time" | "part-time" | "internship" | "contract"
+  location: string
+  isRemote: boolean
+  description: string
+  responsibilities: string[]
+  requirements: string[]
+  salaryMin?: number
+  salaryMax?: number
+  salaryCurrency: string
+  applyUrl?: string
+  applyEmail?: string
+  isActive: boolean
+  applicationDeadline?: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
 // BuyerAddress interface
 interface IBuyerAddress {
   userId: string
@@ -951,6 +970,90 @@ const CustomerPreferencesSchema = new mongoose.Schema<ICustomerPreferences>(
 CustomerPreferencesSchema.index({ userId: 1 })
 CustomerPreferencesSchema.index({ whatsappMarketing: 1 })
 
+const CareerSchema = new mongoose.Schema<ICareer>(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    type: {
+      type: String,
+      enum: ["full-time", "part-time", "internship", "contract"],
+      required: true,
+      index: true,
+    },
+    location: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    isRemote: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 2000,
+    },
+    responsibilities: {
+      type: [String],
+      default: [],
+    },
+    requirements: {
+      type: [String],
+      default: [],
+    },
+    salaryMin: {
+      type: Number,
+      min: 0,
+    },
+    salaryMax: {
+      type: Number,
+      min: 0,
+    },
+    salaryCurrency: {
+      type: String,
+      default: "INR",
+      trim: true,
+      maxlength: 10,
+    },
+    applyUrl: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    applyEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 255,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    applicationDeadline: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "careers",
+  },
+)
+
+CareerSchema.index({ isActive: 1, createdAt: -1 })
+CareerSchema.index({ type: 1, isActive: 1 })
+CareerSchema.index({ isRemote: 1, isActive: 1 })
+CareerSchema.index({ applicationDeadline: 1 })
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -1036,6 +1139,10 @@ function registerModels(connection: Connection) {
     connection.model("PromotionSettings", PromotionSettingsSchema)
     console.log("Registered PromotionSettings model")
   }
+  if (!connection.models.Career) {
+    connection.model("Career", CareerSchema)
+    console.log("Registered Career model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -1061,7 +1168,8 @@ export {
   WhatsAppCampaignSchema,
   WhatsAppCampaignLogSchema,
   CustomerPreferencesSchema,
-  PromotionSettingsSchema, // Export PromotionSettings schema
+  PromotionSettingsSchema,
+  CareerSchema, // Export Career schema
   PROFILE_DB,
 }
 

@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Settings,
   Video,
+  Briefcase,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -117,6 +118,11 @@ const sidebarItems = [
         href: "/admin/whatsapp/analytics",
         title: "WhatsApp Analytics",
         icon: BarChart3,
+      },
+      {
+        href: "/admin/careers",
+        title: "Careers Management",
+        icon: Briefcase,
       },
     ],
   },
