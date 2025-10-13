@@ -1,10 +1,10 @@
 "use client"
 
 import { useState } from "react"
-import { Briefcase, MapPin, DollarSign, Calendar, ExternalLink, Mail } from "lucide-react"
+import { Briefcase, MapPin, DollarSign, Calendar, ExternalLink, Mail, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import JobApplicationForm from "./job-application-form"
 
 type CareerType = "full-time" | "part-time" | "internship" | "contract"
 
@@ -32,6 +32,9 @@ interface CareerFiltersProps {
 
 export default function CareerFilters({ careers }: CareerFiltersProps) {
   const [selectedType, setSelectedType] = useState<string>("all")
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [applicationFormOpen, setApplicationFormOpen] = useState(false)
+  const [selectedJob, setSelectedJob] = useState<{ id: string; title: string } | null>(null)
 
   const filteredCareers = selectedType === "all" ? careers : careers.filter((c) => c.type === selectedType)
 
@@ -59,16 +62,25 @@ export default function CareerFilters({ careers }: CareerFiltersProps) {
   const getTypeColor = (type: CareerType) => {
     switch (type) {
       case "full-time":
-        return "bg-blue-100 text-blue-800"
+        return "bg-blue-100 text-blue-800 border-blue-200"
       case "part-time":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800 border-green-200"
       case "internship":
-        return "bg-purple-100 text-purple-800"
+        return "bg-purple-100 text-purple-800 border-purple-200"
       case "contract":
-        return "bg-orange-100 text-orange-800"
+        return "bg-orange-100 text-orange-800 border-orange-200"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 border-gray-200"
     }
+  }
+
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id)
+  }
+
+  const handleApplyNow = (jobId: string, jobTitle: string) => {
+    setSelectedJob({ id: jobId, title: jobTitle })
+    setApplicationFormOpen(true)
   }
 
   return (
@@ -114,7 +126,6 @@ export default function CareerFilters({ careers }: CareerFiltersProps) {
         </div>
       </div>
 
-      {/* Careers Listing */}
       <div className="container mx-auto px-4 pb-16">
         {filteredCareers.length === 0 ? (
           <div className="text-center py-12">
@@ -127,101 +138,187 @@ export default function CareerFilters({ careers }: CareerFiltersProps) {
             </p>
           </div>
         ) : (
-          <div className="grid gap-6 max-w-5xl mx-auto">
-            {filteredCareers.map((career) => (
-              <Card key={career._id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-start gap-3 mb-2">
-                        <Briefcase className="w-6 h-6 text-gray-600 mt-1 flex-shrink-0" />
-                        <div>
-                          <CardTitle className="text-2xl mb-2">{career.title}</CardTitle>
-                          <div className="flex flex-wrap gap-2">
-                            <Badge className={getTypeColor(career.type)}>{career.type.replace("-", " ")}</Badge>
-                            {career.isRemote && <Badge variant="outline">Remote</Badge>}
+          <div className="max-w-6xl mx-auto space-y-3">
+            {filteredCareers.map((career) => {
+              const isExpanded = expandedId === career._id
+              const salary = formatSalary(career.salaryMin, career.salaryMax, career.salaryCurrency)
+
+              return (
+                <div
+                  key={career._id}
+                  className="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-md transition-all duration-200"
+                >
+                  {/* Clickable Row Header */}
+                  <button
+                    onClick={() => toggleExpand(career._id)}
+                    className="w-full px-4 md:px-6 py-4 md:py-5 flex items-center justify-between gap-4 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      {/* Mobile Layout */}
+                      <div className="md:hidden space-y-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-lg text-gray-900 mb-2 leading-tight">{career.title}</h3>
+                            <div className="flex flex-wrap gap-2">
+                              <Badge className={`${getTypeColor(career.type)} text-xs`}>
+                                {career.type.replace("-", " ")}
+                              </Badge>
+                              {career.isRemote && (
+                                <Badge variant="outline" className="text-xs">
+                                  Remote
+                                </Badge>
+                              )}
+                            </div>
                           </div>
+                        </div>
+                        <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-gray-600">
+                          <div className="flex items-center gap-1.5">
+                            <MapPin className="w-4 h-4 flex-shrink-0" />
+                            <span className="truncate">{career.location}</span>
+                          </div>
+                          {salary && (
+                            <div className="flex items-center gap-1.5">
+                              <DollarSign className="w-4 h-4 flex-shrink-0" />
+                              <span className="truncate">{salary}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Desktop Layout */}
+                      <div className="hidden md:flex items-center gap-6">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-lg text-gray-900 mb-2 leading-tight">{career.title}</h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex items-center gap-1.5">
+                              <MapPin className="w-4 h-4 flex-shrink-0" />
+                              <span>{career.location}</span>
+                            </div>
+                            {salary && (
+                              <div className="flex items-center gap-1.5">
+                                <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                <span>{salary}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <Badge className={`${getTypeColor(career.type)} text-xs whitespace-nowrap`}>
+                            {career.type.replace("-", " ")}
+                          </Badge>
+                          {career.isRemote && (
+                            <Badge variant="outline" className="text-xs whitespace-nowrap">
+                              Remote
+                            </Badge>
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Quick Info */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-                    <div className="flex items-center gap-2 text-gray-600">
-                      <MapPin className="w-4 h-4 flex-shrink-0" />
-                      <span>{career.location}</span>
+
+                    {/* Expand/Collapse Icon */}
+                    <div className="flex-shrink-0">
+                      {isExpanded ? (
+                        <ChevronUp className="w-5 h-5 text-gray-500" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                      )}
                     </div>
-                    {formatSalary(career.salaryMin, career.salaryMax, career.salaryCurrency) && (
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <DollarSign className="w-4 h-4 flex-shrink-0" />
-                        <span>{formatSalary(career.salaryMin, career.salaryMax, career.salaryCurrency)}</span>
-                      </div>
-                    )}
-                    {career.applicationDeadline && (
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Calendar className="w-4 h-4 flex-shrink-0" />
-                        <span>Apply by {formatDate(career.applicationDeadline)}</span>
-                      </div>
-                    )}
-                  </div>
+                  </button>
 
-                  {/* Description */}
-                  <div>
-                    <h4 className="font-semibold mb-2">About the Role</h4>
-                    <p className="text-gray-700 leading-relaxed">{career.description}</p>
-                  </div>
+                  {/* Expandable Details Section */}
+                  {isExpanded && (
+                    <div className="px-4 md:px-6 pb-5 pt-2 border-t border-gray-100 bg-gray-50/50 animate-in slide-in-from-top-2 duration-200">
+                      <div className="space-y-5">
+                        {/* Application Deadline */}
+                        {career.applicationDeadline && (
+                          <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-3 py-2">
+                            <Calendar className="w-4 h-4 flex-shrink-0" />
+                            <span className="font-medium">Apply by {formatDate(career.applicationDeadline)}</span>
+                          </div>
+                        )}
 
-                  {/* Responsibilities */}
-                  {career.responsibilities && career.responsibilities.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Responsibilities</h4>
-                      <ul className="list-disc list-inside space-y-1 text-gray-700">
-                        {career.responsibilities.map((resp, idx) => (
-                          <li key={idx}>{resp}</li>
-                        ))}
-                      </ul>
+                        {/* Description */}
+                        <div>
+                          <h4 className="font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                            <Briefcase className="w-4 h-4" />
+                            About the Role
+                          </h4>
+                          <p className="text-gray-700 leading-relaxed text-sm md:text-base">{career.description}</p>
+                        </div>
+
+                        {/* Two Column Layout for Responsibilities and Requirements */}
+                        <div className="grid md:grid-cols-2 gap-5">
+                          {/* Responsibilities */}
+                          {career.responsibilities && career.responsibilities.length > 0 && (
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3">Key Responsibilities</h4>
+                              <ul className="space-y-2">
+                                {career.responsibilities.map((resp, idx) => (
+                                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
+                                    <span className="flex-1">{resp}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+
+                          {/* Requirements */}
+                          {career.requirements && career.requirements.length > 0 && (
+                            <div>
+                              <h4 className="font-semibold text-gray-900 mb-3">Requirements</h4>
+                              <ul className="space-y-2">
+                                {career.requirements.map((req, idx) => (
+                                  <li key={idx} className="flex items-start gap-2 text-sm text-gray-700">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 mt-2 flex-shrink-0" />
+                                    <span className="flex-1">{req}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Apply Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-3 pt-3">
+                          <Button
+                            onClick={() => handleApplyNow(career._id, career.title)}
+                            className="flex-1 sm:flex-none"
+                          >
+                            Apply Now
+                          </Button>
+                          
+                          {career.applyEmail && (
+                            <Button asChild variant="outline" className="flex-1 sm:flex-none bg-transparent">
+                              <a href={`mailto:${career.applyEmail}`}>
+                                <Mail className="w-4 h-4 mr-2" />
+                                Email Application
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   )}
-
-                  {/* Requirements */}
-                  {career.requirements && career.requirements.length > 0 && (
-                    <div>
-                      <h4 className="font-semibold mb-2">Requirements</h4>
-                      <ul className="list-disc list-inside space-y-1 text-gray-700">
-                        {career.requirements.map((req, idx) => (
-                          <li key={idx}>{req}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {/* Apply Buttons */}
-                  <div className="flex flex-wrap gap-3 pt-4 border-t">
-                    {career.applyUrl && (
-                      <Button asChild className="flex-1 sm:flex-none">
-                        <a href={career.applyUrl} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="w-4 h-4 mr-2" />
-                          Apply Online
-                        </a>
-                      </Button>
-                    )}
-                    {career.applyEmail && (
-                      <Button asChild variant="outline" className="flex-1 sm:flex-none bg-transparent">
-                        <a href={`mailto:${career.applyEmail}`}>
-                          <Mail className="w-4 h-4 mr-2" />
-                          Email Application
-                        </a>
-                      </Button>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
+
+      {/* Job Application Form Modal */}
+      {selectedJob && (
+        <JobApplicationForm
+          isOpen={applicationFormOpen}
+          onClose={() => {
+            setApplicationFormOpen(false)
+            setSelectedJob(null)
+          }}
+          jobId={selectedJob.id}
+          jobTitle={selectedJob.title}
+        />
+      )}
     </>
   )
 }

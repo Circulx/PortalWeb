@@ -1054,6 +1054,175 @@ CareerSchema.index({ type: 1, isActive: 1 })
 CareerSchema.index({ isRemote: 1, isActive: 1 })
 CareerSchema.index({ applicationDeadline: 1 })
 
+interface IApplicant {
+  careerId: string
+  careerTitle: string
+  fullName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  country: string
+  zipCode: string
+  education: string
+  collegeName: string // Added collegeName field
+  experience: string
+  skills: string[]
+  cvUrl: string
+  coverLetter: string
+  whyInterested: string
+  linkedinUrl?: string
+  portfolioUrl?: string
+  availableFrom?: Date
+  expectedSalary?: number
+  status: "pending" | "reviewing" | "shortlisted" | "rejected" | "hired"
+  appliedAt: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+const ApplicantSchema = new mongoose.Schema<IApplicant>(
+  {
+    careerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    careerTitle: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      maxlength: 255,
+      index: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 20,
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    country: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    zipCode: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 20,
+    },
+    education: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+    collegeName: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+    experience: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    skills: {
+      type: [String],
+      required: true,
+      default: [],
+    },
+    cvUrl: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    coverLetter: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 2000,
+    },
+    whyInterested: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    linkedinUrl: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    portfolioUrl: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    availableFrom: {
+      type: Date,
+    },
+    expectedSalary: {
+      type: Number,
+      min: 0,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "reviewing", "shortlisted", "rejected", "hired"],
+      default: "pending",
+      index: true,
+    },
+    appliedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "applicants",
+  },
+)
+
+ApplicantSchema.index({ careerId: 1, email: 1 }, { unique: true })
+ApplicantSchema.index({ status: 1, appliedAt: -1 })
+ApplicantSchema.index({ email: 1, appliedAt: -1 })
+ApplicantSchema.index({ appliedAt: -1 })
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -1143,6 +1312,10 @@ function registerModels(connection: Connection) {
     connection.model("Career", CareerSchema)
     console.log("Registered Career model")
   }
+  if (!connection.models.Applicant) {
+    connection.model("Applicant", ApplicantSchema)
+    console.log("Registered Applicant model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -1169,7 +1342,8 @@ export {
   WhatsAppCampaignLogSchema,
   CustomerPreferencesSchema,
   PromotionSettingsSchema,
-  CareerSchema, // Export Career schema
+  CareerSchema,
+  ApplicantSchema, // Export Applicant schema
   PROFILE_DB,
 }
 

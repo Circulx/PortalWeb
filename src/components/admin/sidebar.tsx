@@ -10,19 +10,20 @@ import {
   Star,
   Store,
   PackageOpen,
-  ImageIcon,
-  MessageSquare,
-  X,
-  MessageCircle,
-  BarChart3,
-  FileText,
-  ChevronDown,
   Package,
   UserCheck,
   ShoppingBag,
   Settings,
   Video,
+  ImageIcon,
+  MessageSquare,
+  X,
+  MessageCircle,
+  BarChart3,
   Briefcase,
+  UserCircle,
+  FileText,
+  ChevronDown,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -95,6 +96,23 @@ const sidebarItems = [
     ],
   },
   {
+    title: "Career",
+    icon: Briefcase,
+    type: "dropdown",
+    items: [
+      {
+        href: "/admin/careers",
+        title: "Job Postings",
+        icon: Briefcase,
+      },
+      {
+        href: "/admin/applicants",
+        title: "Applicants",
+        icon: UserCircle,
+      },
+    ],
+  },
+  {
     title: "Admin Features",
     icon: Settings,
     type: "dropdown",
@@ -118,11 +136,6 @@ const sidebarItems = [
         href: "/admin/whatsapp/analytics",
         title: "WhatsApp Analytics",
         icon: BarChart3,
-      },
-      {
-        href: "/admin/careers",
-        title: "Careers Management",
-        icon: Briefcase,
       },
     ],
   },
