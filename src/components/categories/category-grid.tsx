@@ -33,16 +33,17 @@ export default function CategoryGrid() {
   }, [])
 
   useEffect(() => {
-    if (categories.length <= CATEGORIES_PER_PAGE || !isMounted) return
+    if (!isMounted || !categories || categories.length <= CATEGORIES_PER_PAGE) return
 
     const interval = setInterval(() => {
       setCurrentIndex((prevIndex) => {
+        if (!categories || categories.length === 0) return 0
         return (prevIndex + 1) % categories.length
       })
     }, AUTO_SCROLL_INTERVAL)
 
     return () => clearInterval(interval)
-  }, [categories.length, isMounted])
+  }, [categories, categories.length, isMounted])
 
   const fetchCategories = async () => {
     try {
@@ -54,7 +55,7 @@ export default function CategoryGrid() {
       }
 
       const data = await response.json()
-      setCategories(data)
+      setCategories(Array.isArray(data) ? data : [])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load categories")
       console.error("Error fetching categories:", err)
@@ -86,7 +87,7 @@ export default function CategoryGrid() {
     )
   }
 
-  if (categories.length === 0) {
+  if (!categories || categories.length === 0) {
     return (
       <div className="text-center py-20">
         <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
@@ -96,6 +97,8 @@ export default function CategoryGrid() {
   }
 
   const getVisibleCategories = () => {
+    if (!categories || categories.length === 0) return []
+
     const visibleCategories = []
     for (let i = 0; i < CATEGORIES_PER_PAGE; i++) {
       const categoryIndex = (currentIndex + i) % categories.length
@@ -108,11 +111,9 @@ export default function CategoryGrid() {
   }
 
   const getFeaturedCategories = () => {
+    if (!categories || categories.length === 0) return []
     return [...categories].sort((a, b) => b.count - a.count).slice(0, FEATURED_CATEGORIES_COUNT)
   }
-
-  const visibleCategories = getVisibleCategories()
-  const featuredCategories = getFeaturedCategories()
 
   if (!isMounted) {
     return (
@@ -121,6 +122,9 @@ export default function CategoryGrid() {
       </div>
     )
   }
+
+  const visibleCategories = getVisibleCategories()
+  const featuredCategories = getFeaturedCategories()
 
   return (
     <section className="py-16 bg-gray-200">
@@ -177,9 +181,9 @@ export default function CategoryGrid() {
           {categories.length > CATEGORIES_PER_PAGE && (
             <div className="flex justify-center mt-8">
               <div className="flex space-x-1">
-                {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
+                {Array.from({ length: Math.min(categories.length, 10) }, (_, index) => (
                   <div
-                    key={index}
+                    key={`indicator-${index}`}
                     className={`w-2 h-2 rounded-full transition-all duration-300 ${
                       index === currentIndex % Math.min(categories.length, 10) ? "bg-green-900 w-4" : "bg-gray-300"
                     }`}

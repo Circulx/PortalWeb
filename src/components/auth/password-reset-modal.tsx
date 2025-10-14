@@ -6,8 +6,10 @@ import { useState } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ArrowLeft, Eye, EyeOff } from "lucide-react"
+import { PasswordInput } from "@/components/ui/password-input"
+import { ArrowLeft } from "lucide-react"
 import { verifyEmailForReset, resetPassword } from "@/actions/password-reset"
+import { validateEmail, isPasswordValid } from "@/lib/validation"
 
 interface PasswordResetModalProps {
   isOpen: boolean
@@ -22,8 +24,6 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const handleBack = () => {
     if (step === "password") {
@@ -42,8 +42,6 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
     setConfirmPassword("")
     setError("")
     setIsLoading(false)
-    setShowNewPassword(false)
-    setShowConfirmPassword(false)
   }
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
@@ -51,8 +49,9 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
     setIsLoading(true)
     setError("")
 
-    if (!email) {
-      setError("Please enter your email address")
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || "Invalid email")
       setIsLoading(false)
       return
     }
@@ -80,8 +79,9 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
       return
     }
 
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters long")
+    const passwordValidation = isPasswordValid(newPassword)
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.error || "Invalid password")
       setIsLoading(false)
       return
     }
@@ -165,48 +165,26 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
                 <div>
                   <p className="text-gray-50 px-1 py-1">New Password</p>
-                  <div className="relative">
-                    <Input
-                      type={showNewPassword ? "text" : "password"}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="Enter new password"
-                      className="h-9 px-8 pr-12 bg-white text-black placeholder:text-gray-500 rounded-lg"
-                      disabled={isLoading}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      disabled={isLoading}
-                    >
-                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    value={newPassword}
+                    onChange={setNewPassword}
+                    placeholder="Enter new password"
+                    showStrength={true}
+                    name="newPassword"
+                    id="newPassword"
+                  />
                 </div>
 
                 <div>
                   <p className="text-gray-50 px-1 py-1">Confirm Password</p>
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? "text" : "password"}
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm new password"
-                      className="h-9 px-8 pr-12 bg-white text-black placeholder:text-gray-500 rounded-lg"
-                      disabled={isLoading}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                      disabled={isLoading}
-                    >
-                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+                  <PasswordInput
+                    value={confirmPassword}
+                    onChange={setConfirmPassword}
+                    placeholder="Confirm new password"
+                    showStrength={false}
+                    name="confirmPassword"
+                    id="confirmPassword"
+                  />
                 </div>
 
                 {error && <p className="text-sm text-red-400">{error}</p>}
@@ -221,8 +199,6 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
               </form>
             </div>
           )}
-
-          
         </div>
       </DialogContent>
     </Dialog>

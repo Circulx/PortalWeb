@@ -6,8 +6,10 @@ import { useState, useEffect } from "react"
 import { signUp } from "@/actions/auth"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { PasswordInput } from "@/components/ui/password-input"
 import { ContactModal } from "./contact-modal"
 import { useSearchParams } from "next/navigation"
+import { validateEmail, isPasswordValid } from "@/lib/validation"
 
 interface SignUpFormProps {
   onSuccess: (message: string) => void
@@ -21,6 +23,9 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   const [contactType, setContactType] = useState<"support" | "customer-care">("support")
   const [userType, setUserType] = useState("customer")
   const [gstError, setGstError] = useState("")
+  const [email, setEmail] = useState("")
+  const [emailError, setEmailError] = useState("")
+  const [password, setPassword] = useState("")
 
   const searchParams = useSearchParams()
 
@@ -56,10 +61,38 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     }
   }
 
+  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setEmail(value)
+    setEmailError("")
+
+    if (value) {
+      const validation = validateEmail(value)
+      if (!validation.isValid) {
+        setEmailError(validation.error || "")
+      }
+    }
+  }
+
   async function handleSubmit(formData: FormData) {
     setIsLoading(true)
     setError("")
     setGstError("")
+    setEmailError("")
+
+    const emailValidation = validateEmail(email)
+    if (!emailValidation.isValid) {
+      setEmailError(emailValidation.error || "Invalid email")
+      setIsLoading(false)
+      return
+    }
+
+    const passwordValidation = isPasswordValid(password)
+    if (!passwordValidation.isValid) {
+      setError(passwordValidation.error || "Invalid password")
+      setIsLoading(false)
+      return
+    }
 
     // Validate GST number for sellers before submission
     if (userType === "seller") {
@@ -117,19 +150,23 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
             name="email"
             type="email"
             required
+            value={email}
+            onChange={handleEmailChange}
             placeholder=""
             className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
           />
+          {emailError && <p className="text-sm text-red-400 mt-1 px-1">{emailError}</p>}
+          <p className="text-xs text-gray-300 mt-1 px-1"></p>
         </div>
         <div>
           <p className="text-gray-50 px-1 py-1">Password</p>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            required
+          <PasswordInput
+            value={password}
+            onChange={setPassword}
             placeholder=""
-            className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
+            showStrength={true}
+            name="password"
+            id="password"
           />
         </div>
         {isSellerSignup && (

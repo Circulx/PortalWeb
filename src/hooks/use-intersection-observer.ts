@@ -20,6 +20,12 @@ export function useIntersectionObserver({
     const element = elementRef.current
     if (!element) return
 
+    if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
+      // Fallback: immediately set as intersected if IntersectionObserver is not supported
+      setHasIntersected(true)
+      return
+    }
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -38,7 +44,9 @@ export function useIntersectionObserver({
     observer.observe(element)
 
     return () => {
-      observer.unobserve(element)
+      if (observer && element) {
+        observer.unobserve(element)
+      }
     }
   }, [threshold, rootMargin, triggerOnce])
 

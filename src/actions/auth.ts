@@ -3,6 +3,7 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUserModel } from "@/models/user"
+import type { IUser } from "@/models/user"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
@@ -73,6 +74,23 @@ export async function signUp(formData: FormData) {
     const password = formData.get("password") as string
     const userType = (formData.get("userType") as string) || "customer"
     const gstNumber = formData.get("gstNumber") as string
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return { error: "Please enter a valid email address" }
+    }
+
+    if (password.length < 6) {
+      return { error: "Password must be at least 6 characters long" }
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(password)
+    const hasNumber = /[0-9]/.test(password)
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)
+
+    if (!hasLetter || !hasNumber || !hasSpecial) {
+      return { error: "Password must contain letters, numbers, and special characters" }
+    }
 
     const existingUser = await UserModel.findOne({ email })
     if (existingUser) {
@@ -155,7 +173,9 @@ export async function getCurrentUser() {
       type: string
     }
 
-    const user = await UserModel.findById(decoded.userId).select("-password")
+    const user = (await UserModel.findById(decoded.userId).select("-password").lean()) as
+      | (Omit<IUser, "password"> & { _id: any })
+      | null
 
     if (!user) return null
 
@@ -164,8 +184,15 @@ export async function getCurrentUser() {
       name: user.name,
       email: user.email,
       type: user.type,
-      onboardingStatus: user.onboardingStatus,
-      lightOnboardingData: user.lightOnboardingData,
+      onboardingStatus: user.onboardingStatus || "pending",
+      lightOnboardingData: user.lightOnboardingData
+        ? {
+            businessName: user.lightOnboardingData.businessName || "",
+            gstNumber: user.lightOnboardingData.gstNumber || "",
+            address: user.lightOnboardingData.address || "",
+            categories: user.lightOnboardingData.categories || [],
+          }
+        : undefined,
     }
 
     return plainUser
