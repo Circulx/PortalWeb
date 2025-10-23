@@ -3,12 +3,14 @@ import { Resend } from "resend"
 // Initialize Resend with API key
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-// Email sender address
-const FROM_EMAIL = "product.circ@i10ai.com"
+const FROM_EMAIL = "ranjeshroy97099@gmail.com"
 
-/**
- * Send an email using Resend
- */
+
+
+
+
+
+
 export async function sendEmail({
   to,
   subject,

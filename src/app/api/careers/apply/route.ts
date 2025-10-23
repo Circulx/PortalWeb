@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
+import { sendEmail } from "@/lib/email"
+import { generateApplicationConfirmationEmail } from "@/lib/email-templates"
 
 export async function POST(request: NextRequest) {
   try {
@@ -95,6 +97,33 @@ export async function POST(request: NextRequest) {
     })
 
     console.log("[v0] Application created successfully:", application._id)
+
+    try {
+      console.log("[v0] Sending confirmation email to:", email)
+      const emailHtml = generateApplicationConfirmationEmail({
+        fullName,
+        email,
+        careerTitle,
+        applicationId: application._id.toString(),
+        appliedAt: application.appliedAt,
+      })
+
+      const emailResult = await sendEmail({
+        to: email,
+        subject: `Application Received: ${careerTitle} at IND2B`,
+        html: emailHtml,
+      })
+
+      if (emailResult.success) {
+        console.log("[v0] Confirmation email sent successfully")
+      } else {
+        console.error("[v0] Failed to send confirmation email:", emailResult.error)
+        // Don't fail the application submission if email fails
+      }
+    } catch (emailError) {
+      console.error("[v0] Error sending confirmation email:", emailError)
+      // Don't fail the application submission if email fails
+    }
 
     return NextResponse.json(
       {

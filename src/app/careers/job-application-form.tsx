@@ -156,8 +156,9 @@ export default function JobApplicationForm({ isOpen, onClose, jobId, jobTitle }:
           <div className="flex flex-col items-center justify-center py-12 space-y-4">
             <CheckCircle2 className="w-16 h-16 text-green-500" />
             <h3 className="text-2xl font-bold text-green-700">Application Submitted!</h3>
-            <p className="text-gray-600 text-center">
-              Thank you for applying. We'll review your application and get back to you soon.
+            <p className="text-gray-600 text-center max-w-md">
+              Thank you for applying! We've sent a confirmation email to your inbox. Our team will review your
+              application and reach out within a week.
             </p>
           </div>
         ) : (

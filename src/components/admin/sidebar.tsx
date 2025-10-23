@@ -24,6 +24,7 @@ import {
   UserCircle,
   FileText,
   ChevronDown,
+  Tag,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -126,6 +127,11 @@ const sidebarItems = [
         href: "/admin/promotion-settings",
         title: "Promotion Settings",
         icon: Video,
+      },
+      {
+        href: "/admin/coupons",
+        title: "Coupon Management",
+        icon: Tag,
       },
       {
         href: "/admin/whatsapp/campaigns",

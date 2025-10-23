@@ -6,6 +6,7 @@ import { useSelector } from "react-redux"
 import type { RootState } from "@/store"
 import type { PaymentMethod } from "./paymentOptions"
 import { validateMOQ } from "@/lib/moq"
+import { Tag, X } from "lucide-react"
 
 interface OrderSummaryProps {
   onPlaceOrder: () => void
@@ -28,21 +29,79 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   const [tax, setTax] = useState(0)
   const [total, setTotal] = useState(0)
 
+  const [couponCode, setCouponCode] = useState("")
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string
+    name: string
+    discountAmount: number
+  } | null>(null)
+  const [couponLoading, setCouponLoading] = useState(false)
+  const [couponError, setCouponError] = useState("")
+
   // Calculate totals
   useEffect(() => {
     const calculatedSubTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
-    const calculatedDiscount = 0 // For demo purposes
-    const calculatedTax = calculatedSubTotal * 0.18 // 18% tax for demo
-    const calculatedTotal = calculatedSubTotal - calculatedDiscount + calculatedTax
+
+    const couponDiscount = appliedCoupon?.discountAmount || 0
+    const discountedSubTotal = calculatedSubTotal - couponDiscount
+
+    const calculatedTax = discountedSubTotal * 0.18 // 18% tax
+    const calculatedTotal = discountedSubTotal + calculatedTax
 
     setSubTotal(calculatedSubTotal)
-    setDiscount(calculatedDiscount)
+    setDiscount(couponDiscount)
     setTax(calculatedTax)
     setTotal(calculatedTotal)
 
     // Notify parent component of total amount
     onTotalAmountChange(calculatedTotal)
-  }, [cartItems, onTotalAmountChange])
+  }, [cartItems, appliedCoupon, onTotalAmountChange])
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      setCouponError("Please enter a coupon code")
+      return
+    }
+
+    setCouponLoading(true)
+    setCouponError("")
+
+    try {
+      const response = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          couponCode: couponCode.trim(),
+          orderValue: subTotal,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setAppliedCoupon({
+          code: data.coupon.code,
+          name: data.coupon.name,
+          discountAmount: data.coupon.discountAmount,
+        })
+        setCouponCode("")
+        setCouponError("")
+      } else {
+        setCouponError(data.error || "Invalid coupon code")
+      }
+    } catch (error) {
+      console.error("Error applying coupon:", error)
+      setCouponError("Failed to apply coupon. Please try again.")
+    } finally {
+      setCouponLoading(false)
+    }
+  }
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null)
+    setCouponCode("")
+    setCouponError("")
+  }
 
   const moqStatus = validateMOQ(subTotal)
 
@@ -77,12 +136,70 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
         {/* Divider */}
         <div className="w-full h-px bg-gray-200 my-4"></div>
 
+        <div className="mb-6">
+          <label className="text-sm font-medium text-gray-700 mb-2 block">Have a coupon code?</label>
+          {appliedCoupon ? (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-4 h-4 text-green-600" />
+                  <div>
+                    <p className="text-sm font-medium text-green-800">{appliedCoupon.code}</p>
+                    <p className="text-xs text-green-600">Saved ₹{appliedCoupon.discountAmount.toFixed(2)}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleRemoveCoupon}
+                  className="text-green-600 hover:text-green-800 p-1"
+                  aria-label="Remove coupon"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => {
+                    setCouponCode(e.target.value.toUpperCase())
+                    setCouponError("")
+                  }}
+                  placeholder="Enter coupon code"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  disabled={couponLoading}
+                />
+                <button
+                  onClick={handleApplyCoupon}
+                  disabled={couponLoading || !couponCode.trim()}
+                  className="px-4 py-2 bg-orange-500 text-white rounded-md text-sm font-medium hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                >
+                  {couponLoading ? "Applying..." : "Apply"}
+                </button>
+              </div>
+              {couponError && <p className="text-xs text-red-600">{couponError}</p>}
+            </div>
+          )}
+        </div>
+
+        {/* Divider */}
+        <div className="w-full h-px bg-gray-200 my-4"></div>
+
         {/* Price Breakdown */}
         <div className="space-y-2 mb-6">
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Sub-total</span>
             <span>₹{subTotal.toFixed(2)}</span>
           </div>
+
+          {appliedCoupon && (
+            <div className="flex justify-between text-sm text-green-600">
+              <span>Coupon Discount ({appliedCoupon.code})</span>
+              <span>-₹{appliedCoupon.discountAmount.toFixed(2)}</span>
+            </div>
+          )}
 
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">GST (18%)</span>

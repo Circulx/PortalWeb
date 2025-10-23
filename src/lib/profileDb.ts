@@ -134,6 +134,23 @@ interface ICustomerPreferences {
   updatedAt: Date
 }
 
+// Coupon interface for discount management
+interface ICoupon {
+  couponName: string
+  couponCode: string
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  validFrom: Date
+  validUntil: Date
+  isActive: boolean
+  usageLimit?: number
+  usedCount: number
+  minOrderValue?: number
+  maxDiscountAmount?: number
+  createdAt: Date
+  updatedAt: Date
+}
+
 interface ICareer {
   title: string
   type: "full-time" | "part-time" | "internship" | "contract"
@@ -436,6 +453,8 @@ const OrderSchema = new mongoose.Schema(
     totalAmount: { type: Number, required: true },
     subTotal: { type: Number, required: true },
     discount: { type: Number, default: 0 },
+    couponCode: { type: String },
+    couponDiscount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
     warehouseSelected: { type: Boolean, default: false },
     warehouseId: String,
@@ -970,6 +989,77 @@ const CustomerPreferencesSchema = new mongoose.Schema<ICustomerPreferences>(
 CustomerPreferencesSchema.index({ userId: 1 })
 CustomerPreferencesSchema.index({ whatsappMarketing: 1 })
 
+// Coupon schema for discount management
+const CouponSchema = new mongoose.Schema<ICoupon>(
+  {
+    couponName: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    couponCode: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      uppercase: true,
+      maxlength: 50,
+      index: true,
+    },
+    discountType: {
+      type: String,
+      enum: ["percentage", "fixed"],
+      required: true,
+    },
+    discountValue: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    validFrom: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    validUntil: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    usageLimit: {
+      type: Number,
+      min: 0,
+    },
+    usedCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    minOrderValue: {
+      type: Number,
+      min: 0,
+    },
+    maxDiscountAmount: {
+      type: Number,
+      min: 0,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "coupons",
+  },
+)
+
+// Add indexes for Coupon
+CouponSchema.index({ isActive: 1, validFrom: 1, validUntil: 1 })
+CouponSchema.index({ couponCode: 1, isActive: 1 })
+
 const CareerSchema = new mongoose.Schema<ICareer>(
   {
     title: {
@@ -1316,6 +1406,10 @@ function registerModels(connection: Connection) {
     connection.model("Applicant", ApplicantSchema)
     console.log("Registered Applicant model")
   }
+  if (!connection.models.Coupon) {
+    connection.model("Coupon", CouponSchema)
+    console.log("Registered Coupon model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -1343,7 +1437,8 @@ export {
   CustomerPreferencesSchema,
   PromotionSettingsSchema,
   CareerSchema,
-  ApplicantSchema, // Export Applicant schema
+  ApplicantSchema,
+  CouponSchema,
   PROFILE_DB,
 }
 
