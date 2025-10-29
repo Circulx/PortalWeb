@@ -92,7 +92,7 @@ export default function Footer() {
               <Link href="/sell" className="block text-white hover:text-gray-300">
                 Sell on IND2B
               </Link>
-              <Link href="/refund-policy" className="block text-white hover:text-gray-300">
+              <Link href="/" className="block text-white hover:text-gray-300">
                 Latest Buy
               </Link>
               <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
@@ -110,7 +110,7 @@ export default function Footer() {
               <Link href="/shipping-policy" className="block text-white hover:text-gray-300">
                 Requirements
               </Link>
-              <Link href="/refund-policy" className="block text-white hover:text-gray-300">
+              <Link href="/" className="block text-white hover:text-gray-300">
                 Products
               </Link>
               <Link href="/coinmarketcap" className="block text-white hover:text-gray-300">
