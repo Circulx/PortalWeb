@@ -58,12 +58,11 @@ export const fetchProducts = createAsyncThunk(
   async (options: { category?: string } = {}, { getState, rejectWithValue }) => {
     const state = getState() as { products: ProductState }
 
-    // If products are already loaded and it's been less than 30 minutes, don't fetch again
-    const thirtyMinutesInMs = 30 * 60 * 1000
+    const twentyMinutesInMs = 20 * 60 * 1000
     if (
       state.products.products.length > 0 &&
       state.products.lastFetched &&
-      Date.now() - state.products.lastFetched < thirtyMinutesInMs
+      Date.now() - state.products.lastFetched < twentyMinutesInMs
     ) {
       return {
         products: state.products.products,

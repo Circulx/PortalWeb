@@ -18,7 +18,7 @@ export async function GET() {
         $match: {
           isActive: true,
           is_draft: false,
-          category_name: { $exists: true, $ne: null, },
+          category_name: { $exists: true, $ne: null },
         },
       },
       {
@@ -55,9 +55,8 @@ export async function GET() {
 
     console.log(`Found ${categories.length} categories`)
 
-    // Add cache headers for better performance
     const response = NextResponse.json(categories, { status: 200 })
-    response.headers.set("Cache-Control", "public, s-maxage=600, stale-while-revalidate=1200") // Cache for 10 minutes
+    response.headers.set("Cache-Control", "public, s-maxage=1200, stale-while-revalidate=2400") // Cache for 20 minutes, stale for 40 minutes
 
     return response
   } catch (error) {

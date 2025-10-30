@@ -9,8 +9,7 @@ let advertisementCache: {
   position: string
 } | null = null
 
-// Cache duration: 5 minutes (300,000 milliseconds)
-const CACHE_DURATION = 5 * 60 * 1000
+const CACHE_DURATION = 20 * 60 * 1000 // 20 minutes (1,200,000 milliseconds)
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -33,13 +32,16 @@ export async function GET(request: NextRequest) {
         return deviceMatch && positionMatch
       })
 
-      return NextResponse.json({
+      const response = NextResponse.json({
         success: true,
         data: filteredData,
         count: filteredData.length,
         cached: true,
         responseTime: responseTime,
       })
+      response.headers.set("Cache-Control", "public, s-maxage=1200, stale-while-revalidate=2400")
+
+      return response
     }
 
     console.log(`[v0] API: Fetching fresh advertisements from database`)
@@ -103,13 +105,16 @@ export async function GET(request: NextRequest) {
 
     console.log(`[v0] API: Returning ${filteredData.length} filtered advertisements`)
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: filteredData,
       count: filteredData.length,
       cached: false,
       responseTime: responseTime,
     })
+    response.headers.set("Cache-Control", "public, s-maxage=1200, stale-while-revalidate=2400")
+
+    return response
   } catch (error) {
     console.error("[v0] API: Error fetching active advertisements:", error)
     return NextResponse.json(

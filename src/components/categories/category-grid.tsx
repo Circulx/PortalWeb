@@ -13,6 +13,9 @@ interface Category {
   subcategories: string[]
 }
 
+let categoryCache: { data: Category[]; timestamp: number } | null = null
+const CACHE_DURATION = 20 * 60 * 1000 // 20 minutes
+
 export default function CategoryGrid() {
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
@@ -47,6 +50,13 @@ export default function CategoryGrid() {
 
   const fetchCategories = async () => {
     try {
+      if (categoryCache && Date.now() - categoryCache.timestamp < CACHE_DURATION) {
+        console.log("[v0] Using cached categories from client")
+        setCategories(categoryCache.data)
+        setLoading(false)
+        return
+      }
+
       setLoading(true)
       const response = await fetch("/api/categories")
 
@@ -55,7 +65,14 @@ export default function CategoryGrid() {
       }
 
       const data = await response.json()
-      setCategories(Array.isArray(data) ? data : [])
+      const categoriesData = Array.isArray(data) ? data : []
+
+      categoryCache = {
+        data: categoriesData,
+        timestamp: Date.now(),
+      }
+
+      setCategories(categoriesData)
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load categories")
       console.error("Error fetching categories:", err)

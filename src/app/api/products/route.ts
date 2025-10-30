@@ -287,9 +287,8 @@ export async function GET(request: Request) {
 
     console.log(`=== RETURNING ${transformedProducts.length} TRANSFORMED PRODUCTS WITH RATINGS ===`)
 
-    // Add cache headers
     const response = NextResponse.json(transformedProducts, { status: 200 })
-    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=600")
+    response.headers.set("Cache-Control", "public, s-maxage=1200, stale-while-revalidate=2400")
 
     return response
   } catch (error) {

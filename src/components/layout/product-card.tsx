@@ -140,8 +140,8 @@ const ProductCard = memo(function ProductCard({
       stock: stock,
     })
 
-    toast.success("Added to cart!", {
-      duration: 1500,
+    toast.success("Product added in cart!", {
+      duration: 2000,
       position: "bottom-center",
     })
   }, [addToCart, href, title, image_link, priceCalculation.finalPrice, discount, seller_id, units, stock])

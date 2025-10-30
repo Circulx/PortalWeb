@@ -45,7 +45,7 @@ export const fetchAdvertisements = createAsyncThunk(
   ) => {
     const state = getState() as { advertisements: AdvertisementState }
 
-    const cacheValidityDuration = 5 * 60 * 1000 // Reduced cache duration to 5 minutes
+    const cacheValidityDuration = 20 * 60 * 1000 // 20 minutes
     const now = Date.now()
 
     // Check if we have valid cached data - return immediately

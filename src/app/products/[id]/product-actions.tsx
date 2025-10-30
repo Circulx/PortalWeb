@@ -104,9 +104,8 @@ export default function ProductActions({
       stock,
     })
 
-    // Show success toast
-    toast.success("Added to cart successfully!", {
-      duration: 3000,
+    toast.success("Product added in cart!", {
+      duration: 2000,
       position: "bottom-center",
     })
   }, [addToCart, productId, title, imageUrl, price, discount, sellerId, units, stock])

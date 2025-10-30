@@ -12,6 +12,8 @@ import AdvertisementPreloader from "@/components/layout/advertisement-preloader"
 import SingleAdvertisement from "@/components/layout/single-advertisement"
 import SellerSignupOffer from "@/components/home/seller-signup-offer"
 
+export const revalidate = 1200 // 20 minutes in seconds
+
 export default function Home() {
   return (
     <main className="min-h-screen">

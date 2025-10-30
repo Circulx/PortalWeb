@@ -12,6 +12,9 @@ interface PromotionSettings {
   isActive: boolean
 }
 
+let promotionCache: { data: PromotionSettings; timestamp: number } | null = null
+const CACHE_DURATION = 20 * 60 * 1000 // 20 minutes
+
 export default function PromotionSection() {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false)
   const [settings, setSettings] = useState<PromotionSettings | null>(null)
@@ -20,10 +23,21 @@ export default function PromotionSection() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
+        if (promotionCache && Date.now() - promotionCache.timestamp < CACHE_DURATION) {
+          console.log("[v0] Using cached promotion settings from client")
+          setSettings(promotionCache.data)
+          setLoading(false)
+          return
+        }
+
         const response = await fetch("/api/admin/promotion-settings")
         const result = await response.json()
 
         if (result.success && result.data) {
+          promotionCache = {
+            data: result.data,
+            timestamp: Date.now(),
+          }
           setSettings(result.data)
         }
       } catch (error) {
