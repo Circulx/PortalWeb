@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Loader2, Package } from "lucide-react"
@@ -27,31 +27,9 @@ export default function CategoryGrid() {
   const AUTO_SCROLL_INTERVAL = 5000
   const FEATURED_CATEGORIES_COUNT = 6
 
-  useEffect(() => {
-    setIsMounted(true)
-  }, [])
-
-  useEffect(() => {
-    fetchCategories()
-  }, [])
-
-  useEffect(() => {
-    if (!isMounted || !categories || categories.length <= CATEGORIES_PER_PAGE) return
-
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        if (!categories || categories.length === 0) return 0
-        return (prevIndex + 1) % categories.length
-      })
-    }, AUTO_SCROLL_INTERVAL)
-
-    return () => clearInterval(interval)
-  }, [categories, categories.length, isMounted])
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       if (categoryCache && Date.now() - categoryCache.timestamp < CACHE_DURATION) {
-        console.log("[v0] Using cached categories from client")
         setCategories(categoryCache.data)
         setLoading(false)
         return
@@ -79,7 +57,46 @@ export default function CategoryGrid() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    setIsMounted(true)
+    fetchCategories()
+  }, [fetchCategories])
+
+  useEffect(() => {
+    if (!isMounted || !categories || categories.length <= CATEGORIES_PER_PAGE) return
+
+    const interval = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        const maxIndex = categories.length - 1
+        return prevIndex >= maxIndex ? 0 : prevIndex + 1
+      })
+    }, AUTO_SCROLL_INTERVAL)
+
+    return () => {
+      clearInterval(interval)
+    }
+  }, [categories, isMounted, CATEGORIES_PER_PAGE])
+
+  const visibleCategories = useMemo(() => {
+    if (!categories || categories.length === 0) return []
+
+    const visible = []
+    for (let i = 0; i < CATEGORIES_PER_PAGE; i++) {
+      const categoryIndex = (currentIndex + i) % categories.length
+      visible.push({
+        ...categories[categoryIndex],
+        key: `${categories[categoryIndex].name}-${categoryIndex}`,
+      })
+    }
+    return visible
+  }, [categories, currentIndex, CATEGORIES_PER_PAGE])
+
+  const featuredCategories = useMemo(() => {
+    if (!categories || categories.length === 0) return []
+    return [...categories].sort((a, b) => b.count - a.count).slice(0, FEATURED_CATEGORIES_COUNT)
+  }, [categories, FEATURED_CATEGORIES_COUNT])
 
   if (loading) {
     return (
@@ -113,25 +130,6 @@ export default function CategoryGrid() {
     )
   }
 
-  const getVisibleCategories = () => {
-    if (!categories || categories.length === 0) return []
-
-    const visibleCategories = []
-    for (let i = 0; i < CATEGORIES_PER_PAGE; i++) {
-      const categoryIndex = (currentIndex + i) % categories.length
-      visibleCategories.push({
-        ...categories[categoryIndex],
-        key: `${categories[categoryIndex].name}-${currentIndex}-${i}`,
-      })
-    }
-    return visibleCategories
-  }
-
-  const getFeaturedCategories = () => {
-    if (!categories || categories.length === 0) return []
-    return [...categories].sort((a, b) => b.count - a.count).slice(0, FEATURED_CATEGORIES_COUNT)
-  }
-
   if (!isMounted) {
     return (
       <div className="flex justify-center items-center py-20">
@@ -139,9 +137,6 @@ export default function CategoryGrid() {
       </div>
     )
   }
-
-  const visibleCategories = getVisibleCategories()
-  const featuredCategories = getFeaturedCategories()
 
   return (
     <section className="py-16 bg-gray-200">
