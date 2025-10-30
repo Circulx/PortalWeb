@@ -79,12 +79,13 @@ async function getProductReviews(
 
     const ReviewModel = getReviewModel(connection)
 
-    // Fetch approved reviews for this product
     const reviews = await ReviewModel.find({
       product_id: productId,
       status: "approved",
     })
+      .select("userId orderId product_id title rating review status isVerifiedPurchase createdAt updatedAt")
       .sort({ createdAt: -1 })
+      .limit(50) // Limit initial reviews for faster page load
       .lean()
       .exec()
 
@@ -93,7 +94,7 @@ async function getProductReviews(
 
     if (totalReviews > 0) {
       const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
-      averageRating = Math.round((totalRating / totalReviews) * 10) / 10 // Round to 1 decimal place
+      averageRating = Math.round((totalRating / totalReviews) * 10) / 10
     }
 
     console.log(`Found ${totalReviews} reviews with average rating: ${averageRating}`)
@@ -166,13 +167,23 @@ async function getProductById(id: string): Promise<Product | null> {
     let productDoc = null
 
     if (!isNaN(productId)) {
-      productDoc = await ProductModel.findOne({ product_id: productId }).lean().exec()
+      productDoc = await ProductModel.findOne({ product_id: productId })
+        .select(
+          "product_id title description price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
+        )
+        .lean()
+        .exec()
     }
 
     if (!productDoc) {
       console.log(`Product not found by product_id: ${productId}, trying _id`)
       if (mongoose.Types.ObjectId.isValid(id)) {
-        productDoc = await ProductModel.findById(id).lean().exec()
+        productDoc = await ProductModel.findById(id)
+          .select(
+            "product_id title description price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
+          )
+          .lean()
+          .exec()
       }
     }
 
@@ -219,7 +230,7 @@ async function getProductById(id: string): Promise<Product | null> {
   }
 }
 
-// Product detail page component - Now a proper server component
+// Product detail page component - Now a proper server component with ISR
 export default async function ProductPage({ params }: { params: { id: string } }) {
   try {
     // Extract the ID parameter
@@ -230,7 +241,6 @@ export default async function ProductPage({ params }: { params: { id: string } }
       return notFound()
     }
 
-    // Fetch the product data and reviews
     const [product, reviewData] = await Promise.all([getProductById(id), getProductReviews(id)])
 
     // If product not found, show 404 page
@@ -509,7 +519,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 </span>
               </div>
 
-              {/* Contact Buttons */}
+              {/* Contact Buttons 
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button className="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-1 transition-colors">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -529,9 +539,10 @@ export default async function ProductPage({ params }: { params: { id: string } }
                   Contact Supplier
                 </button>
               </div>
+              */}
 
-              {/* Response Rate */}
-              <p className="text-center text-sm text-gray-600">86% Response Rate</p>
+              {/* Response Rate 
+              <p className="text-center text-sm text-gray-600"></p> */}
             </div>
 
             {/* Sponsored Advertisement */}
@@ -562,5 +573,35 @@ export default async function ProductPage({ params }: { params: { id: string } }
         <p className="mt-4">We're having trouble loading this product. Please try again later.</p>
       </div>
     )
+  }
+}
+
+export const revalidate = 300 // Revalidate every 5 minutes
+
+export const dynamicParams = true
+
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  try {
+    const product = await getProductById(params.id)
+
+    if (!product) {
+      return {
+        title: "Product Not Found",
+      }
+    }
+
+    return {
+      title: product.title,
+      description: product.description?.slice(0, 160) || `Buy ${product.title} at best price`,
+      openGraph: {
+        title: product.title,
+        description: product.description?.slice(0, 160),
+        images: [product.image_link || "/placeholder.svg"],
+      },
+    }
+  } catch (error) {
+    return {
+      title: "Product",
+    }
   }
 }

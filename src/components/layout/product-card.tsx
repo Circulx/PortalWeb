@@ -215,7 +215,7 @@ const ProductCard = memo(function ProductCard({
         className={`bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 
         border ${isHovered ? "border-green-900 border-2" : "border-gray-200 border"}`}
       >
-        <Link href={`/products/${productId}`}>
+        <Link href={`/products/${productId}`} prefetch={true}>
           <div className="relative aspect-square overflow-hidden p-2 bg-white-100">
             <div className="relative w-full h-full transform group-hover:scale-105 transition-transform duration-300">
               <Image
@@ -236,7 +236,11 @@ const ProductCard = memo(function ProductCard({
 
         <div className="p-2 space-y-1.5">
           {/* Product Title with href */}
-          <Link href={`/products/${productId}`} className="block hover:text-green-900 transition-colors duration-200">
+          <Link
+            href={`/products/${productId}`}
+            prefetch={true}
+            className="block hover:text-green-900 transition-colors duration-200"
+          >
             <h3 className="text-gray-800 font-medium text-sm line-clamp-2 min-h-[2.4rem] hover:text-gray-800">
               {title}
             </h3>

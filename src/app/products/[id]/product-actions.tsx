@@ -53,7 +53,6 @@ export default function ProductActions({
   const { addItem: addToCart } = useCartSync()
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isLoading: wishlistLoading } = useWishlistSync()
 
-  // Record product view (user or guest)
   useEffect(() => {
     const recordView = async () => {
       try {
@@ -66,9 +65,10 @@ export default function ProductActions({
             title,
             image: imageUrl,
           }),
+          keepalive: true,
         }).catch(() => {})
 
-        // LocalStorage fallback for guests
+        // LocalStorage fallback for guests - wrapped in try-catch
         try {
           const key = "guest_browsing_history"
           const existing = JSON.parse(localStorage.getItem(key) || "[]") as Array<any>
@@ -77,14 +77,15 @@ export default function ProductActions({
           const limited = filtered.slice(0, 20)
           localStorage.setItem(key, JSON.stringify(limited))
         } catch (_e) {
-          // ignore
+          // ignore localStorage errors
         }
       } catch (_err) {
-        // ignore
+        // ignore all errors
       }
     }
 
-    recordView()
+    const timeoutId = setTimeout(recordView, 100)
+    return () => clearTimeout(timeoutId)
   }, [productId, title, imageUrl])
 
   // Handle adding to cart
