@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState } from "react"
 import { useDispatch } from "react-redux"
 import { setCartFromDb } from "@/store/slices/cartSlice"
 import axios from "axios"
@@ -11,20 +11,27 @@ import type { AppDispatch } from "@/store"
 export default function CartProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>()
   const [isLoading, setIsLoading] = useState(false)
-  const initialized = useRef(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const initializeCart = async () => {
-      // Only initialize once
-      if (initialized.current || isLoading) return
+      if (isLoading) return
 
       try {
         setIsLoading(true)
-        initialized.current = true
 
         const user = await getCurrentUser()
+        const userId = user?.id || null
+
+        if (userId === currentUserId) {
+          setIsLoading(false)
+          return
+        }
+
+        setCurrentUserId(userId)
+
         if (!user) {
-          // If no user, just mark as initialized with empty cart
+          // If no user, clear cart
           dispatch(setCartFromDb([]))
           return
         }
@@ -37,7 +44,6 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         dispatch(setCartFromDb(dbItems))
       } catch (error) {
         console.error("CartProvider: Error initializing cart:", error)
-        // Even if there's an error, mark as initialized to prevent blocking UI
         dispatch(setCartFromDb([]))
       } finally {
         setIsLoading(false)
@@ -45,7 +51,11 @@ export default function CartProvider({ children }: { children: React.ReactNode }
     }
 
     initializeCart()
-  }, [dispatch])
+
+    const interval = setInterval(initializeCart, 500)
+
+    return () => clearInterval(interval)
+  }, [dispatch, currentUserId, isLoading])
 
   return <>{children}</>
 }

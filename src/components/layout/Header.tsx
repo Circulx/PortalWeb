@@ -10,8 +10,10 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { signOut } from "@/actions/auth"
-import { useSelector } from "react-redux"
+import { useSelector, useDispatch } from "react-redux"
 import type { RootState } from "@/store"
+import { clearCart } from "@/store/slices/cartSlice"
+import { clearWishlist } from "@/store/slices/wishlistSlice"
 import { useRouter } from "next/navigation"
 import EnhancedSearchBar from "./enhanced-search-bar"
 
@@ -40,23 +42,22 @@ export default function Header({ user }: HeaderProps) {
   const [isClient, setIsClient] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [isLoggedOut, setIsLoggedOut] = useState(false)
 
-  // Get cart and wishlist counts from Redux store
+  const dispatch = useDispatch()
+
   const cartItemsCount = useSelector((state: RootState) => state.cart.items.length)
   const wishlistItemsCount = useSelector((state: RootState) => state.wishlist.items.length)
 
   const router = useRouter()
 
-  // Auto-scroll settings - optimized
   const SCROLL_INTERVAL = 5000
   const CATEGORIES_PER_VIEW = 8
 
-  // Client-side hydration check
   useEffect(() => {
     setIsClient(true)
   }, [])
 
-  // Optimized category fetching with caching
   useEffect(() => {
     if (!isClient) return
 
@@ -64,12 +65,10 @@ export default function Header({ user }: HeaderProps) {
       try {
         setIsLoading(true)
 
-        // Check if categories are cached in sessionStorage
         const cachedCategories = sessionStorage.getItem("header-categories")
         if (cachedCategories) {
           const parsed = JSON.parse(cachedCategories)
           if (Date.now() - parsed.timestamp < 300000) {
-            // 5 minutes cache
             setCategories(parsed.data)
             setIsLoading(false)
             return
@@ -81,7 +80,6 @@ export default function Header({ user }: HeaderProps) {
           const data = await response.json()
           setCategories(data)
 
-          // Cache the categories
           sessionStorage.setItem(
             "header-categories",
             JSON.stringify({
@@ -99,7 +97,6 @@ export default function Header({ user }: HeaderProps) {
       }
     }
 
-    // Use requestIdleCallback for non-critical API calls
     if (typeof window !== "undefined" && "requestIdleCallback" in window) {
       window.requestIdleCallback(fetchCategories)
     } else {
@@ -107,7 +104,6 @@ export default function Header({ user }: HeaderProps) {
     }
   }, [isClient])
 
-  // Optimized auto-scroll with better performance
   useEffect(() => {
     if (categories.length <= CATEGORIES_PER_VIEW) return
 
@@ -118,7 +114,6 @@ export default function Header({ user }: HeaderProps) {
     return () => clearInterval(interval)
   }, [categories.length])
 
-  // Memoized visible categories calculation
   const visibleCategories = useMemo(() => {
     if (categories.length === 0) return []
 
@@ -161,6 +156,13 @@ export default function Header({ user }: HeaderProps) {
 
   const handleCategoryClick = (e: React.MouseEvent<HTMLAnchorElement>, category: string) => {
     // Category navigation logic
+  }
+
+  const handleLogout = () => {
+    setIsLoggedOut(true)
+    dispatch(clearCart())
+    dispatch(clearWishlist())
+    signOut()
   }
 
   if (!isClient) {
@@ -211,7 +213,9 @@ export default function Header({ user }: HeaderProps) {
             </div>
 
             {/* Search Bar - Hidden on mobile when menu is open */}
-            <div className={`flex-1 max-w-xl lg:max-w-2xl mx-1 sm:mx-2 ${isMobileMenuOpen ? 'hidden sm:block' : 'block'}`}>
+            <div
+              className={`flex-1 max-w-xl lg:max-w-2xl mx-1 sm:mx-2 ${isMobileMenuOpen ? "hidden sm:block" : "block"}`}
+            >
               <EnhancedSearchBar />
             </div>
 
@@ -232,13 +236,17 @@ export default function Header({ user }: HeaderProps) {
                 className="sm:hidden p-2 hover:bg-gray-100 rounded-full transition-colors"
                 aria-label="Toggle menu"
               >
-                {isMobileMenuOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
+                {isMobileMenuOpen ? (
+                  <X className="w-5 h-5 text-gray-600" />
+                ) : (
+                  <Menu className="w-5 h-5 text-gray-600" />
+                )}
               </button>
 
               {/* Wishlist - Hidden on mobile when menu is open */}
               <Link
                 href="/dashboard/wishlist"
-                className={`relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors ${isMobileMenuOpen ? 'hidden sm:flex' : 'flex'}`}
+                className={`relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors ${isMobileMenuOpen ? "hidden sm:flex" : "flex"}`}
               >
                 <Heart className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600 hover:text-red-500 transition-colors" />
                 {wishlistItemsCount > 0 && (
@@ -251,7 +259,7 @@ export default function Header({ user }: HeaderProps) {
               {/* Cart - Hidden on mobile when menu is open */}
               <Link
                 href="/cart"
-                className={`relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors ${isMobileMenuOpen ? 'hidden sm:flex' : 'flex'}`}
+                className={`relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors ${isMobileMenuOpen ? "hidden sm:flex" : "flex"}`}
               >
                 <Image
                   src="/cart.webp"
@@ -269,8 +277,8 @@ export default function Header({ user }: HeaderProps) {
               </Link>
 
               {/* User Menu/Login - Hidden on mobile when menu is open */}
-              <div className={isMobileMenuOpen ? 'hidden sm:block' : 'block'}>
-                {user ? (
+              <div className={isMobileMenuOpen ? "hidden sm:block" : "block"}>
+                {user && !isLoggedOut ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -290,7 +298,7 @@ export default function Header({ user }: HeaderProps) {
                       <DropdownMenuItem onClick={navigateToDashboard} className="cursor-pointer">
                         Dashboard
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => signOut()} className="cursor-pointer">
+                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                         <LogOut className="w-4 h-4 mr-2" />
                         Sign Out
                       </DropdownMenuItem>
@@ -343,13 +351,7 @@ export default function Header({ user }: HeaderProps) {
                   className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <Image
-                    src="/cart.webp"
-                    alt="Shopping Cart"
-                    width={20}
-                    height={20}
-                    className="w-5 h-5"
-                  />
+                  <Image src="/cart.webp" alt="Shopping Cart" width={20} height={20} className="w-5 h-5" />
                   <span className="text-sm font-medium">Cart</span>
                   {cartItemsCount > 0 && (
                     <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
@@ -360,7 +362,7 @@ export default function Header({ user }: HeaderProps) {
               </div>
 
               {/* Mobile User Menu */}
-              {user ? (
+              {user && !isLoggedOut ? (
                 <div className="space-y-2">
                   <button
                     onClick={() => {
@@ -377,7 +379,7 @@ export default function Header({ user }: HeaderProps) {
                   </button>
                   <button
                     onClick={() => {
-                      signOut()
+                      handleLogout()
                       setIsMobileMenuOpen(false)
                     }}
                     className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left text-red-600"
@@ -413,7 +415,10 @@ export default function Header({ user }: HeaderProps) {
                 {isLoading ? (
                   <div className="flex space-x-3 sm:space-x-4 lg:space-x-6 animate-pulse">
                     {Array.from({ length: 6 }).map((_, index) => (
-                      <div key={index} className="h-3 sm:h-4 bg-orange-400 rounded w-12 sm:w-16 lg:w-18 flex-shrink-0"></div>
+                      <div
+                        key={index}
+                        className="h-3 sm:h-4 bg-orange-400 rounded w-12 sm:w-16 lg:w-18 flex-shrink-0"
+                      ></div>
                     ))}
                   </div>
                 ) : (
