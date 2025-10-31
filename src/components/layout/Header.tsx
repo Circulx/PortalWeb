@@ -42,6 +42,7 @@ export default function Header({ user }: HeaderProps) {
   const [isClient, setIsClient] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
+  const [isLoggedOut, setIsLoggedOut] = useState(false)
 
   const dispatch = useDispatch()
 
@@ -158,6 +159,7 @@ export default function Header({ user }: HeaderProps) {
   }
 
   const handleLogout = () => {
+    setIsLoggedOut(true)
     dispatch(clearCart())
     dispatch(clearWishlist())
     signOut()
@@ -276,7 +278,7 @@ export default function Header({ user }: HeaderProps) {
 
               {/* User Menu/Login - Hidden on mobile when menu is open */}
               <div className={isMobileMenuOpen ? "hidden sm:block" : "block"}>
-                {user ? (
+                {user && !isLoggedOut ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -360,7 +362,7 @@ export default function Header({ user }: HeaderProps) {
               </div>
 
               {/* Mobile User Menu */}
-              {user ? (
+              {user && !isLoggedOut ? (
                 <div className="space-y-2">
                   <button
                     onClick={() => {
