@@ -400,7 +400,7 @@ export default function QuotationRequests() {
                                 </div>
 
                                 <div>
-                                  <label className="text-sm font-medium">Your Quoted Price (₹)</label>
+                                  <label className="text-sm font-medium">Your Quoted Price </label>
                                   <Input
                                     type="number"
                                     placeholder="Enter your quoted price"
@@ -632,7 +632,7 @@ export default function QuotationRequests() {
                                   </div>
 
                                   <div>
-                                    <label className="text-sm font-medium">Your Quoted Price (₹)</label>
+                                    <label className="text-sm font-medium">Your Quoted Price</label>
                                     <Input
                                       type="number"
                                       placeholder="Enter your quoted price"
