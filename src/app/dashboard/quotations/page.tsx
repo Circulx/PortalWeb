@@ -267,7 +267,7 @@ export default function QuotationsPage() {
                       <div>
                         <span className="text-gray-600 text-xs">Requested:</span>
                         <div className="flex items-center gap-1 font-semibold text-blue-600">
-                          <DollarSign className="w-3 h-3" />₹{quotation.requestedPrice.toLocaleString()}
+                          <DollarSign className="w-3 h-3" />{quotation.requestedPrice.toLocaleString()}
                         </div>
                       </div>
                       <div>
