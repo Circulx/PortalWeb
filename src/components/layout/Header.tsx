@@ -43,6 +43,12 @@ export default function Header({ user }: HeaderProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isSearchExpanded, setIsSearchExpanded] = useState(false)
   const [isLoggedOut, setIsLoggedOut] = useState(false)
+  const [justLoggedInUser, setJustLoggedInUser] = useState<{
+    id: string
+    name: string
+    email: string
+    type: "admin" | "seller" | "customer"
+  } | null>(null)
 
   const dispatch = useDispatch()
 
@@ -53,6 +59,12 @@ export default function Header({ user }: HeaderProps) {
 
   const SCROLL_INTERVAL = 5000
   const CATEGORIES_PER_VIEW = 8
+
+  useEffect(() => {
+    if (user && justLoggedInUser) {
+      setJustLoggedInUser(null)
+    }
+  }, [user, justLoggedInUser])
 
   useEffect(() => {
     setIsClient(true)
@@ -125,9 +137,28 @@ export default function Header({ user }: HeaderProps) {
     return visible
   }, [categories, currentIndex])
 
-  function handleAuthSuccess() {
+  function handleAuthSuccess(userData?: {
+    id: string
+    name: string
+    email: string
+    type: "admin" | "seller" | "customer"
+  }) {
     setIsAuthModalOpen(false)
-    if (user) {
+
+    if (userData) {
+      setJustLoggedInUser(userData)
+      setIsLoggedOut(false)
+
+      router.refresh()
+
+      if (userData.type === "admin") {
+        router.push("/admin")
+      } else if (userData.type === "seller") {
+        router.push("/seller")
+      } else {
+        router.push("/dashboard")
+      }
+    } else if (user) {
       if (user.type === "admin") {
         router.push("/admin")
       } else if (user.type === "seller") {
@@ -139,10 +170,11 @@ export default function Header({ user }: HeaderProps) {
   }
 
   function navigateToDashboard() {
-    if (user) {
-      if (user.type === "admin") {
+    const currentUser = justLoggedInUser || user
+    if (currentUser) {
+      if (currentUser.type === "admin") {
         router.push("/admin")
-      } else if (user.type === "seller") {
+      } else if (currentUser.type === "seller") {
         router.push("/seller")
       } else {
         router.push("/dashboard")
@@ -158,18 +190,18 @@ export default function Header({ user }: HeaderProps) {
 
   const handleLogout = async () => {
     setIsLoggedOut(true)
+    setJustLoggedInUser(null)
     dispatch(clearCart())
     dispatch(clearWishlist())
 
-    // Call server action to delete cookie
     await signOut()
 
-    // Refresh server components without full page reload
     router.refresh()
 
-    // Navigate to home page smoothly
     router.push("/")
   }
+
+  const displayUser = justLoggedInUser || user
 
   if (!isClient) {
     return (
@@ -284,7 +316,7 @@ export default function Header({ user }: HeaderProps) {
 
               {/* User Menu/Login - Hidden on mobile when menu is open */}
               <div className={isMobileMenuOpen ? "hidden sm:block" : "block"}>
-                {user && !isLoggedOut ? (
+                {displayUser && !isLoggedOut ? (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
@@ -292,11 +324,13 @@ export default function Header({ user }: HeaderProps) {
                         className="h-7 sm:h-8 lg:h-10 px-1.5 sm:px-2 lg:px-3 flex items-center gap-1 sm:gap-1.5 lg:gap-2 border-gray-300 hover:border-gray-400 transition-colors bg-transparent min-w-0"
                       >
                         <Avatar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6">
-                          <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
-                          <AvatarFallback className="text-[10px] sm:text-xs lg:text-sm">{user.name[0]}</AvatarFallback>
+                          <AvatarImage src={`https://avatar.vercel.sh/${displayUser.id}`} />
+                          <AvatarFallback className="text-[10px] sm:text-xs lg:text-sm">
+                            {displayUser.name[0]}
+                          </AvatarFallback>
                         </Avatar>
                         <span className="hidden sm:inline text-[10px] sm:text-xs lg:text-sm font-medium truncate max-w-16 lg:max-w-20">
-                          {user.name.split(" ")[0]}
+                          {displayUser.name.split(" ")[0]}
                         </span>
                       </Button>
                     </DropdownMenuTrigger>
@@ -367,7 +401,7 @@ export default function Header({ user }: HeaderProps) {
                 </div>
 
                 {/* Mobile User Menu */}
-                {user && !isLoggedOut ? (
+                {displayUser && !isLoggedOut ? (
                   <div className="space-y-2">
                     <button
                       onClick={() => {
@@ -377,10 +411,10 @@ export default function Header({ user }: HeaderProps) {
                       className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left"
                     >
                       <Avatar className="h-6 w-6">
-                        <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
-                        <AvatarFallback className="text-xs">{user.name[0]}</AvatarFallback>
+                        <AvatarImage src={`https://avatar.vercel.sh/${displayUser.id}`} />
+                        <AvatarFallback className="text-xs">{displayUser.name[0]}</AvatarFallback>
                       </Avatar>
-                      <span className="text-sm font-medium">{user.name}</span>
+                      <span className="text-sm font-medium">{displayUser.name}</span>
                     </button>
                     <button
                       onClick={() => {
