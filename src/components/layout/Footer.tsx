@@ -110,7 +110,7 @@ export default function Footer() {
               <Link href="/shipping-policy" className="block text-sm text-white hover:text-gray-300 transition-colors">
                 Requirements
               </Link>
-              <Link href="/" className="block text-sm text-white hover:text-gray-300 transition-colors">
+              <Link href="/products" className="block text-sm text-white hover:text-gray-300 transition-colors">
                 Products
               </Link>
               <Link href="/coinmarketcap" className="block text-sm text-white hover:text-gray-300 transition-colors">
