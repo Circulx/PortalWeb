@@ -5,7 +5,8 @@ import { getCurrentUser } from "@/actions/auth"
 export default function IdlePopup() {
   const [isIdle, setIsIdle] = useState(false)
   const [shouldShow, setShouldShow] = useState(false)
-  const idleTime = 3000 // 5 seconds
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const idleTime = 5000 // 5 seconds
 
   useEffect(() => {
     const checkSellerOnboardingStatus = async () => {
@@ -32,6 +33,28 @@ export default function IdlePopup() {
   }, [])
 
   useEffect(() => {
+    const checkForOpenModals = () => {
+      const hasOpenDialog = document.querySelector('[role="dialog"][data-state="open"]') !== null
+      const hasOpenModal = document.querySelector("[data-radix-dialog-content]") !== null
+      setIsModalOpen(hasOpenDialog || hasOpenModal)
+    }
+
+    checkForOpenModals()
+
+    const observer = new MutationObserver(checkForOpenModals)
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["data-state", "role"],
+    })
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [])
+
+  useEffect(() => {
     if (!shouldShow) return
 
     const timeout = setTimeout(() => {
@@ -49,7 +72,7 @@ export default function IdlePopup() {
     }
   }, [shouldShow])
 
-  if (!isIdle || !shouldShow) return null
+  if (!isIdle || !shouldShow || isModalOpen) return null
 
   const ORANGE = "#FF6A00"
   const BLACK = "#111111"
