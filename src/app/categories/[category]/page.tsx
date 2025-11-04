@@ -1,39 +1,42 @@
 import CategoryProductsPage from "@/components/categories/category-products-page"
 
 interface CategoryPageProps {
-  params: {
+  params: Promise<{
     category: string
-  }
-  searchParams: {
+  }>
+  searchParams: Promise<{
     subcategory?: string
     sortBy?: string
     sortOrder?: string
     page?: string
-  }
+  }>
 }
 
-export default function CategoryPage({ params, searchParams }: CategoryPageProps) {
-  const decodedCategory = decodeURIComponent(params.category)
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+  const { category } = await params
+  const search = await searchParams
+
+  const decodedCategory = decodeURIComponent(category)
 
   return (
     <div className="min-h-screen">
       <CategoryProductsPage
         category={decodedCategory}
-        subcategory={searchParams.subcategory}
-        sortBy={searchParams.sortBy}
-        sortOrder={searchParams.sortOrder}
-        page={searchParams.page}
+        subcategory={search.subcategory}
+        sortBy={search.sortBy}
+        sortOrder={search.sortOrder}
+        page={search.page}
       />
     </div>
   )
 }
 
-// Generate metadata for SEO
-export async function generateMetadata({ params }: { params: { category: string } }) {
-  const category = decodeURIComponent(params.category)
+export async function generateMetadata({ params }: { params: Promise<{ category: string }> }) {
+  const { category } = await params
+  const decodedCategory = decodeURIComponent(category)
 
   return {
-    title: `${category} Products - Shop Now`,
-    description: `Browse our wide selection of ${category} products. Find the best deals and quality items.`,
+    title: `${decodedCategory} Products - Shop Now`,
+    description: `Browse our wide selection of ${decodedCategory} products. Find the best deals and quality items.`,
   }
 }
