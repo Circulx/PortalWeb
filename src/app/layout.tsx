@@ -15,7 +15,6 @@ import { OnboardingPopupHandler } from "@/components/onboarding-popup-handler"
 export const metadata: Metadata = {
   title: "IND2B",
   description: "Your one-stop shop for all your needs",
-  generator: "v0.dev",
   icons: {
     icon: [
       {
@@ -55,7 +54,7 @@ export default async function RootLayout({
         <link rel="icon" href="/logo.webp" sizes="any" />
         <link rel="apple-touch-icon" href="/logo.webp" />
       </head>
-      <body className="bg-gray-100">
+      <body className="bg-gray-100 prevent-overflow">
         <GoogleAnalytics />
         <Clarity />
         <Providers>
@@ -63,7 +62,7 @@ export default async function RootLayout({
           <Suspense fallback={null}>
             <PageViewTracker />
           </Suspense>
-          <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14">{children}</main>
+          <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14 w-full max-w-full overflow-x-hidden">{children}</main>
           <Footer />
           <OnboardingPopupHandler />
         </Providers>

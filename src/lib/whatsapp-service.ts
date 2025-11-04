@@ -1,3 +1,4 @@
+/*
 // WhatsApp notification service using Twilio WhatsApp Business API
 import twilio from "twilio"
 
@@ -567,4 +568,77 @@ https://console.twilio.com/us1/develop/sms/whatsapp/senders`
 }
 
 // Export singleton instance
+export const whatsappService = new WhatsAppService()
+*/
+
+interface OrderDetails {
+  orderId: string
+  customerName: string
+  customerPhone: string
+  products: Array<{
+    title: string
+    quantity: number
+    price: number
+  }>
+  totalAmount: number
+  paymentMethod: string
+  status: string
+  createdAt: string
+}
+
+interface MarketingMessageDetails {
+  phone: string
+  name: string
+  message: string
+  campaignType?: "product_launch" | "offer" | "update" | "general"
+  productLink?: string
+  offerCode?: string
+}
+
+export class WhatsAppService {
+  async sendOrderNotification(orderDetails: OrderDetails): Promise<boolean> {
+    console.log("[WhatsApp] Service disabled - Twilio not configured")
+    console.log("[WhatsApp] Order notification skipped for:", orderDetails.customerPhone)
+    return false
+  }
+
+  async sendMarketingMessage(messageDetails: MarketingMessageDetails): Promise<boolean> {
+    console.log("[WhatsApp] Service disabled - Twilio not configured")
+    console.log("[WhatsApp] Marketing message skipped for:", messageDetails.phone)
+    return false
+  }
+
+  async testConnection(): Promise<boolean> {
+    console.log("[WhatsApp] Service disabled - Twilio not configured")
+    return false
+  }
+
+  async validateRecipient(phoneNumber: string): Promise<boolean> {
+    console.log("[WhatsApp] Service disabled - Twilio not configured")
+    return false
+  }
+
+  async checkRecipientOptIn(phoneNumber: string): Promise<{ isOptedIn: boolean; message: string }> {
+    return {
+      isOptedIn: false,
+      message: "WhatsApp service disabled - Twilio not configured",
+    }
+  }
+
+  public getSMSConfigurationStatus(): { configured: boolean; message: string } {
+    return {
+      configured: false,
+      message: "WhatsApp service disabled - Twilio not configured",
+    }
+  }
+
+  public getSandboxInstructions(): string {
+    return "WhatsApp service disabled - Twilio not configured"
+  }
+
+  public isSandboxMode(): boolean {
+    return false
+  }
+}
+
 export const whatsappService = new WhatsAppService()

@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef } from "react"
 import { useDispatch } from "react-redux"
 import { fetchWishlist } from "@/store/slices/wishlistSlice"
 import { getCurrentUser } from "@/actions/auth"
@@ -13,42 +13,27 @@ interface WishlistProviderProps {
 
 export default function WishlistProvider({ children }: WishlistProviderProps) {
   const dispatch = useDispatch<AppDispatch>()
-  const [isLoading, setIsLoading] = useState(false)
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
-    const initializeWishlist = async () => {
-      if (isLoading) return
+    if (hasInitialized.current) return
 
+    const initializeWishlist = async () => {
       try {
-        setIsLoading(true)
+        hasInitialized.current = true
 
         const user = await getCurrentUser()
-        const userId = user?.id || null
-
-        if (userId === currentUserId) {
-          setIsLoading(false)
-          return
-        }
-
-        setCurrentUserId(userId)
 
         if (user) {
           await dispatch(fetchWishlist()).unwrap()
         }
       } catch (error) {
         console.error("WishlistProvider: Error initializing wishlist:", error)
-      } finally {
-        setIsLoading(false)
       }
     }
 
     initializeWishlist()
-
-    const interval = setInterval(initializeWishlist, 500)
-
-    return () => clearInterval(interval)
-  }, [dispatch, currentUserId, isLoading])
+  }, [dispatch])
 
   return <>{children}</>
 }

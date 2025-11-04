@@ -135,8 +135,6 @@ export default function Header({ user }: HeaderProps) {
       } else {
         router.push("/dashboard")
       }
-    } else {
-      window.location.reload()
     }
   }
 
@@ -158,11 +156,19 @@ export default function Header({ user }: HeaderProps) {
     // Category navigation logic
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsLoggedOut(true)
     dispatch(clearCart())
     dispatch(clearWishlist())
-    signOut()
+
+    // Call server action to delete cookie
+    await signOut()
+
+    // Refresh server components without full page reload
+    router.refresh()
+
+    // Navigate to home page smoothly
+    router.push("/")
   }
 
   if (!isClient) {
@@ -315,176 +321,174 @@ export default function Header({ user }: HeaderProps) {
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Mobile Search Bar - Expanded */}
-        {isSearchExpanded && (
-          <div className="sm:hidden px-4 py-2 bg-white border-t border-gray-200">
-            <EnhancedSearchBar />
-          </div>
-        )}
-
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div className="sm:hidden bg-white border-t border-gray-200 shadow-lg">
-            <div className="px-4 py-4 space-y-4">
-              {/* Mobile User Actions */}
-              <div className="flex items-center justify-between">
-                <Link
-                  href="/dashboard/wishlist"
-                  className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Heart className="w-5 h-5 text-gray-600" />
-                  <span className="text-sm font-medium">Wishlist</span>
-                  {wishlistItemsCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      {wishlistItemsCount > 99 ? "99+" : wishlistItemsCount}
-                    </span>
-                  )}
-                </Link>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <Link
-                  href="/cart"
-                  className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <Image src="/cart.webp" alt="Shopping Cart" width={20} height={20} className="w-5 h-5" />
-                  <span className="text-sm font-medium">Cart</span>
-                  {cartItemsCount > 0 && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-                      {cartItemsCount > 99 ? "99+" : cartItemsCount}
-                    </span>
-                  )}
-                </Link>
-              </div>
-
-              {/* Mobile User Menu */}
-              {user && !isLoggedOut ? (
-                <div className="space-y-2">
-                  <button
-                    onClick={() => {
-                      navigateToDashboard()
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left"
-                  >
-                    <Avatar className="h-6 w-6">
-                      <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
-                      <AvatarFallback className="text-xs">{user.name[0]}</AvatarFallback>
-                    </Avatar>
-                    <span className="text-sm font-medium">{user.name}</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleLogout()
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left text-red-600"
-                  >
-                    <LogOut className="w-5 h-5" />
-                    <span className="text-sm font-medium">Sign Out</span>
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => {
-                    setIsAuthModalOpen(true)
-                    setIsMobileMenuOpen(false)
-                  }}
-                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-                >
-                  Login
-                </button>
-              )}
+          {/* Mobile Search Bar - Expanded */}
+          {isSearchExpanded && (
+            <div className="sm:hidden px-4 py-2 bg-white border-t border-gray-200">
+              <EnhancedSearchBar />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Categories Bar - Improved Mobile Experience */}
-        <div className="bg-orange-600 text-white overflow-hidden -mt-px">
-          <div className="w-full px-2 sm:px-3 lg:px-4">
-            <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5">
-              <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
-                Categories:
-              </span>
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div className="sm:hidden bg-white border-t border-gray-200 shadow-lg">
+              <div className="px-4 py-4 space-y-4">
+                {/* Mobile User Actions */}
+                <div className="flex items-center justify-between">
+                  <Link
+                    href="/dashboard/wishlist"
+                    className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Heart className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium">Wishlist</span>
+                    {wishlistItemsCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                        {wishlistItemsCount > 99 ? "99+" : wishlistItemsCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
 
-              <div className="flex-1 overflow-hidden">
-                {isLoading ? (
-                  <div className="flex space-x-3 sm:space-x-4 lg:space-x-6 animate-pulse">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className="h-3 sm:h-4 bg-orange-400 rounded w-12 sm:w-16 lg:w-18 flex-shrink-0"
-                      ></div>
-                    ))}
+                <div className="flex items-center justify-between">
+                  <Link
+                    href="/cart"
+                    className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    <Image src="/cart.webp" alt="Shopping Cart" width={20} height={20} className="w-5 h-5" />
+                    <span className="text-sm font-medium">Cart</span>
+                    {cartItemsCount > 0 && (
+                      <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+                        {cartItemsCount > 99 ? "99+" : cartItemsCount}
+                      </span>
+                    )}
+                  </Link>
+                </div>
+
+                {/* Mobile User Menu */}
+                {user && !isLoggedOut ? (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => {
+                        navigateToDashboard()
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left"
+                    >
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={`https://avatar.vercel.sh/${user.id}`} />
+                        <AvatarFallback className="text-xs">{user.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-medium">{user.name}</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        handleLogout()
+                        setIsMobileMenuOpen(false)
+                      }}
+                      className="w-full flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors text-left text-red-600"
+                    >
+                      <LogOut className="w-5 h-5" />
+                      <span className="text-sm font-medium">Sign Out</span>
+                    </button>
                   </div>
                 ) : (
-                  <div className="relative">
-                    {/* Mobile: Horizontal scroll */}
-                    <div className="sm:hidden overflow-x-auto scrollbar-hide">
-                      <div className="flex space-x-4 pb-1">
-                        {categories.map((category, index) => (
-                          <Link
-                            key={`${category.name}-${index}`}
-                            href={`/categories/${encodeURIComponent(category.name)}`}
-                            className="text-xs hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap px-2 py-1 rounded hover:bg-orange-500"
-                            onClick={(e) => handleCategoryClick(e, category.name)}
-                          >
-                            {category.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
+                  <button
+                    onClick={() => {
+                      setIsAuthModalOpen(true)
+                      setIsMobileMenuOpen(false)
+                    }}
+                    className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-4 rounded-lg font-medium transition-colors"
+                  >
+                    Login
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
-                    {/* Desktop: Auto-scrolling */}
-                    <div className="hidden sm:block">
-                      <div
-                        className="flex space-x-4 sm:space-x-6 transition-transform duration-1000 ease-in-out"
-                        style={{
-                          transform:
-                            categories.length > CATEGORIES_PER_VIEW
-                              ? `translateX(-${(currentIndex * 100) / categories.length}%)`
-                              : "translateX(0)",
-                        }}
-                      >
-                        {categories.concat(categories).map((category, index) => (
-                          <Link
-                            key={`${category.name}-${index}`}
-                            href={`/categories/${encodeURIComponent(category.name)}`}
-                            className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap"
-                            onClick={(e) => handleCategoryClick(e, category.name)}
-                          >
-                            {category.name}
-                          </Link>
-                        ))}
+          {/* Categories Bar - Improved Mobile Experience */}
+          <div className="bg-orange-600 text-white overflow-hidden -mt-px">
+            <div className="w-full px-2 sm:px-3 lg:px-4">
+              <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5">
+                <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
+                  Categories:
+                </span>
+
+                <div className="flex-1 overflow-hidden">
+                  {isLoading ? (
+                    <div className="flex space-x-3 sm:space-x-4 lg:space-x-6 animate-pulse">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <div
+                          key={index}
+                          className="h-3 sm:h-4 bg-orange-400 rounded w-12 sm:w-16 lg:w-18 flex-shrink-0"
+                        ></div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="relative">
+                      {/* Mobile: Horizontal scroll */}
+                      <div className="sm:hidden overflow-x-auto scrollbar-hide">
+                        <div className="flex space-x-4 pb-1">
+                          {categories.map((category, index) => (
+                            <Link
+                              key={`${category.name}-${index}`}
+                              href={`/categories/${encodeURIComponent(category.name)}`}
+                              className="text-xs hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap px-2 py-1 rounded hover:bg-orange-500"
+                              onClick={(e) => handleCategoryClick(e, category.name)}
+                            >
+                              {category.name}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Desktop: Auto-scrolling */}
+                      <div className="hidden sm:block">
+                        <div
+                          className="flex space-x-4 sm:space-x-6 transition-transform duration-1000 ease-in-out"
+                          style={{
+                            transform:
+                              categories.length > CATEGORIES_PER_VIEW
+                                ? `translateX(-${(currentIndex * 100) / categories.length}%)`
+                                : "translateX(0)",
+                          }}
+                        >
+                          {categories.concat(categories).map((category, index) => (
+                            <Link
+                              key={`${category.name}-${index}`}
+                              href={`/categories/${encodeURIComponent(category.name)}`}
+                              className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap"
+                              onClick={(e) => handleCategoryClick(e, category.name)}
+                            >
+                              {category.name}
+                            </Link>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                  )}
+                </div>
+
+                {!isLoading && categories.length > CATEGORIES_PER_VIEW && (
+                  <div className="hidden lg:flex items-center ml-4 space-x-1">
+                    {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
+                      <div
+                        key={index}
+                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                          index === currentIndex % Math.min(categories.length, 10) ? "bg-white w-3" : "bg-orange-300"
+                        }`}
+                      />
+                    ))}
                   </div>
                 )}
               </div>
-
-              {!isLoading && categories.length > CATEGORIES_PER_VIEW && (
-                <div className="hidden lg:flex items-center ml-4 space-x-1">
-                  {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
-                    <div
-                      key={index}
-                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                        index === currentIndex % Math.min(categories.length, 10) ? "bg-white w-3" : "bg-orange-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
           </div>
         </div>
       </div>
-
       <div className="h-10 sm:h-12 lg:h-14"></div>
-
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onSuccess={handleAuthSuccess} />
     </header>
   )
