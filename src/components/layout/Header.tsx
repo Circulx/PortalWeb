@@ -443,9 +443,9 @@ export default function Header({ user }: HeaderProps) {
           )}
 
           {/* Categories Bar - Improved Mobile Experience */}
-          <div className="bg-orange-600 text-white overflow-hidden -mt-px">
-            <div className="w-full px-2 sm:px-3 lg:px-4">
-              <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5">
+          <div className="bg-orange-600 text-white overflow-hidden -mt-px w-full">
+            <div className="w-full">
+              <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5 px-2 sm:px-3 lg:px-4">
                 <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
                   Categories:
                 </span>
