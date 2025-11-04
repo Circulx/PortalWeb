@@ -92,7 +92,7 @@ export default function Footer() {
               <Link href="/sell" className="block text-sm text-white hover:text-gray-300 transition-colors">
                 Sell on IND2B
               </Link>
-              <Link href="/" className="block text-sm text-white hover:text-gray-300 transition-colors">
+              <Link href="/dashboard/orders" className="block text-sm text-white hover:text-gray-300 transition-colors">
                 Latest Buy
               </Link>
               <Link href="/coinmarketcap" className="block text-sm text-white hover:text-gray-300 transition-colors">
