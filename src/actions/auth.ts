@@ -43,10 +43,11 @@ export async function signIn(formData: FormData) {
 
     const cookieStore = await cookies()
     cookieStore.set("auth-token", token, {
-      httpOnly: false,
-      secure: false,
-      sameSite: "strict",
-      maxAge: 60 * 60 * 24 * 1, // 1 days
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 1, // 1 day
+      path: "/",
     })
 
     return {
@@ -168,9 +169,17 @@ export async function getCurrentUser() {
 
     if (!token || !token.value) return null
 
-    const decoded = jwt.verify(token.value, JWT_SECRET) as {
-      userId: string
-      type: string
+    let decoded
+    try {
+      decoded = jwt.verify(token.value, JWT_SECRET) as {
+        userId: string
+        type: string
+      }
+    } catch (jwtError) {
+      console.error("JWT verification failed:", jwtError)
+      // Clear the invalid token
+      cookieStore.delete("auth-token")
+      return null
     }
 
     const user = (await UserModel.findById(decoded.userId).select("-password").lean()) as
