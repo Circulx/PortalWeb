@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const body = await request.json()
-    const { id } = params
+    const { id } = await params
 
     const connection = await connectProfileDB()
     const Career = connection.models.Career
@@ -41,9 +41,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = params
+    const { id } = await params
 
     const connection = await connectProfileDB()
     const Career = connection.models.Career

@@ -222,7 +222,7 @@ export default function Header({ user }: HeaderProps) {
               </div>
             </div>
           </div>
-          <div className="bg-orange-600 h-12"></div>
+          <div className="bg-orange-600 h-12 w-full"></div>
         </div>
         <div className="h-10 sm:h-12 lg:h-14"></div>
       </header>
@@ -441,84 +441,81 @@ export default function Header({ user }: HeaderProps) {
               </div>
             </div>
           )}
+        </div>
 
-          {/* Categories Bar - Improved Mobile Experience */}
-          <div className="bg-orange-600 text-white overflow-hidden -mt-px w-full">
-            <div className="w-full">
-              <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5 px-2 sm:px-3 lg:px-4">
-                <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
-                  Categories:
-                </span>
+        <div className="bg-orange-600 text-white overflow-hidden w-full">
+          <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5 px-2 sm:px-4 lg:px-6">
+            <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
+              Categories:
+            </span>
 
-                <div className="flex-1 overflow-hidden">
-                  {isLoading ? (
-                    <div className="flex space-x-3 sm:space-x-4 lg:space-x-6 animate-pulse">
-                      {Array.from({ length: 6 }).map((_, index) => (
-                        <div
-                          key={index}
-                          className="h-3 sm:h-4 bg-orange-400 rounded w-12 sm:w-16 lg:w-18 flex-shrink-0"
-                        ></div>
+            <div className="flex-1 overflow-hidden">
+              {isLoading ? (
+                <div className="flex space-x-3 sm:space-x-4 lg:space-x-6 animate-pulse">
+                  {Array.from({ length: 6 }).map((_, index) => (
+                    <div
+                      key={index}
+                      className="h-3 sm:h-4 bg-orange-400 rounded w-12 sm:w-16 lg:w-18 flex-shrink-0"
+                    ></div>
+                  ))}
+                </div>
+              ) : (
+                <div className="relative">
+                  {/* Mobile: Horizontal scroll */}
+                  <div className="sm:hidden overflow-x-auto scrollbar-hide">
+                    <div className="flex space-x-4 pb-1">
+                      {categories.map((category, index) => (
+                        <Link
+                          key={`${category.name}-${index}`}
+                          href={`/categories/${encodeURIComponent(category.name)}`}
+                          className="text-xs hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap px-2 py-1 rounded hover:bg-orange-500"
+                          onClick={(e) => handleCategoryClick(e, category.name)}
+                        >
+                          {category.name}
+                        </Link>
                       ))}
                     </div>
-                  ) : (
-                    <div className="relative">
-                      {/* Mobile: Horizontal scroll */}
-                      <div className="sm:hidden overflow-x-auto scrollbar-hide">
-                        <div className="flex space-x-4 pb-1">
-                          {categories.map((category, index) => (
-                            <Link
-                              key={`${category.name}-${index}`}
-                              href={`/categories/${encodeURIComponent(category.name)}`}
-                              className="text-xs hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap px-2 py-1 rounded hover:bg-orange-500"
-                              onClick={(e) => handleCategoryClick(e, category.name)}
-                            >
-                              {category.name}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Desktop: Auto-scrolling */}
-                      <div className="hidden sm:block">
-                        <div
-                          className="flex space-x-4 sm:space-x-6 transition-transform duration-1000 ease-in-out"
-                          style={{
-                            transform:
-                              categories.length > CATEGORIES_PER_VIEW
-                                ? `translateX(-${(currentIndex * 100) / categories.length}%)`
-                                : "translateX(0)",
-                          }}
-                        >
-                          {categories.concat(categories).map((category, index) => (
-                            <Link
-                              key={`${category.name}-${index}`}
-                              href={`/categories/${encodeURIComponent(category.name)}`}
-                              className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap"
-                              onClick={(e) => handleCategoryClick(e, category.name)}
-                            >
-                              {category.name}
-                            </Link>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {!isLoading && categories.length > CATEGORIES_PER_VIEW && (
-                  <div className="hidden lg:flex items-center ml-4 space-x-1">
-                    {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
-                      <div
-                        key={index}
-                        className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                          index === currentIndex % Math.min(categories.length, 10) ? "bg-white w-3" : "bg-orange-300"
-                        }`}
-                      />
-                    ))}
                   </div>
-                )}
-              </div>
+
+                  {/* Desktop: Auto-scrolling */}
+                  <div className="hidden sm:block">
+                    <div
+                      className="flex space-x-4 sm:space-x-6 transition-transform duration-1000 ease-in-out"
+                      style={{
+                        transform:
+                          categories.length > CATEGORIES_PER_VIEW
+                            ? `translateX(-${(currentIndex * 100) / categories.length}%)`
+                            : "translateX(0)",
+                      }}
+                    >
+                      {categories.concat(categories).map((category, index) => (
+                        <Link
+                          key={`${category.name}-${index}`}
+                          href={`/categories/${encodeURIComponent(category.name)}`}
+                          className="text-xs sm:text-sm hover:text-gray-200 transition-colors flex-shrink-0 whitespace-nowrap"
+                          onClick={(e) => handleCategoryClick(e, category.name)}
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {!isLoading && categories.length > CATEGORIES_PER_VIEW && (
+              <div className="hidden lg:flex items-center ml-4 space-x-1">
+                {Array.from({ length: Math.min(categories.length, 10) }).map((_, index) => (
+                  <div
+                    key={index}
+                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                      index === currentIndex % Math.min(categories.length, 10) ? "bg-white w-3" : "bg-orange-300"
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

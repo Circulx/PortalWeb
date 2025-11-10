@@ -111,6 +111,29 @@ export function RecentProductsTable() {
     }
   }
 
+  const handlePageClick = (pageNumber: number) => {
+    if (pageNumber !== pagination.currentPage) {
+      fetchRecentProducts(pageNumber)
+    }
+  }
+
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = []
+    const maxPagesToShow = 5
+    let startPage = Math.max(1, pagination.currentPage - Math.floor(maxPagesToShow / 2))
+    const endPage = Math.min(pagination.totalPages, startPage + maxPagesToShow - 1)
+
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1)
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i)
+    }
+
+    return pages
+  }
+
   const formatDateTime = (dateTime: string | Date): string => {
     const date = new Date(dateTime)
     return (
@@ -235,17 +258,37 @@ export function RecentProductsTable() {
               size="sm"
               onClick={handlePreviousPage}
               disabled={!pagination.hasPrevious || refreshing}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 bg-transparent"
             >
               <ChevronLeft className="w-4 h-4" />
               Previous
             </Button>
+
+            <div className="flex items-center gap-1">
+              {getPageNumbers().map((page) => (
+                <Button
+                  key={page}
+                  variant={page === pagination.currentPage ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handlePageClick(page as number)}
+                  disabled={refreshing}
+                  className={
+                    page === pagination.currentPage
+                      ? "bg-black text-white hover:bg-black font-semibold min-w-9"
+                      : "min-w-9"
+                  }
+                >
+                  {page}
+                </Button>
+              ))}
+            </div>
+
             <Button
               variant="outline"
               size="sm"
               onClick={handleNextPage}
               disabled={!pagination.hasNext || refreshing}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 bg-transparent"
             >
               Next
               <ChevronRight className="w-4 h-4" />

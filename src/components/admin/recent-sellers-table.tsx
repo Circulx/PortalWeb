@@ -116,17 +116,20 @@ export function RecentSellersTable() {
   const handleNextPage = () => {
     if (pagination.hasNextPage) {
       fetchSellers(pagination.currentPage + 1)
+      window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
 
   const handlePrevPage = () => {
     if (pagination.hasPrevPage) {
       fetchSellers(pagination.currentPage - 1)
+      window.scrollTo({ top: 0, behavior: "smooth" })
     }
   }
 
   const handlePageClick = (page: number) => {
     fetchSellers(page)
+    window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   // Generate page numbers for pagination
@@ -182,7 +185,7 @@ export function RecentSellersTable() {
           size="sm"
           onClick={handleRefresh}
           disabled={loading}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-transparent"
         >
           <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
@@ -263,7 +266,7 @@ export function RecentSellersTable() {
               size="sm"
               onClick={handlePrevPage}
               disabled={!pagination.hasPrevPage || loading}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 bg-transparent"
             >
               <ChevronLeft className="h-4 w-4" />
               Previous
@@ -291,7 +294,7 @@ export function RecentSellersTable() {
               size="sm"
               onClick={handleNextPage}
               disabled={!pagination.hasNextPage || loading}
-              className="flex items-center gap-1"
+              className="flex items-center gap-1 bg-transparent"
             >
               Next
               <ChevronRight className="h-4 w-4" />

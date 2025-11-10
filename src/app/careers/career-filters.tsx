@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Briefcase, MapPin, DollarSign, Calendar, ExternalLink, Mail, ChevronDown, ChevronUp } from "lucide-react"
+import { Briefcase, MapPin, IndianRupee, Calendar, Mail, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import JobApplicationForm from "./job-application-form"
@@ -178,7 +178,7 @@ export default function CareerFilters({ careers }: CareerFiltersProps) {
                           </div>
                           {salary && (
                             <div className="flex items-center gap-1.5">
-                              <DollarSign className="w-4 h-4 flex-shrink-0" />
+                              <IndianRupee className="w-4 h-4 flex-shrink-0" />
                               <span className="truncate">{salary}</span>
                             </div>
                           )}
@@ -196,7 +196,7 @@ export default function CareerFilters({ careers }: CareerFiltersProps) {
                             </div>
                             {salary && (
                               <div className="flex items-center gap-1.5">
-                                <DollarSign className="w-4 h-4 flex-shrink-0" />
+                                <IndianRupee className="w-4 h-4 flex-shrink-0" />
                                 <span>{salary}</span>
                               </div>
                             )}
@@ -287,7 +287,7 @@ export default function CareerFilters({ careers }: CareerFiltersProps) {
                           >
                             Apply Now
                           </Button>
-                          
+
                           {career.applyEmail && (
                             <Button asChild variant="outline" className="flex-1 sm:flex-none bg-transparent">
                               <a href={`mailto:${career.applyEmail}`}>
