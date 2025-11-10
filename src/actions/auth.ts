@@ -7,7 +7,7 @@ import type { IUser } from "@/models/user"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
-const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfyfkjb"
+const JWT_SECRET = process.env.JWT_SECRET || "834fe5d5ce83b223"
 
 function isValidGSTNumber(gstNumber: string): boolean {
   const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
@@ -44,20 +44,18 @@ export async function signIn(formData: FormData) {
     const cookieStore = await cookies()
 
     const isProduction = process.env.NODE_ENV === "production"
-    const cookieOptions: any = {
+
+    // Delete any existing auth-token to prevent conflicts
+    cookieStore.delete("auth-token")
+
+    // Set cookie with simplified options that work across environments
+    cookieStore.set("auth-token", token, {
       httpOnly: true,
       secure: isProduction,
       sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 1, // 1 day
+      maxAge: 60 * 60 * 24, // 1 day
       path: "/",
-    }
-
-    // For production, allow broader domain matching
-    if (isProduction && process.env.NEXT_PUBLIC_DOMAIN) {
-      cookieOptions.domain = process.env.NEXT_PUBLIC_DOMAIN
-    }
-
-    cookieStore.set("auth-token", token, cookieOptions)
+    })
 
     return {
       success: true,
@@ -176,14 +174,25 @@ export async function getCurrentUser() {
     const cookieStore = await cookies()
     const token = cookieStore.get("auth-token")
 
-    if (!token || !token.value) {
-      console.log("[v0] No auth token found in cookies")
+    if (!token?.value) {
       return null
     }
 
+    // Validate token format before attempting JWT verification
     const tokenValue = token.value.trim()
-    if (!tokenValue || tokenValue.length < 10) {
-      console.log("[v0] Invalid token format detected, clearing cookie")
+
+    // Check if token looks like a valid JWT (should have 3 parts separated by dots)
+    const tokenParts = tokenValue.split(".")
+    if (tokenParts.length !== 3) {
+      console.error("[v0] Malformed JWT token detected - incorrect structure")
+      cookieStore.delete("auth-token")
+      return null
+    }
+
+    // Check if each part is base64-like (alphanumeric, -, _)
+    const isValidBase64 = tokenParts.every((part) => /^[A-Za-z0-9_-]+$/.test(part))
+    if (!isValidBase64) {
+      console.error("[v0] Malformed JWT token detected - invalid base64 encoding")
       cookieStore.delete("auth-token")
       return null
     }
@@ -194,8 +203,8 @@ export async function getCurrentUser() {
         userId: string
         type: string
       }
-    } catch (jwtError) {
-      console.error("[v0] JWT verification failed:", jwtError)
+    } catch (jwtError: any) {
+      console.error("[v0] JWT verification failed:", jwtError.message)
       // Clear the invalid token
       cookieStore.delete("auth-token")
       return null
@@ -206,7 +215,6 @@ export async function getCurrentUser() {
       | null
 
     if (!user) {
-      console.log("[v0] User not found in database, clearing cookie")
       cookieStore.delete("auth-token")
       return null
     }
