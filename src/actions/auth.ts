@@ -7,7 +7,7 @@ import type { IUser } from "@/models/user"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
-const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
+const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfyfkjb"
 
 function isValidGSTNumber(gstNumber: string): boolean {
   const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
@@ -42,13 +42,22 @@ export async function signIn(formData: FormData) {
     const token = jwt.sign({ userId: user._id, type: user.type }, JWT_SECRET, { expiresIn: "1d" })
 
     const cookieStore = await cookies()
-    cookieStore.set("auth-token", token, {
+
+    const isProduction = process.env.NODE_ENV === "production"
+    const cookieOptions: any = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 1, // 1 day
       path: "/",
-    })
+    }
+
+    // For production, allow broader domain matching
+    if (isProduction && process.env.NEXT_PUBLIC_DOMAIN) {
+      cookieOptions.domain = process.env.NEXT_PUBLIC_DOMAIN
+    }
+
+    cookieStore.set("auth-token", token, cookieOptions)
 
     return {
       success: true,
@@ -167,16 +176,26 @@ export async function getCurrentUser() {
     const cookieStore = await cookies()
     const token = cookieStore.get("auth-token")
 
-    if (!token || !token.value) return null
+    if (!token || !token.value) {
+      console.log("[v0] No auth token found in cookies")
+      return null
+    }
+
+    const tokenValue = token.value.trim()
+    if (!tokenValue || tokenValue.length < 10) {
+      console.log("[v0] Invalid token format detected, clearing cookie")
+      cookieStore.delete("auth-token")
+      return null
+    }
 
     let decoded
     try {
-      decoded = jwt.verify(token.value, JWT_SECRET) as {
+      decoded = jwt.verify(tokenValue, JWT_SECRET) as {
         userId: string
         type: string
       }
     } catch (jwtError) {
-      console.error("JWT verification failed:", jwtError)
+      console.error("[v0] JWT verification failed:", jwtError)
       // Clear the invalid token
       cookieStore.delete("auth-token")
       return null
@@ -186,7 +205,11 @@ export async function getCurrentUser() {
       | (Omit<IUser, "password"> & { _id: any })
       | null
 
-    if (!user) return null
+    if (!user) {
+      console.log("[v0] User not found in database, clearing cookie")
+      cookieStore.delete("auth-token")
+      return null
+    }
 
     const plainUser = {
       id: user._id.toString(),
@@ -206,7 +229,7 @@ export async function getCurrentUser() {
 
     return plainUser
   } catch (error) {
-    console.error("Error in getCurrentUser:", error)
+    console.error("[v0] Error in getCurrentUser:", error)
     return null
   }
 }
