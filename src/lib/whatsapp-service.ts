@@ -1,4 +1,4 @@
-/*
+/* 
 // WhatsApp notification service using Twilio WhatsApp Business API
 import twilio from "twilio"
 
@@ -571,73 +571,42 @@ https://console.twilio.com/us1/develop/sms/whatsapp/senders`
 export const whatsappService = new WhatsAppService()
 */
 
-interface OrderDetails {
-  orderId: string
-  customerName: string
-  customerPhone: string
-  products: Array<{
-    title: string
-    quantity: number
-    price: number
-  }>
-  totalAmount: number
-  paymentMethod: string
-  status: string
-  createdAt: string
-}
-
-interface MarketingMessageDetails {
-  phone: string
-  name: string
-  message: string
-  campaignType?: "product_launch" | "offer" | "update" | "general"
-  productLink?: string
-  offerCode?: string
-}
+console.warn("[WhatsApp Service] Twilio integration is currently disabled")
 
 export class WhatsAppService {
-  async sendOrderNotification(orderDetails: OrderDetails): Promise<boolean> {
-    console.log("[WhatsApp] Service disabled - Twilio not configured")
-    console.log("[WhatsApp] Order notification skipped for:", orderDetails.customerPhone)
+  async sendOrderNotification(): Promise<boolean> {
+    console.log("[WhatsApp Service] Order notification skipped - Twilio disabled")
     return false
   }
 
-  async sendMarketingMessage(messageDetails: MarketingMessageDetails): Promise<boolean> {
-    console.log("[WhatsApp] Service disabled - Twilio not configured")
-    console.log("[WhatsApp] Marketing message skipped for:", messageDetails.phone)
+  async sendMarketingMessage(): Promise<boolean> {
+    console.log("[WhatsApp Service] Marketing message skipped - Twilio disabled")
+    return false
+  }
+
+  async sendSMSFallback(): Promise<boolean> {
+    console.log("[WhatsApp Service] SMS fallback skipped - Twilio disabled")
     return false
   }
 
   async testConnection(): Promise<boolean> {
-    console.log("[WhatsApp] Service disabled - Twilio not configured")
+    console.log("[WhatsApp Service] Connection test skipped - Twilio disabled")
     return false
   }
 
-  async validateRecipient(phoneNumber: string): Promise<boolean> {
-    console.log("[WhatsApp] Service disabled - Twilio not configured")
+  isSandboxMode(): boolean {
     return false
   }
 
-  async checkRecipientOptIn(phoneNumber: string): Promise<{ isOptedIn: boolean; message: string }> {
-    return {
-      isOptedIn: false,
-      message: "WhatsApp service disabled - Twilio not configured",
-    }
+  getSandboxInstructions(): string {
+    return "Twilio WhatsApp service is currently disabled"
   }
 
-  public getSMSConfigurationStatus(): { configured: boolean; message: string } {
+  getSMSConfigurationStatus(): { configured: boolean; message: string } {
     return {
       configured: false,
-      message: "WhatsApp service disabled - Twilio not configured",
+      message: "Twilio service is currently disabled",
     }
-  }
-
-  public getSandboxInstructions(): string {
-    return "WhatsApp service disabled - Twilio not configured"
-  }
-
-  public isSandboxMode(): boolean {
-    return false
   }
 }
 

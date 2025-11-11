@@ -18,7 +18,7 @@ export async function GET() {
         $match: {
           isActive: true,
           is_draft: false,
-          category_name: { $exists: true, $ne: null, $ne: "", $ne: "undefined" },
+          category_name: { $exists: true, $ne: null },
         },
       },
       {
@@ -53,11 +53,9 @@ export async function GET() {
       },
     ])
 
-    const validCategories = categories.filter((cat) => cat.name && cat.name !== "undefined" && cat.name.trim() !== "")
+    console.log(`Found ${categories.length} categories`)
 
-    console.log(`Found ${validCategories.length} valid categories out of ${categories.length} total`)
-
-    const response = NextResponse.json(validCategories, { status: 200 })
+    const response = NextResponse.json(categories, { status: 200 })
     response.headers.set("Cache-Control", "public, s-maxage=1200, stale-while-revalidate=2400") // Cache for 20 minutes, stale for 40 minutes
 
     return response

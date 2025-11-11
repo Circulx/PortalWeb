@@ -35,13 +35,13 @@ export function formatNumber(num: number): string {
 /**
  * Format currency value
  * @param amount - Amount to format
- * @param currency - Currency code (default: INR)
+ * @param currency - Currency code (default: USD)
  * @returns Formatted currency string
  */
-export function formatCurrency(amount: number, currency = "INR"): string {
-  return new Intl.NumberFormat("en-IN", {
+export function formatCurrency(amount: number, currency = "USD"): string {
+  return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "INR",
+    currency: "USD",
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount)
@@ -82,3 +82,7 @@ export function debounce<T extends (...args: any[]) => any>(fn: T, ms = 300): (.
     timeoutId = setTimeout(() => fn(...args), ms)
   }
 }
+
+
+
+

@@ -3,16 +3,8 @@ import { connectProfileDB } from "@/lib/profileDb"
 
 export async function GET(request: Request, { params }: { params: any }) {
   try {
-    const { category } = await params
+    const { category } = params
     const decodedCategory = decodeURIComponent(category)
-
-    if (!decodedCategory || decodedCategory === "undefined" || decodedCategory.trim() === "") {
-      console.error(`Invalid category name: ${decodedCategory}`)
-      return NextResponse.json(
-        { error: "Invalid category name", products: [], totalCount: 0, subcategories: [] },
-        { status: 400 },
-      )
-    }
 
     console.log(`Fetching products for category: ${decodedCategory}`)
 
@@ -39,7 +31,7 @@ export async function GET(request: Request, { params }: { params: any }) {
       category_name: { $regex: new RegExp(`^${decodedCategory}$`, "i") },
     }
 
-    if (subcategory && subcategory !== "all") {
+    if (subcategory) {
       filter.sub_category_name = { $regex: new RegExp(`^${subcategory}$`, "i") }
     }
 
@@ -75,7 +67,7 @@ export async function GET(request: Request, { params }: { params: any }) {
     // Get subcategories for this category
     const subcategories = await ProductModel.distinct("sub_category_name", {
       ...filter,
-      sub_category_name: { $exists: true, $ne: null},
+      sub_category_name: { $exists: true, $ne: null, $ne: "" },
     })
 
     const response = NextResponse.json({

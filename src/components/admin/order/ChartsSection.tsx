@@ -63,7 +63,7 @@ export default function ChartsSection() {
       return (
         <div className="bg-white p-2 border border-gray-200 shadow-sm rounded-md">
           <p className="font-medium">{`${label}`}</p>
-          <p className="text-[#ff4d4f]">{`Revenue: ₹${payload[0].value.toLocaleString()}`}</p>
+          <p className="text-[#ff4d4f]">{`Revenue: $${payload[0].value.toLocaleString()}`}</p>
         </div>
       )
     }
@@ -108,7 +108,7 @@ export default function ChartsSection() {
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={revenueData}>
               <XAxis dataKey="name" />
-              <YAxis tickFormatter={(value) => `₹${value.toLocaleString()}`} />
+              <YAxis tickFormatter={(value) => `$${value.toLocaleString()}`} />
               <Tooltip content={<CustomTooltip />} />
               <Line type="monotone" dataKey="value" stroke="#ff4d4f" strokeWidth={2} activeDot={{ r: 8 }} />
             </LineChart>

@@ -114,7 +114,7 @@ interface IWhatsAppCampaignLog {
   recipientEmail?: string
   messageContent: string
   status: "pending" | "sent" | "delivered" | "failed"
-  twilioSid?: string
+  // twilioSid?: string
   errorMessage?: string
   sentAt?: Date
   deliveredAt?: Date
@@ -917,10 +917,6 @@ const WhatsAppCampaignLogSchema = new mongoose.Schema<IWhatsAppCampaignLog>(
       enum: ["pending", "sent", "delivered", "failed"],
       default: "pending",
       index: true,
-    },
-    twilioSid: {
-      type: String,
-      trim: true,
     },
     errorMessage: {
       type: String,

@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { CustomerReviewsStats } from "@/components/admin/product-reviews/product-reviews-stats"
-import { CustomerReviewsTable } from "@/components/admin/product-reviews/product-reviews-table"
+import { CustomerReviewsStats } from "@/components/admin/customer-reviews/customer-reviews-stats"
+import { CustomerReviewsTable } from "@/components/admin/customer-reviews/customer-reviews-table"
 
 interface ReviewStats {
   totalReviews: number

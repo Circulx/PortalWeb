@@ -82,73 +82,43 @@ export async function getOrderStats() {
 }
 
 // Function to get revenue data for the chart
-export async function getRevenueData(dateRange?: { from?: Date; to?: Date }, statusFilter?: string) {
+export async function getRevenueData() {
   try {
     const conn = await connectProfileDB()
     const Order = conn.model("Order")
 
+    // Get current date
     const currentDate = new Date()
+
+    // Create an array of the last 7 days
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     const revenueData = []
 
-    // Determine the date range
-    let startDate = new Date()
-    startDate.setDate(currentDate.getDate() - 6)
-    startDate.setHours(0, 0, 0, 0)
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date()
+      date.setDate(currentDate.getDate() - i)
 
-    let endDate = new Date(currentDate)
-    endDate.setHours(23, 59, 59, 999)
+      // Start of the day
+      const startOfDay = new Date(date)
+      startOfDay.setHours(0, 0, 0, 0)
 
-    // Override with provided dateRange if available
-    if (dateRange?.from) {
-      startDate = new Date(dateRange.from)
-      startDate.setHours(0, 0, 0, 0)
-    }
-    if (dateRange?.to) {
-      endDate = new Date(dateRange.to)
-      endDate.setHours(23, 59, 59, 999)
-    }
+      // End of the day
+      const endOfDay = new Date(date)
+      endOfDay.setHours(23, 59, 59, 999)
 
-    // Build the query filter
-    const baseQuery: any = {
-      createdAt: { $gte: startDate, $lte: endDate },
-    }
-
-    // Add status filter if provided
-    if (statusFilter && statusFilter !== "ALL_STATUSES") {
-      baseQuery.status = {
-        $regex: new RegExp(`^${statusFilter}$`, "i"),
-      }
-    }
-
-    // Generate date labels based on the date range
-    const dateLabels = []
-    const currentCheck = new Date(startDate)
-    while (currentCheck <= endDate) {
-      dateLabels.push({
-        date: new Date(currentCheck),
-        label: days[currentCheck.getDay()],
-        startOfDay: new Date(currentCheck),
-        endOfDay: new Date(currentCheck.getTime() + 24 * 60 * 60 * 1000 - 1),
+      // Query orders for this day
+      const dayOrders = await Order.find({
+        createdAt: { $gte: startOfDay, $lte: endOfDay },
+        paymentMethod: "ONLINE", // Assuming ONLINE means paid
       })
-      currentCheck.setDate(currentCheck.getDate() + 1)
-    }
 
-    // Query and aggregate revenue for each day
-    for (const dayInfo of dateLabels) {
-      const dayQuery = {
-        ...baseQuery,
-        createdAt: { $gte: dayInfo.startOfDay, $lt: dayInfo.endOfDay },
-      }
-
-      const dayOrders = await Order.find(dayQuery)
-
+      // Calculate total revenue for the day
       const dayRevenue = dayOrders.reduce((total, order) => {
         return total + (order.totalAmount || 0)
       }, 0)
 
       revenueData.push({
-        name: dayInfo.label,
+        name: days[date.getDay()],
         value: Math.round(dayRevenue),
       })
     }
@@ -274,7 +244,7 @@ export async function getOrders(page = 1, dateFilter = "all", statusFilter = "al
         seller: order.products?.[0]?.seller || "Multiple Sellers",
         date: orderDate.toISOString().split("T")[0],
         displayDate,
-        total: `₹${(order.totalAmount || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+        total: `$${(order.totalAmount || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
         status: order.status || "Pending",
         payment: paymentStatus,
       }

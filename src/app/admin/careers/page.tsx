@@ -163,7 +163,7 @@ export default function CareersAdminPage() {
               <select
                 value={filters.isActive}
                 onChange={(e) => setFilters((p) => ({ ...p, isActive: e.target.value }))}
-                className="w-full p-2 border rounded-md bg-white text-black"
+                className="w-full p-2 border rounded-md"
               >
                 <option value="">All</option>
                 <option value="true">Active</option>
@@ -175,7 +175,7 @@ export default function CareersAdminPage() {
               <select
                 value={filters.type}
                 onChange={(e) => setFilters((p) => ({ ...p, type: e.target.value }))}
-                className="w-full p-2 border rounded-md bg-white text-black"
+                className="w-full p-2 border rounded-md"
               >
                 <option value="">All Types</option>
                 <option value="full-time">Full-time</option>
@@ -362,7 +362,7 @@ function CareerModal({
               type="number"
               value={salaryMin ?? ""}
               onChange={(e) => setSalaryMin(e.target.value ? Number(e.target.value) : undefined)}
-              placeholder="e.g., ₹600000"
+              placeholder="e.g., 600000"
             />
           </div>
           <div className="space-y-2">
@@ -371,7 +371,7 @@ function CareerModal({
               type="number"
               value={salaryMax ?? ""}
               onChange={(e) => setSalaryMax(e.target.value ? Number(e.target.value) : undefined)}
-              placeholder="e.g., ₹1200000"
+              placeholder="e.g., 1200000"
             />
           </div>
           <div className="space-y-2">

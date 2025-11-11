@@ -48,24 +48,6 @@ export default function ApplicantsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null)
 
-  const cleanDuplicatedName = (name: string): string => {
-    if (!name) return name
-    const words = name.trim().split(/\s+/)
-    const halfLength = Math.floor(words.length / 2)
-
-    // Check if the name is duplicated by comparing first half with second half
-    if (words.length % 2 === 0 && words.length > 2) {
-      const firstHalf = words.slice(0, halfLength).join(" ")
-      const secondHalf = words.slice(halfLength).join(" ")
-
-      if (firstHalf === secondHalf) {
-        return firstHalf
-      }
-    }
-
-    return name
-  }
-
   const fetchApplicants = async (page = 1) => {
     try {
       setLoading(true)
@@ -77,11 +59,7 @@ export default function ApplicantsPage() {
       const res = await fetch(`/api/admin/applicants?${params}`)
       const json = await res.json()
       if (json.success) {
-        const cleanedApplicants = json.data.items.map((applicant: Applicant) => ({
-          ...applicant,
-          fullName: cleanDuplicatedName(applicant.fullName),
-        }))
-        setApplicants(cleanedApplicants)
+        setApplicants(json.data.items)
         setPagination(json.data.pagination)
       } else {
         toast.error(json.error || "Failed to fetch applicants")

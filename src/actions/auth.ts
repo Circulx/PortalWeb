@@ -1,8 +1,11 @@
 "use server"
+
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUserModel } from "@/models/user"
+import type { IUser } from "@/models/user"
 import bcrypt from "bcryptjs"
-import { createUserSession, getUserSession, clearUserSession } from "@/lib/session-store"
+import jwt from "jsonwebtoken"
 
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
@@ -36,13 +39,15 @@ export async function signIn(formData: FormData) {
       return { error: "Invalid credentials" }
     }
 
-    const session = await createUserSession(user)
+    const token = jwt.sign({ userId: user._id, type: user.type }, JWT_SECRET, { expiresIn: "1d" })
 
-    if (!session) {
-      return { error: "Failed to create session" }
-    }
-
-    console.log("[v0] User signed in successfully:", email)
+    const cookieStore = await cookies()
+    cookieStore.set("auth-token", token, {
+      httpOnly: false,
+      secure: false,
+      sameSite: "strict",
+      maxAge: 60 * 60 * 24 * 1, // 1 days
+    })
 
     return {
       success: true,
@@ -55,7 +60,7 @@ export async function signIn(formData: FormData) {
       },
     }
   } catch (error) {
-    console.error("[v0] Error in signIn:", error)
+    console.error("Error in signIn:", error)
     return { error: "Something went wrong" }
   }
 }
@@ -149,29 +154,50 @@ export async function signUp(formData: FormData) {
 }
 
 export async function signOut() {
-  await clearUserSession()
+  const cookieStore = await cookies()
+  cookieStore.delete("auth-token")
   redirect("/")
-}
-
-export async function verifyClientToken(token: string) {
-  console.log("[v0] verifyClientToken called - checking session instead")
-  // Just return the current session
-  return await getUserSession()
 }
 
 export async function getCurrentUser() {
   try {
-    const user = await getUserSession()
+    const UserModel = await getUserModel()
 
-    if (user) {
-      console.log("[v0] Current user retrieved:", user.email, "Type:", user.type)
-    } else {
-      console.log("[v0] No current user found")
+    const cookieStore = await cookies()
+    const token = cookieStore.get("auth-token")
+
+    if (!token || !token.value) return null
+
+    const decoded = jwt.verify(token.value, JWT_SECRET) as {
+      userId: string
+      type: string
     }
 
-    return user
+    const user = (await UserModel.findById(decoded.userId).select("-password").lean()) as
+      | (Omit<IUser, "password"> & { _id: any })
+      | null
+
+    if (!user) return null
+
+    const plainUser = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      onboardingStatus: user.onboardingStatus || "pending",
+      lightOnboardingData: user.lightOnboardingData
+        ? {
+            businessName: user.lightOnboardingData.businessName || "",
+            gstNumber: user.lightOnboardingData.gstNumber || "",
+            address: user.lightOnboardingData.address || "",
+            categories: user.lightOnboardingData.categories || [],
+          }
+        : undefined,
+    }
+
+    return plainUser
   } catch (error) {
-    console.error("[v0] Error in getCurrentUser:", error)
+    console.error("Error in getCurrentUser:", error)
     return null
   }
 }

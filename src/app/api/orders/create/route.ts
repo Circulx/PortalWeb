@@ -3,7 +3,6 @@ import { connectProfileDB } from "@/lib/profileDb"
 import { getCurrentUser } from "@/actions/auth"
 import { sendEmail } from "@/lib/email"
 import { generateOrderConfirmationEmail } from "@/lib/email-templates"
-// import { whatsappService } from "@/lib/whatsapp-service"
 import type { Order } from "@/models/profile/order"
 
 // Define interface for product data from database
@@ -189,10 +188,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    /*
     if (orderData.billingDetails?.phoneNumber || orderData.billingDetails?.phone) {
-      console.log("[WhatsApp] Service disabled - Twilio not configured")
-      console.log("[WhatsApp] Order notification skipped")
-      /*
       try {
         const customerPhone = orderData.billingDetails.phoneNumber || orderData.billingDetails.phone
         const customerName =
@@ -225,10 +222,10 @@ export async function POST(request: NextRequest) {
         console.error("Error sending WhatsApp notification:", whatsappError)
         // Don't fail the order creation if WhatsApp fails
       }
-      */
     } else {
       console.warn("No phone number provided for WhatsApp notification")
     }
+    */
 
     return NextResponse.json({
       success: true,

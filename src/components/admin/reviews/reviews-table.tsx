@@ -420,16 +420,6 @@ export function ReviewsTable() {
     )
   }
 
-  const handlePreviousPage = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 1))
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
-
-  const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-    window.scrollTo({ top: 0, behavior: "smooth" })
-  }
-
   return (
     <div className="w-full">
       <div className="flex flex-col">
@@ -673,10 +663,20 @@ export function ReviewsTable() {
                 Showing page {currentPage} of {totalPages}
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
                   Previous
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
                   Next
                 </Button>
               </div>

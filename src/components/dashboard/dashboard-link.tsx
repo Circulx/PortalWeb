@@ -4,37 +4,24 @@ import type React from "react"
 
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { getCurrentUser, verifyClientToken } from "@/actions/auth"
-import { clientAuth } from "@/lib/auth-client"
+import { getCurrentUser } from "@/actions/auth"
 
 interface DashboardLinkProps {
   children: React.ReactNode
   className?: string
-  onAuthRequired?: () => void
 }
 
-export function DashboardLink({ children, className, onAuthRequired }: DashboardLinkProps) {
+export function DashboardLink({ children, className }: DashboardLinkProps) {
   const router = useRouter()
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault()
 
     try {
-      console.log("[v0] Dashboard link clicked, checking authentication...")
-
-      let user = await getCurrentUser()
-
-      if (!user) {
-        const clientToken = clientAuth.getToken()
-        if (clientToken) {
-          console.log("[v0] Trying client-side token")
-          user = await verifyClientToken(clientToken)
-        }
-      }
-
-      console.log("[v0] User check result:", user ? `User found: ${user.type}` : "No user found")
+      const user = await getCurrentUser()
 
       if (user) {
+        // Redirect based on user role
         if (user.type === "admin") {
           router.push("/admin")
         } else if (user.type === "seller") {
@@ -43,16 +30,12 @@ export function DashboardLink({ children, className, onAuthRequired }: Dashboard
           router.push("/dashboard")
         }
       } else {
-        console.log("[v0] No user authenticated, triggering auth modal")
-        if (onAuthRequired) {
-          onAuthRequired()
-        }
+        // Not authenticated, show login modal
+        router.push("/login?returnUrl=/dashboard")
       }
     } catch (error) {
-      console.error("[v0] Error checking auth:", error)
-      if (onAuthRequired) {
-        onAuthRequired()
-      }
+      console.error("Error checking auth:", error)
+      router.push("/login?returnUrl=/dashboard")
     }
   }
 

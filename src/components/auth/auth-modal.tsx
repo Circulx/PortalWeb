@@ -10,7 +10,7 @@ import { getCurrentUser } from "@/actions/auth"
 interface AuthModalProps {
   isOpen: boolean
   onClose: () => void
-  onSuccess: (userData?: { id: string; name: string; email: string; type: "admin" | "seller" | "customer" }) => void
+  onSuccess: () => void
 }
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
@@ -53,16 +53,11 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     setIsSignIn(true)
   }
 
-  const handleSignInSuccess = async (userData?: {
-    id: string
-    name: string
-    email: string
-    type: "admin" | "seller" | "customer"
-  }) => {
+  const handleSignInSuccess = async () => {
     setIsLoading(true)
     setPasswordResetSuccess(false)
-    // Pass user data to parent for instant profile display
-    onSuccess(userData)
+    // Let the parent component handle the redirect
+    onSuccess()
   }
 
   return (

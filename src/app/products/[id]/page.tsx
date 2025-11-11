@@ -231,10 +231,10 @@ async function getProductById(id: string): Promise<Product | null> {
 }
 
 // Product detail page component - Now a proper server component with ISR
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProductPage({ params }: { params: { id: string } }) {
   try {
-    // Extract the ID parameter - must await params in Next.js 15
-    const { id } = await params
+    // Extract the ID parameter
+    const { id } = params
 
     if (!id) {
       console.error("No ID parameter provided")
@@ -519,7 +519,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 </span>
               </div>
 
-              {/* Contact Buttons */}
+              {/* Contact Buttons 
               <div className="grid grid-cols-2 gap-2 mb-3">
                 <button className="bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium flex items-center justify-center gap-1 transition-colors">
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -539,9 +539,10 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                   Contact Supplier
                 </button>
               </div>
+              */}
 
-              {/* Response Rate */}
-              <p className="text-center text-sm text-gray-600">86% Response Rate</p>
+              {/* Response Rate 
+              <p className="text-center text-sm text-gray-600"></p> */}
             </div>
 
             {/* Sponsored Advertisement */}
@@ -579,10 +580,9 @@ export const revalidate = 300 // Revalidate every 5 minutes
 
 export const dynamicParams = true
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+export async function generateMetadata({ params }: { params: { id: string } }) {
   try {
-    const { id } = await params
-    const product = await getProductById(id)
+    const product = await getProductById(params.id)
 
     if (!product) {
       return {
