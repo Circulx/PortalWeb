@@ -1,38 +1,37 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUserModel } from "@/models/user"
 import { connectDB1 } from "@/lib/db"
-import jwt from "jsonwebtoken"
-
-const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
+import { getUserSession } from "@/lib/session-store"
 
 export async function GET(req: NextRequest) {
   try {
+    console.log("[v0] Account details API called")
+
     await connectDB1()
+    console.log("[v0] Database connected")
 
-    // Get the auth token from cookies
-    const cookieStore = req.cookies
-    const token = cookieStore.get("auth-token")
+    const sessionUser = await getUserSession()
+    console.log("[v0] Session user retrieved:", sessionUser ? sessionUser.email : "null")
 
-    if (!token || !token.value) {
+    if (!sessionUser || !sessionUser.id) {
+      console.log("[v0] Unauthorized - no session user")
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Decode the JWT token to get the user ID
-    const decoded = jwt.verify(token.value, JWT_SECRET) as { userId: string }
-    const userId = decoded.userId
-
     // Fetch the user from the database
     const UserModel = await getUserModel()
-    const user = await UserModel.findById(userId).select("-password") // Exclude the password field
+    const user = await UserModel.findById(sessionUser.id).select("-password") // Exclude the password field
 
     if (!user) {
+      console.log("[v0] User not found in database")
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
 
+    console.log("[v0] User data fetched successfully")
     // Return the user data
     return NextResponse.json(user, { status: 200 })
   } catch (error) {
-    console.error("Error fetching user data:", error)
+    console.error("[v0] Error fetching user data:", error)
     return NextResponse.json({ error: "Failed to fetch user data" }, { status: 500 })
   }
 }
@@ -43,21 +42,15 @@ export async function PATCH(req: NextRequest) {
 
     const { fullName, email, secondaryEmail, phoneNumber, country, state, zipCode } = await req.json()
 
-    // Get the auth token from cookies
-    const cookieStore = req.cookies
-    const token = cookieStore.get("auth-token")
+    const sessionUser = await getUserSession()
 
-    if (!token || !token.value) {
+    if (!sessionUser || !sessionUser.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // Decode the JWT token to get the user ID
-    const decoded = jwt.verify(token.value, JWT_SECRET) as { userId: string }
-    const userId = decoded.userId
-
     // Fetch the user from the database
     const UserModel = await getUserModel()
-    const user = await UserModel.findById(userId)
+    const user = await UserModel.findById(sessionUser.id)
 
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })

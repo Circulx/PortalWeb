@@ -2,6 +2,17 @@
 
 import { cookies } from "next/headers"
 import { getUserModel } from "@/models/user"
+import { connectDB1 } from "@/lib/db"
+
+interface UserData {
+  _id: any
+  name: string
+  email: string
+  type: "admin" | "seller" | "customer"
+  onboardingStatus?: string
+  lightOnboardingData?: any
+  [key: string]: any
+}
 
 // Simple session storage without JWT
 export async function createUserSession(user: any) {
@@ -36,8 +47,12 @@ export async function createUserSession(user: any) {
 
 export async function getUserSession() {
   try {
+    console.log("[v0] getUserSession called")
+
     const cookieStore = await cookies()
     const sessionCookie = cookieStore.get("user-session")
+
+    console.log("[v0] Session cookie exists:", !!sessionCookie?.value)
 
     if (!sessionCookie?.value) {
       console.log("[v0] No session cookie found")
@@ -45,6 +60,7 @@ export async function getUserSession() {
     }
 
     const sessionData = JSON.parse(sessionCookie.value)
+    console.log("[v0] Session data parsed:", { userId: sessionData.userId, email: sessionData.email })
 
     // Validate session is not expired (7 days)
     const sessionAge = Date.now() - sessionData.timestamp
@@ -56,9 +72,14 @@ export async function getUserSession() {
       return null
     }
 
+    await connectDB1()
+    console.log("[v0] Database connected, looking up user:", sessionData.userId)
+
     // Verify user still exists in database
     const UserModel = await getUserModel()
-    const user = await UserModel.findById(sessionData.userId).select("-password").lean()
+    const user = (await UserModel.findById(sessionData.userId).select("-password").lean()) as UserData | null
+
+    console.log("[v0] User found in database:", !!user)
 
     if (!user) {
       console.log("[v0] User not found in database")
@@ -73,8 +94,8 @@ export async function getUserSession() {
       name: user.name,
       email: user.email,
       type: user.type,
-      onboardingStatus: (user as any).onboardingStatus || "pending",
-      lightOnboardingData: (user as any).lightOnboardingData,
+      onboardingStatus: user.onboardingStatus || "pending",
+      lightOnboardingData: user.lightOnboardingData,
     }
   } catch (error) {
     console.error("[v0] Error reading session:", error)
