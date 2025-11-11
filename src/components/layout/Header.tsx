@@ -16,6 +16,7 @@ import { clearCart } from "@/store/slices/cartSlice"
 import { clearWishlist } from "@/store/slices/wishlistSlice"
 import { useRouter } from "next/navigation"
 import EnhancedSearchBar from "./enhanced-search-bar"
+import { clientAuth } from "@/lib/auth-client"
 
 interface HeaderProps {
   user?: {
@@ -137,19 +138,30 @@ export default function Header({ user }: HeaderProps) {
     return visible
   }, [categories, currentIndex])
 
-  function handleAuthSuccess(userData?: {
-    id: string
-    name: string
-    email: string
-    type: "admin" | "seller" | "customer"
-  }) {
+  function handleAuthSuccess(
+    userData?: {
+      id: string
+      name: string
+      email: string
+      type: "admin" | "seller" | "customer"
+    },
+    token?: string,
+  ) {
+    console.log("[v0] Auth success handler called", userData ? `User: ${userData.email}` : "No user data")
+
     setIsAuthModalOpen(false)
+
+    if (token) {
+      clientAuth.setToken(token)
+    }
 
     if (userData) {
       setJustLoggedInUser(userData)
       setIsLoggedOut(false)
 
       router.refresh()
+
+      console.log("[v0] Navigating user based on type:", userData.type)
 
       if (userData.type === "admin") {
         router.push("/admin")
@@ -159,6 +171,7 @@ export default function Header({ user }: HeaderProps) {
         router.push("/dashboard")
       }
     } else if (user) {
+      console.log("[v0] Using existing user for navigation:", user.type)
       if (user.type === "admin") {
         router.push("/admin")
       } else if (user.type === "seller") {
@@ -171,7 +184,10 @@ export default function Header({ user }: HeaderProps) {
 
   function navigateToDashboard() {
     const currentUser = justLoggedInUser || user
+    console.log("[v0] Navigate to dashboard called", currentUser ? `User: ${currentUser.email}` : "No user")
+
     if (currentUser) {
+      console.log("[v0] User authenticated, navigating to dashboard for type:", currentUser.type)
       if (currentUser.type === "admin") {
         router.push("/admin")
       } else if (currentUser.type === "seller") {
@@ -180,6 +196,7 @@ export default function Header({ user }: HeaderProps) {
         router.push("/dashboard")
       }
     } else {
+      console.log("[v0] No user authenticated, opening auth modal")
       setIsAuthModalOpen(true)
     }
   }
@@ -193,6 +210,8 @@ export default function Header({ user }: HeaderProps) {
     setJustLoggedInUser(null)
     dispatch(clearCart())
     dispatch(clearWishlist())
+
+    clientAuth.removeToken()
 
     await signOut()
 
@@ -233,7 +252,7 @@ export default function Header({ user }: HeaderProps) {
     <header className="w-full bg-white shadow-sm">
       <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
         {/* Main Header */}
-        <div className="w-full px-2 sm:px-4 lg:px-6 pb-0.5 pt-1.5 sm:pb-1 sm:pt-2 bg-white">
+        <div className="w-full px-2 sm:px-4 lg:px-6 pb-0 pt-1.5 sm:pb-0.5 sm:pt-2 bg-white">
           <div className="flex items-center justify-between gap-2 sm:gap-4 lg:gap-6">
             {/* Logo */}
             <div className="flex-shrink-0">
@@ -444,7 +463,7 @@ export default function Header({ user }: HeaderProps) {
         </div>
 
         <div className="bg-orange-600 text-white overflow-hidden w-full">
-          <div className="flex items-center py-1.5 sm:py-2 lg:py-2.5 px-2 sm:px-4 lg:px-6">
+          <div className="flex items-center py-0.75 sm:py-1 lg:py-1.25 px-2 sm:px-4 lg:px-6">
             <span className="text-xs sm:text-sm font-medium hidden sm:inline flex-shrink-0 mr-4 sm:mr-6">
               Categories:
             </span>

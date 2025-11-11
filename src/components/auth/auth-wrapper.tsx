@@ -4,9 +4,10 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { getCurrentUser } from "@/actions/auth"
+import { getCurrentUser, verifyClientToken } from "@/actions/auth"
 import { AuthModal } from "./auth-modal"
 import toast from "react-hot-toast"
+import { clientAuth } from "@/lib/auth-client"
 
 interface AuthWrapperProps {
   children: React.ReactNode
@@ -25,7 +26,15 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
       try {
         console.log("[v0] AuthWrapper: Starting authentication check for role:", requiredRole)
 
-        const currentUser = await getCurrentUser()
+        let currentUser = await getCurrentUser()
+
+        if (!currentUser) {
+          const clientToken = clientAuth.getToken()
+          if (clientToken) {
+            console.log("[v0] AuthWrapper: Trying client-side token")
+            currentUser = await verifyClientToken(clientToken)
+          }
+        }
 
         console.log(
           "[v0] AuthWrapper: getCurrentUser result:",
@@ -35,7 +44,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
         setUser(currentUser)
 
         if (!currentUser) {
-          // User is not logged in, show auth modal
           console.log("[v0] AuthWrapper: No user authenticated, showing auth modal")
           setIsAuthModalOpen(true)
           setIsAuthenticated(false)
@@ -43,7 +51,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
           console.log("[v0] AuthWrapper: User role mismatch. Required:", requiredRole, "Actual:", currentUser.type)
           setIsAuthenticated(false)
 
-          // Get portal name for notification
           const portalNames = {
             admin: "Admin Portal",
             seller: "Seller Portal",
@@ -51,7 +58,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
           }
           const attemptedPortal = portalNames[requiredRole]
 
-          // Show access denied notification
           toast.error(`You have not access to this ${attemptedPortal}`, {
             duration: 3000,
             position: "top-center",
@@ -62,7 +68,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
             },
           })
 
-          // Redirect to the appropriate dashboard based on user's actual role
           setTimeout(() => {
             if (currentUser.type === "admin") {
               router.push("/admin")
@@ -77,7 +82,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
             }
           }, 500)
         } else {
-          // User is authenticated and has the correct role
           console.log("[v0] AuthWrapper: User authenticated successfully with correct role")
           setIsAuthenticated(true)
         }
@@ -98,7 +102,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
     setIsAuthModalOpen(false)
     setIsLoading(true)
 
-    // Check user role after login
     const currentUser = await getCurrentUser()
     console.log(
       "[v0] AuthWrapper: Post-login user check:",
@@ -124,7 +127,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
           },
         })
 
-        // Redirect to the appropriate dashboard based on role
         setTimeout(() => {
           if (currentUser.type === "admin") {
             window.location.href = "/admin"
@@ -139,16 +141,13 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
           }
         }, 500)
       } else {
-        // User has the correct role
         if (currentUser.type === "seller" && requiredRole === "seller") {
-          // Check onboarding status and redirect accordingly
           if (currentUser.onboardingStatus === "pending") {
             window.location.href = "/seller/light-onboarding"
           } else {
             window.location.href = "/seller/profile"
           }
         } else {
-          // For other roles, refresh the page
           console.log("[v0] AuthWrapper: Reloading page for authenticated user")
           window.location.reload()
         }
@@ -156,7 +155,6 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
     }
   }
 
-  // Show loading spinner while checking authentication
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
@@ -165,15 +163,12 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
     )
   }
 
-  // Only render children if authenticated and has correct role
   return (
     <>
       {isAuthenticated ? (
         children
       ) : (
-        <div className="fixed inset-0 flex items-center justify-center bg-white z-50">
-          {/* This div ensures the dashboard is not visible at all */}
-        </div>
+        <div className="fixed inset-0 flex items-center justify-center bg-white z-50"></div>
       )}
       <AuthModal
         isOpen={isAuthModalOpen}

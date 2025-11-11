@@ -39,27 +39,22 @@ export async function signIn(formData: FormData) {
       return { error: "Invalid credentials" }
     }
 
-    const token = jwt.sign({ userId: user._id, type: user.type }, JWT_SECRET, { expiresIn: "1d" })
+    const token = jwt.sign({ userId: user._id, type: user.type }, JWT_SECRET, { expiresIn: "7d" })
 
     const cookieStore = await cookies()
 
-    const isProduction = process.env.NODE_ENV === "production"
-
-    // Delete any existing auth-token to prevent conflicts
-    cookieStore.delete("auth-token")
-
-    // Set cookie with simplified options that work across environments
     cookieStore.set("auth-token", token, {
-      httpOnly: true,
-      secure: isProduction,
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 60 * 60 * 24, // 1 day
+      maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     })
 
     return {
       success: true,
       message: "Signed in successfully",
+      token,
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -167,6 +162,62 @@ export async function signOut() {
   redirect("/")
 }
 
+export async function verifyClientToken(token: string) {
+  try {
+    const UserModel = await getUserModel()
+
+    if (!token || token.trim() === "") {
+      return null
+    }
+
+    const tokenValue = token.trim()
+    const tokenParts = tokenValue.split(".")
+
+    if (tokenParts.length !== 3) {
+      return null
+    }
+
+    let decoded
+    try {
+      decoded = jwt.verify(tokenValue, JWT_SECRET) as {
+        userId: string
+        type: string
+      }
+    } catch (jwtError: any) {
+      return null
+    }
+
+    const user = (await UserModel.findById(decoded.userId).select("-password").lean()) as
+      | (Omit<IUser, "password"> & { _id: any })
+      | null
+
+    if (!user) {
+      return null
+    }
+
+    const plainUser = {
+      id: user._id.toString(),
+      name: user.name,
+      email: user.email,
+      type: user.type,
+      onboardingStatus: user.onboardingStatus || "pending",
+      lightOnboardingData: user.lightOnboardingData
+        ? {
+            businessName: user.lightOnboardingData.businessName || "",
+            gstNumber: user.lightOnboardingData.gstNumber || "",
+            address: user.lightOnboardingData.address || "",
+            categories: user.lightOnboardingData.categories || [],
+          }
+        : undefined,
+    }
+
+    return plainUser
+  } catch (error) {
+    console.error("[v0] Error in verifyClientToken:", error)
+    return null
+  }
+}
+
 export async function getCurrentUser() {
   try {
     const UserModel = await getUserModel()
@@ -174,30 +225,14 @@ export async function getCurrentUser() {
     const cookieStore = await cookies()
     const token = cookieStore.get("auth-token")
 
-    console.log("[v0] getCurrentUser called, token exists:", !!token?.value)
-
     if (!token?.value) {
-      console.log("[v0] No auth token found in cookies")
       return null
     }
 
-    // Validate token format before attempting JWT verification
     const tokenValue = token.value.trim()
-
-    console.log("[v0] Token length:", tokenValue.length, "First 20 chars:", tokenValue.substring(0, 20))
-
-    // Check if token looks like a valid JWT (should have 3 parts separated by dots)
     const tokenParts = tokenValue.split(".")
-    if (tokenParts.length !== 3) {
-      console.error("[v0] Malformed JWT token detected - incorrect structure, parts:", tokenParts.length)
-      cookieStore.delete("auth-token")
-      return null
-    }
 
-    // Check if each part is base64-like (alphanumeric, -, _)
-    const isValidBase64 = tokenParts.every((part) => /^[A-Za-z0-9_-]+$/.test(part))
-    if (!isValidBase64) {
-      console.error("[v0] Malformed JWT token detected - invalid base64 encoding")
+    if (tokenParts.length !== 3) {
       cookieStore.delete("auth-token")
       return null
     }
@@ -208,10 +243,7 @@ export async function getCurrentUser() {
         userId: string
         type: string
       }
-      console.log("[v0] JWT verified successfully for user type:", decoded.type)
     } catch (jwtError: any) {
-      console.error("[v0] JWT verification failed:", jwtError.message)
-      // Clear the invalid token
       cookieStore.delete("auth-token")
       return null
     }
@@ -221,12 +253,9 @@ export async function getCurrentUser() {
       | null
 
     if (!user) {
-      console.error("[v0] User not found in database for decoded userId:", decoded.userId)
       cookieStore.delete("auth-token")
       return null
     }
-
-    console.log("[v0] User retrieved successfully:", user.email)
 
     const plainUser = {
       id: user._id.toString(),
