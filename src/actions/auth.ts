@@ -1,11 +1,8 @@
 "use server"
-
-import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { getUserModel } from "@/models/user"
-import type { IUser } from "@/models/user"
 import bcrypt from "bcryptjs"
-import jwt from "jsonwebtoken"
+import { createUserSession, getUserSession, clearUserSession } from "@/lib/session-store"
 
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
@@ -39,22 +36,17 @@ export async function signIn(formData: FormData) {
       return { error: "Invalid credentials" }
     }
 
-    const token = jwt.sign({ userId: user._id, type: user.type }, JWT_SECRET, { expiresIn: "7d" })
+    const session = await createUserSession(user)
 
-    const cookieStore = await cookies()
+    if (!session) {
+      return { error: "Failed to create session" }
+    }
 
-    cookieStore.set("auth-token", token, {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-      path: "/",
-    })
+    console.log("[v0] User signed in successfully:", email)
 
     return {
       success: true,
       message: "Signed in successfully",
-      token,
       user: {
         id: user._id.toString(),
         name: user.name,
@@ -63,7 +55,7 @@ export async function signIn(formData: FormData) {
       },
     }
   } catch (error) {
-    console.error("Error in signIn:", error)
+    console.error("[v0] Error in signIn:", error)
     return { error: "Something went wrong" }
   }
 }
@@ -157,123 +149,27 @@ export async function signUp(formData: FormData) {
 }
 
 export async function signOut() {
-  const cookieStore = await cookies()
-  cookieStore.delete("auth-token")
+  await clearUserSession()
   redirect("/")
 }
 
 export async function verifyClientToken(token: string) {
-  try {
-    const UserModel = await getUserModel()
-
-    if (!token || token.trim() === "") {
-      return null
-    }
-
-    const tokenValue = token.trim()
-    const tokenParts = tokenValue.split(".")
-
-    if (tokenParts.length !== 3) {
-      return null
-    }
-
-    let decoded
-    try {
-      decoded = jwt.verify(tokenValue, JWT_SECRET) as {
-        userId: string
-        type: string
-      }
-    } catch (jwtError: any) {
-      return null
-    }
-
-    const user = (await UserModel.findById(decoded.userId).select("-password").lean()) as
-      | (Omit<IUser, "password"> & { _id: any })
-      | null
-
-    if (!user) {
-      return null
-    }
-
-    const plainUser = {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      type: user.type,
-      onboardingStatus: user.onboardingStatus || "pending",
-      lightOnboardingData: user.lightOnboardingData
-        ? {
-            businessName: user.lightOnboardingData.businessName || "",
-            gstNumber: user.lightOnboardingData.gstNumber || "",
-            address: user.lightOnboardingData.address || "",
-            categories: user.lightOnboardingData.categories || [],
-          }
-        : undefined,
-    }
-
-    return plainUser
-  } catch (error) {
-    console.error("[v0] Error in verifyClientToken:", error)
-    return null
-  }
+  console.log("[v0] verifyClientToken called - checking session instead")
+  // Just return the current session
+  return await getUserSession()
 }
 
 export async function getCurrentUser() {
   try {
-    const UserModel = await getUserModel()
+    const user = await getUserSession()
 
-    const cookieStore = await cookies()
-    const token = cookieStore.get("auth-token")
-
-    if (!token?.value) {
-      return null
+    if (user) {
+      console.log("[v0] Current user retrieved:", user.email, "Type:", user.type)
+    } else {
+      console.log("[v0] No current user found")
     }
 
-    const tokenValue = token.value.trim()
-    const tokenParts = tokenValue.split(".")
-
-    if (tokenParts.length !== 3) {
-      cookieStore.delete("auth-token")
-      return null
-    }
-
-    let decoded
-    try {
-      decoded = jwt.verify(tokenValue, JWT_SECRET) as {
-        userId: string
-        type: string
-      }
-    } catch (jwtError: any) {
-      cookieStore.delete("auth-token")
-      return null
-    }
-
-    const user = (await UserModel.findById(decoded.userId).select("-password").lean()) as
-      | (Omit<IUser, "password"> & { _id: any })
-      | null
-
-    if (!user) {
-      cookieStore.delete("auth-token")
-      return null
-    }
-
-    const plainUser = {
-      id: user._id.toString(),
-      name: user.name,
-      email: user.email,
-      type: user.type,
-      onboardingStatus: user.onboardingStatus || "pending",
-      lightOnboardingData: user.lightOnboardingData
-        ? {
-            businessName: user.lightOnboardingData.businessName || "",
-            gstNumber: user.lightOnboardingData.gstNumber || "",
-            address: user.lightOnboardingData.address || "",
-            categories: user.lightOnboardingData.categories || [],
-          }
-        : undefined,
-    }
-
-    return plainUser
+    return user
   } catch (error) {
     console.error("[v0] Error in getCurrentUser:", error)
     return null

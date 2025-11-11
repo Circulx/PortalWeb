@@ -22,10 +22,10 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
   const router = useRouter()
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        console.log("[v0] AuthWrapper: Starting authentication check for role:", requiredRole)
+    async function checkAuth() {
+      console.log("[v0] AuthWrapper: Checking authentication for role:", requiredRole)
 
+      try {
         let currentUser = await getCurrentUser()
 
         if (!currentUser) {
