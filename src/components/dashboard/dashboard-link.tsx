@@ -9,16 +9,21 @@ import { getCurrentUser } from "@/actions/auth"
 interface DashboardLinkProps {
   children: React.ReactNode
   className?: string
+  onAuthRequired?: () => void
 }
 
-export function DashboardLink({ children, className }: DashboardLinkProps) {
+export function DashboardLink({ children, className, onAuthRequired }: DashboardLinkProps) {
   const router = useRouter()
 
   const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault()
 
     try {
+      console.log("[v0] Dashboard link clicked, checking authentication...")
+
       const user = await getCurrentUser()
+
+      console.log("[v0] User check result:", user ? `User found: ${user.type}` : "No user found")
 
       if (user) {
         // Redirect based on user role
@@ -30,12 +35,16 @@ export function DashboardLink({ children, className }: DashboardLinkProps) {
           router.push("/dashboard")
         }
       } else {
-        // Not authenticated, show login modal
-        router.push("/login?returnUrl=/dashboard")
+        console.log("[v0] No user authenticated, triggering auth modal")
+        if (onAuthRequired) {
+          onAuthRequired()
+        }
       }
     } catch (error) {
-      console.error("Error checking auth:", error)
-      router.push("/login?returnUrl=/dashboard")
+      console.error("[v0] Error checking auth:", error)
+      if (onAuthRequired) {
+        onAuthRequired()
+      }
     }
   }
 

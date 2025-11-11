@@ -7,7 +7,7 @@ import type { IUser } from "@/models/user"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 
-const JWT_SECRET = process.env.JWT_SECRET || "834fe5d5ce83b223"
+const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
 function isValidGSTNumber(gstNumber: string): boolean {
   const cleanGST = gstNumber.replace(/\s/g, "").toUpperCase()
@@ -174,17 +174,22 @@ export async function getCurrentUser() {
     const cookieStore = await cookies()
     const token = cookieStore.get("auth-token")
 
+    console.log("[v0] getCurrentUser called, token exists:", !!token?.value)
+
     if (!token?.value) {
+      console.log("[v0] No auth token found in cookies")
       return null
     }
 
     // Validate token format before attempting JWT verification
     const tokenValue = token.value.trim()
 
+    console.log("[v0] Token length:", tokenValue.length, "First 20 chars:", tokenValue.substring(0, 20))
+
     // Check if token looks like a valid JWT (should have 3 parts separated by dots)
     const tokenParts = tokenValue.split(".")
     if (tokenParts.length !== 3) {
-      console.error("[v0] Malformed JWT token detected - incorrect structure")
+      console.error("[v0] Malformed JWT token detected - incorrect structure, parts:", tokenParts.length)
       cookieStore.delete("auth-token")
       return null
     }
@@ -203,6 +208,7 @@ export async function getCurrentUser() {
         userId: string
         type: string
       }
+      console.log("[v0] JWT verified successfully for user type:", decoded.type)
     } catch (jwtError: any) {
       console.error("[v0] JWT verification failed:", jwtError.message)
       // Clear the invalid token
@@ -215,9 +221,12 @@ export async function getCurrentUser() {
       | null
 
     if (!user) {
+      console.error("[v0] User not found in database for decoded userId:", decoded.userId)
       cookieStore.delete("auth-token")
       return null
     }
+
+    console.log("[v0] User retrieved successfully:", user.email)
 
     const plainUser = {
       id: user._id.toString(),

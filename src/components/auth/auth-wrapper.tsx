@@ -23,14 +23,24 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        console.log("[v0] AuthWrapper: Starting authentication check for role:", requiredRole)
+
         const currentUser = await getCurrentUser()
+
+        console.log(
+          "[v0] AuthWrapper: getCurrentUser result:",
+          currentUser ? `User: ${currentUser.email}, Type: ${currentUser.type}` : "No user",
+        )
+
         setUser(currentUser)
 
         if (!currentUser) {
           // User is not logged in, show auth modal
+          console.log("[v0] AuthWrapper: No user authenticated, showing auth modal")
           setIsAuthModalOpen(true)
           setIsAuthenticated(false)
         } else if (requiredRole && currentUser.type !== requiredRole) {
+          console.log("[v0] AuthWrapper: User role mismatch. Required:", requiredRole, "Actual:", currentUser.type)
           setIsAuthenticated(false)
 
           // Get portal name for notification
@@ -68,10 +78,11 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
           }, 500)
         } else {
           // User is authenticated and has the correct role
+          console.log("[v0] AuthWrapper: User authenticated successfully with correct role")
           setIsAuthenticated(true)
         }
       } catch (error) {
-        console.error("Auth check failed:", error)
+        console.error("[v0] AuthWrapper: Auth check failed with error:", error)
         setIsAuthModalOpen(true)
         setIsAuthenticated(false)
       } finally {
@@ -83,11 +94,17 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
   }, [router, requiredRole])
 
   const handleAuthSuccess = async () => {
+    console.log("[v0] AuthWrapper: handleAuthSuccess called")
     setIsAuthModalOpen(false)
     setIsLoading(true)
 
     // Check user role after login
     const currentUser = await getCurrentUser()
+    console.log(
+      "[v0] AuthWrapper: Post-login user check:",
+      currentUser ? `${currentUser.email} (${currentUser.type})` : "No user",
+    )
+
     if (currentUser) {
       if (requiredRole && currentUser.type !== requiredRole) {
         const portalNames = {
@@ -132,6 +149,7 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
           }
         } else {
           // For other roles, refresh the page
+          console.log("[v0] AuthWrapper: Reloading page for authenticated user")
           window.location.reload()
         }
       }
