@@ -86,7 +86,6 @@ export async function POST(request: NextRequest) {
 
     console.log("[v0] Starting to send messages")
 
-    /*
     for (const recipient of recipients.slice(0, 50)) {
       // Limit to 50 for testing
       try {
@@ -110,35 +109,14 @@ export async function POST(request: NextRequest) {
           status: "pending",
         })
 
-        let success = false
-        try {
-          if (whatsappService && typeof whatsappService.sendMarketingMessage === "function") {
-            success = await whatsappService.sendMarketingMessage({
-              phone: recipient.phone,
-              name: recipient.name,
-              message: personalizedMessage,
-              campaignType,
-              productLink,
-              offerCode,
-            })
-          } else {
-            console.log("[v0] WhatsApp service not available, simulating send")
-            success = true // Simulate success for testing
-          }
-        } catch (serviceError) {
-          console.error("[v0] WhatsApp service error:", serviceError)
-          success = false
-        }
+        const success = false
+        console.log("[v0] WhatsApp service disabled - Twilio not configured")
+        console.log("[v0] Campaign message would have been sent to:", recipient.phone)
 
-        if (success) {
-          logEntry.status = "sent"
-          logEntry.sentAt = new Date()
-          sentCount++
-        } else {
-          logEntry.status = "failed"
-          logEntry.errorMessage = "Failed to send message"
-          failedCount++
-        }
+        // Mark as failed since service is disabled
+        logEntry.status = "failed"
+        logEntry.errorMessage = "WhatsApp service disabled - Twilio not configured"
+        failedCount++
 
         await logEntry.save()
       } catch (error) {
@@ -146,10 +124,6 @@ export async function POST(request: NextRequest) {
         failedCount++
       }
     }
-    */
-
-    console.log("[v0] WhatsApp service disabled - marking campaign as failed")
-    failedCount = Math.min(recipients.length, 50)
 
     // Update campaign statistics
     await WhatsAppCampaign.findByIdAndUpdate(campaignId, {
@@ -163,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Campaign processing complete (Twilio service disabled)",
+      message: "Campaign processed (WhatsApp service disabled)",
       data: {
         totalRecipients: Math.min(recipients.length, 50),
         sentCount,

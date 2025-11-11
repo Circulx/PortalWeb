@@ -1,4 +1,3 @@
-/* 
 // WhatsApp notification service using Twilio WhatsApp Business API
 import twilio from "twilio"
 
@@ -568,46 +567,4 @@ https://console.twilio.com/us1/develop/sms/whatsapp/senders`
 }
 
 // Export singleton instance
-export const whatsappService = new WhatsAppService()
-*/
-
-console.warn("[WhatsApp Service] Twilio integration is currently disabled")
-
-export class WhatsAppService {
-  async sendOrderNotification(): Promise<boolean> {
-    console.log("[WhatsApp Service] Order notification skipped - Twilio disabled")
-    return false
-  }
-
-  async sendMarketingMessage(): Promise<boolean> {
-    console.log("[WhatsApp Service] Marketing message skipped - Twilio disabled")
-    return false
-  }
-
-  async sendSMSFallback(): Promise<boolean> {
-    console.log("[WhatsApp Service] SMS fallback skipped - Twilio disabled")
-    return false
-  }
-
-  async testConnection(): Promise<boolean> {
-    console.log("[WhatsApp Service] Connection test skipped - Twilio disabled")
-    return false
-  }
-
-  isSandboxMode(): boolean {
-    return false
-  }
-
-  getSandboxInstructions(): string {
-    return "Twilio WhatsApp service is currently disabled"
-  }
-
-  getSMSConfigurationStatus(): { configured: boolean; message: string } {
-    return {
-      configured: false,
-      message: "Twilio service is currently disabled",
-    }
-  }
-}
-
 export const whatsappService = new WhatsAppService()

@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PasswordResetModal } from "./password-reset-modal"
 import { ContactModal } from "./contact-modal"
+import { useRouter } from "next/navigation" // Added useRouter for smooth navigation without page reload
 
 interface SignInFormProps {
-  onSuccess: () => void
+  onSuccess: (user?: any) => void
   onSignUp: () => void
   setIsLoading: (isLoading: boolean) => void
 }
@@ -24,6 +25,8 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
   const [rememberMe, setRememberMe] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
   const [contactType, setContactType] = useState<"support" | "customer-care">("support")
+
+  const router = useRouter()
 
   // Load saved email from localStorage on component mount
   useEffect(() => {
@@ -57,8 +60,13 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
       return
     }
 
-    // Call onSuccess to handle redirection
-    onSuccess()
+    if (result.success && result.user) {
+      onSuccess(result.user)
+    } else {
+      onSuccess()
+    }
+
+    router.refresh()
   }
 
   const handlePasswordResetSuccess = () => {

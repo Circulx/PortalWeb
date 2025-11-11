@@ -139,7 +139,10 @@ export function SellerList() {
 
   const currentPageData = getCurrentPageData()
 
-  const handleStatusChange = async (sellerId: string, status: "Approved" | "Reject" | "Review" | "Pending Completion") => {
+  const handleStatusChange = async (
+    sellerId: string,
+    status: "Approved" | "Reject" | "Review" | "Pending Completion",
+  ) => {
     try {
       const response = await fetch(`/api/admin/sellers/${sellerId}`, {
         method: "PATCH",
@@ -306,7 +309,10 @@ export function SellerList() {
                         defaultValue="Review"
                         value={seller.status || "Review"}
                         onValueChange={(value) =>
-                          handleStatusChange(seller._id, value as "Approved" | "Reject" | "Review" | "Pending Completion")
+                          handleStatusChange(
+                            seller._id,
+                            value as "Approved" | "Reject" | "Review" | "Pending Completion",
+                          )
                         }
                       >
                         <SelectTrigger
@@ -333,7 +339,10 @@ export function SellerList() {
                           <SelectItem className="bg-amber-100 text-amber-800 hover:bg-amber-200" value="Review">
                             Review
                           </SelectItem>
-                          <SelectItem className="bg-blue-100 text-blue-800 hover:bg-blue-200" value="Pending Completion">
+                          <SelectItem
+                            className="bg-blue-100 text-blue-800 hover:bg-blue-200"
+                            value="Pending Completion"
+                          >
                             Pending Completion
                           </SelectItem>
                         </SelectContent>
@@ -356,7 +365,10 @@ export function SellerList() {
       {/* Pagination controls */}
       <div className="flex items-center justify-between">
         <Button
-          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          onClick={() => {
+            setCurrentPage((prev) => Math.max(prev - 1, 1))
+            window.scrollTo({ top: 0, behavior: "smooth" }) // Added smooth scroll to top when clicking Previous
+          }}
           disabled={currentPage === 1}
           variant="outline"
           size="sm"
@@ -368,7 +380,10 @@ export function SellerList() {
           Page {currentPage} of {totalPages}
         </div>
         <Button
-          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+          onClick={() => {
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            window.scrollTo({ top: 0, behavior: "smooth" }) // Added smooth scroll to top when clicking Next
+          }}
           disabled={currentPage === totalPages}
           variant="outline"
           size="sm"
