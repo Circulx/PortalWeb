@@ -18,7 +18,6 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   MessageSquare,
   Package,
-  DollarSign,
   Calendar,
   Phone,
   Mail,
@@ -267,14 +266,14 @@ export default function QuotationsPage() {
                       <div>
                         <span className="text-gray-600 text-xs">Requested:</span>
                         <div className="flex items-center gap-1 font-semibold text-blue-600">
-                          <DollarSign className="w-3 h-3" />{quotation.requestedPrice.toLocaleString()}
+                          ₹{quotation.requestedPrice.toLocaleString()}
                         </div>
                       </div>
                       <div>
                         <span className="text-gray-600 text-xs">Seller Quote:</span>
                         {quotation.sellerQuotedPrice ? (
                           <div className="flex items-center gap-1 font-semibold text-green-600">
-                            <DollarSign className="w-3 h-3" />₹{quotation.sellerQuotedPrice.toLocaleString()}
+                            ₹{quotation.sellerQuotedPrice.toLocaleString()}
                           </div>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -317,7 +316,6 @@ export default function QuotationsPage() {
                                     <h4 className="font-semibold text-gray-900">Your Request</h4>
                                     <div className="space-y-2">
                                       <div className="flex items-center gap-2 text-sm">
-                                        <DollarSign className="w-4 h-4 text-blue-600" />
                                         <span className="font-medium">Requested Price:</span>
                                         <span className="font-semibold text-blue-600">
                                           ₹{selectedQuotation.requestedPrice.toLocaleString()}
@@ -369,10 +367,7 @@ export default function QuotationsPage() {
 
                                       {selectedQuotation.sellerQuotedPrice && (
                                         <div className="flex items-center gap-2 text-lg font-semibold text-green-600">
-                                          <DollarSign className="w-5 h-5" />
-                                          <span>
-                                            Quoted Price: ₹{selectedQuotation.sellerQuotedPrice.toLocaleString()}
-                                          </span>
+                                          ₹{selectedQuotation.sellerQuotedPrice.toLocaleString()}
                                         </div>
                                       )}
 
@@ -523,13 +518,13 @@ export default function QuotationsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1 font-semibold text-blue-600">
-                          <DollarSign className="w-4 h-4" />₹{quotation.requestedPrice.toLocaleString()}
+                          ₹{quotation.requestedPrice.toLocaleString()}
                         </div>
                       </TableCell>
                       <TableCell>
                         {quotation.sellerQuotedPrice ? (
                           <div className="flex items-center gap-1 font-semibold text-green-600">
-                            <DollarSign className="w-4 h-4" />₹{quotation.sellerQuotedPrice.toLocaleString()}
+                            ₹{quotation.sellerQuotedPrice.toLocaleString()}
                           </div>
                         ) : (
                           <span className="text-gray-400">-</span>
@@ -575,7 +570,6 @@ export default function QuotationsPage() {
                                       <h4 className="font-semibold text-gray-900">Your Request</h4>
                                       <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm">
-                                          <DollarSign className="w-4 h-4 text-blue-600" />
                                           <span className="font-medium">Requested Price:</span>
                                           <span className="font-semibold text-blue-600">
                                             ₹{selectedQuotation.requestedPrice.toLocaleString()}
@@ -627,10 +621,7 @@ export default function QuotationsPage() {
 
                                         {selectedQuotation.sellerQuotedPrice && (
                                           <div className="flex items-center gap-2 text-lg font-semibold text-green-600">
-                                            <DollarSign className="w-5 h-5" />
-                                            <span>
-                                              Quoted Price: ₹{selectedQuotation.sellerQuotedPrice.toLocaleString()}
-                                            </span>
+                                            ₹{selectedQuotation.sellerQuotedPrice.toLocaleString()}
                                           </div>
                                         )}
 
