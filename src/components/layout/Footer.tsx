@@ -62,10 +62,10 @@ export default function Footer() {
               <Link href="/careers" className="block text-white hover:text-gray-300">
                 Careers
               </Link>
-              <Link href="/token-address" className="block text-white hover:text-gray-300">
+              <Link href="/press" className="block text-white hover:text-gray-300">
                 Press
               </Link>
-              <Link href="/audit" className="block text-white hover:text-gray-300">
+              <Link href="/articles" className="block text-white hover:text-gray-300">
                 Articles
               </Link>
             </div>
