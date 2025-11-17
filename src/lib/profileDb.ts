@@ -626,26 +626,31 @@ const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(
       type: String,
       required: true,
       trim: true,
+      maxlength: 500,
     },
     country: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
     state: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
     city: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
     zipCode: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 20,
     },
     email: {
       type: String,
@@ -1313,6 +1318,48 @@ ApplicantSchema.index({ status: 1, appliedAt: -1 })
 ApplicantSchema.index({ email: 1, appliedAt: -1 })
 ApplicantSchema.index({ appliedAt: -1 })
 
+// Define Newsletter Schema
+interface INewsletter {
+  email: string
+  subscribedAt: Date
+  unsubscribedAt?: Date
+  isActive: boolean
+}
+
+const NewsletterSchema = new mongoose.Schema<INewsletter>(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    subscribedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    unsubscribedAt: {
+      type: Date,
+      default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "newsletter",
+  },
+)
+
+// Add indexes for Newsletter
+NewsletterSchema.index({ email: 1, isActive: 1 })
+NewsletterSchema.index({ subscribedAt: -1 })
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -1410,6 +1457,10 @@ function registerModels(connection: Connection) {
     connection.model("Coupon", CouponSchema)
     console.log("Registered Coupon model")
   }
+  if (!connection.models.Newsletter) {
+    connection.model("Newsletter", NewsletterSchema)
+    console.log("Registered Newsletter model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -1439,6 +1490,7 @@ export {
   CareerSchema,
   ApplicantSchema,
   CouponSchema,
+  NewsletterSchema,
   PROFILE_DB,
 }
 
