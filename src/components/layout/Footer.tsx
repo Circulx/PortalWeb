@@ -135,7 +135,7 @@ export default function Footer() {
               <Link href="/feedback" className="block text-white hover:text-gray-300">
                 Feedback
               </Link>
-              <Link href="/partnerships" className="block text-white hover:text-gray-300">
+              <Link href="/partnership" className="block text-white hover:text-gray-300">
                 Partnerships
               </Link>
             </div>
