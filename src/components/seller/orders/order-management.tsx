@@ -10,26 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Separator } from "@/components/ui/separator"
-import {
-  Loader2,
-  Search,
-  Package,
-  TrendingUp,
-  DollarSign,
-  AlertCircle,
-  Calendar,
-  User,
-  CreditCard,
-  RefreshCw,
-  ChevronDown,
-  Check,
-  Eye,
-  MapPin,
-  Phone,
-  Mail,
-  ShoppingCart,
-  IndianRupee,
-} from "lucide-react"
+import { Loader2, Search, Package, TrendingUp, DollarSign, AlertCircle, Calendar, User, CreditCard, RefreshCw, ChevronDown, Check, Eye, MapPin, Phone, Mail, ShoppingCart, IndianRupee } from 'lucide-react'
 import { format } from "date-fns"
 import { toast } from "sonner"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"

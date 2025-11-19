@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useCallback } from "react"
-import { Plus, Upload, X, Save, AlertCircle, Calculator } from "lucide-react"
+import { Plus, Upload, X, Save, AlertCircle, Calculator } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -18,7 +18,7 @@ import * as z from "zod"
 import { useToast } from "@/components/ui/use-toast"
 import { Toaster } from "@/components/ui/toaster"
 import debounce from "lodash/debounce"
-import { useRouter } from "next/navigation"
+import { useRouter } from 'next/navigation'
 
 // Define the product schema without GST
 const productSchema = z.object({
@@ -852,7 +852,7 @@ export default function ProductForm({ onSubmit, onCancel, initialData, productId
                             placeholder={isLoadingCategories ? "Loading categories..." : "Select Category"}
                           />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="bg-white">
                           {categories.length > 0 ? (
                             categories.map((category) => (
                               <SelectItem key={category.id} value={category.name}>

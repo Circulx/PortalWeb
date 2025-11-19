@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Package, ShoppingCart, DollarSign, TrendingUp, Loader2, RefreshCw } from "lucide-react"
+import { useRouter } from 'next/navigation'
+import { Package, ShoppingCart, DollarSign, TrendingUp, Loader2, RefreshCw } from 'lucide-react'
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { PerformanceCard } from "@/components/seller/performance-card"
@@ -155,7 +155,7 @@ export default function DashboardContent() {
         <PerformanceCard
           icon={<DollarSign className="h-6 w-6 text-green-600" />}
           label="Inventory Value"
-          value={formatCurrency(data?.metrics.inventoryValue || 0)}
+          value={`₹${(data?.metrics.inventoryValue || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
           prefix=""
         />
         <PerformanceCard
