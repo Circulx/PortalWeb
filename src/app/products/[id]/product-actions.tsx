@@ -23,6 +23,15 @@ interface ProductActionsProps {
   productImages: string[]
 }
 
+const sanitizeFilename = (title: string): string => {
+  return title
+    .trim()
+    .replace(/[^\w\s-]/g, "") // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+    .toLowerCase()
+}
+
 export default function ProductActions({
   productId,
   title,
@@ -255,7 +264,22 @@ export default function ProductActions({
             />
           </button>
 
-          <img src={productImages[0] || "/placeholder.svg"} alt={title} className="w-full h-[400px] object-contain" />
+          <a
+            href={productImages[0] || "/placeholder.svg"}
+            download={sanitizeFilename(title)}
+            className="block"
+            onClick={(e) => {
+              // Prevent navigation, only allow download
+              e.preventDefault()
+            }}
+          >
+            <img
+              src={productImages[0] || "/placeholder.svg"}
+              alt={title}
+              className="w-full h-[400px] object-contain"
+              crossOrigin="anonymous"
+            />
+          </a>
         </div>
 
         {/* Action Buttons */}
