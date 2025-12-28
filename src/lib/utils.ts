@@ -70,6 +70,45 @@ export function generateId(length = 8): string {
 }
 
 /**
+ * Generate a URL-friendly slug from a string
+ * @param text - Text to convert to slug
+ * @returns URL-friendly slug
+ */
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric characters with hyphens
+    .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
+    .substring(0, 60) // Limit length to 60 characters
+}
+
+/**
+ * Generate SEO-friendly product URL
+ * @param productId - Product ID
+ * @param title - Product title
+ * @returns SEO-friendly URL path
+ */
+export function generateProductUrl(productId: number | string, title: string): string {
+  const slug = generateSlug(title)
+  return `/products/${productId}-${slug}`
+}
+
+/**
+ * Extract product ID from URL slug (handles both formats: "123" and "123-product-name")
+ * @param idParam - URL parameter containing ID or ID-slug
+ * @returns Product ID as string
+ */
+export function extractProductId(idParam: string): string {
+  // If the param contains a hyphen, extract just the ID part
+  const firstHyphenIndex = idParam.indexOf("-")
+  if (firstHyphenIndex > 0) {
+    return idParam.substring(0, firstHyphenIndex)
+  }
+  // Otherwise return the whole param (backwards compatibility)
+  return idParam
+}
+
+/**
  * Debounce a function
  * @param fn - Function to debounce
  * @param ms - Debounce delay in milliseconds

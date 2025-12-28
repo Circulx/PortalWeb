@@ -8,6 +8,7 @@ import type { AppDispatch, RootState } from "@/store"
 import { fetchProducts, fetchProductsByCategory } from "@/store/slices/productSlice"
 import { LazySection } from "./lazy-section"
 import { SectionSkeleton } from "./section-skeleton"
+import { generateProductUrl } from "@/lib/utils"
 
 // Optimized loading skeleton component
 const Skeleton = memo(({ className = "", ...props }: { className?: string; [key: string]: any }) => {
@@ -164,7 +165,7 @@ const ProductCarousel = memo(
                     price={product.price}
                     discount={product.discount}
                     image_link={product.image_link || "/placeholder.svg?height=200&width=200"}
-                    href={`/products/${product.product_id}`}
+                    href={generateProductUrl(product.product_id)}
                     rating={product.rating}
                     originalPrice={product.price + product.discount}
                     hoverImage={product.image_link || "/placeholder.svg?height=200&width=200"}

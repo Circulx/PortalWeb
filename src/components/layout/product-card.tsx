@@ -9,6 +9,7 @@ import type { RootState } from "@/store"
 import { useCartSync } from "@/hooks/useCartSync"
 import { useWishlistSync } from "@/hooks/useWishlistSync"
 import { toast } from "react-hot-toast"
+import { generateProductUrl } from "@/lib/utils"
 
 interface ProductCardProps {
   title: string
@@ -110,6 +111,8 @@ const ProductCard = memo(function ProductCard({
 
   // Extract product ID from href
   const productId = href.split("/").pop() || ""
+
+  const seoFriendlyUrl = generateProductUrl(productId, title)
 
   // Memoized price calculation
   const calculatePrice = usePriceCalculation(price, gst, discount)
@@ -215,7 +218,7 @@ const ProductCard = memo(function ProductCard({
         className={`bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 
         border ${isHovered ? "border-green-900 border-2" : "border-gray-200 border"}`}
       >
-        <Link href={`/products/${productId}`} prefetch={true}>
+        <Link href={seoFriendlyUrl} prefetch={true}>
           <div className="relative aspect-square overflow-hidden p-2 bg-white-100">
             <div className="relative w-full h-full transform group-hover:scale-105 transition-transform duration-300">
               <Image
@@ -237,7 +240,7 @@ const ProductCard = memo(function ProductCard({
         <div className="p-2 space-y-1.5">
           {/* Product Title with href */}
           <Link
-            href={`/products/${productId}`}
+            href={seoFriendlyUrl}
             prefetch={true}
             className="block hover:text-green-900 transition-colors duration-200"
           >

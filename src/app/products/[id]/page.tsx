@@ -8,6 +8,7 @@ import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
 import RequestQuoteButton from "@/components/product/request-quote-button"
 import SponsoredAdvertisement from "@/components/product/sponsored-advertisement"
+import { extractProductId } from "@/lib/utils"
 
 // Define the product interface
 interface Product {
@@ -241,7 +242,9 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       return notFound()
     }
 
-    const [product, reviewData] = await Promise.all([getProductById(id), getProductReviews(id)])
+    const productId = extractProductId(id)
+
+    const [product, reviewData] = await Promise.all([getProductById(productId), getProductReviews(productId)])
 
     // If product not found, show 404 page
     if (!product) {
@@ -302,7 +305,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
                 {/* Product Actions Component */}
                 <ProductActions
-                  productId={id}
+                  productId={productId}
                   title={product.title}
                   price={priceCalculation.finalPrice}
                   imageUrl={productImages[0] || "/placeholder.svg"}
@@ -398,7 +401,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 Request a custom quotation from the seller and get the best deal for your requirements.
               </p>
               <RequestQuoteButton
-                productId={id}
+                productId={productId}
                 productTitle={product.title}
                 sellerId={product.seller_id || product.emailId || product.product_id?.toString() || ""}
                 currentPrice={priceCalculation.finalPrice}
