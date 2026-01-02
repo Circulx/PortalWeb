@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { getCurrentUser } from "@/actions/auth"
 
 export default function IdlePopup() {
@@ -8,7 +8,13 @@ export default function IdlePopup() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const idleTime = 5000 // 5 seconds
 
+  const observerRef = useRef<MutationObserver | null>(null)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
+
   useEffect(() => {
+    isMountedRef.current = true
+
     const checkSellerOnboardingStatus = async () => {
       try {
         const user = await getCurrentUser()
@@ -17,58 +23,87 @@ export default function IdlePopup() {
           if (response.ok) {
             const data = await response.json()
             if (data.status === "Pending Completion") {
-              setShouldShow(false)
+              if (isMountedRef.current) {
+                setShouldShow(false)
+              }
               return
             }
           }
         }
-        setShouldShow(true)
+        if (isMountedRef.current) {
+          setShouldShow(true)
+        }
       } catch (error) {
         console.error("Error checking seller onboarding status:", error)
-        setShouldShow(true)
+        if (isMountedRef.current) {
+          setShouldShow(true)
+        }
       }
     }
 
     checkSellerOnboardingStatus()
+
+    return () => {
+      isMountedRef.current = false
+    }
   }, [])
 
   useEffect(() => {
     const checkForOpenModals = () => {
       const hasOpenDialog = document.querySelector('[role="dialog"][data-state="open"]') !== null
       const hasOpenModal = document.querySelector("[data-radix-dialog-content]") !== null
-      setIsModalOpen(hasOpenDialog || hasOpenModal)
+      if (isMountedRef.current) {
+        setIsModalOpen(hasOpenDialog || hasOpenModal)
+      }
     }
 
     checkForOpenModals()
 
-    const observer = new MutationObserver(checkForOpenModals)
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["data-state", "role"],
-    })
+    const handleFocusChange = () => {
+      checkForOpenModals()
+    }
+
+    // Check on focus/blur events instead of observing all DOM changes
+    window.addEventListener("focus", handleFocusChange, { passive: true })
+    window.addEventListener("blur", handleFocusChange, { passive: true })
+    document.addEventListener("click", handleFocusChange, { passive: true, capture: true })
 
     return () => {
-      observer.disconnect()
+      window.removeEventListener("focus", handleFocusChange)
+      window.removeEventListener("blur", handleFocusChange)
+      document.removeEventListener("click", handleFocusChange)
+
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
+      }
     }
   }, [])
 
   useEffect(() => {
     if (!shouldShow) return
 
-    const timeout = setTimeout(() => {
-      setIsIdle(true)
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        setIsIdle(true)
+      }
     }, idleTime)
 
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsIdle(false)
+      if (e.key === "Escape" && isMountedRef.current) setIsIdle(false)
     }
-    window.addEventListener("keydown", onKeyDown)
+    window.addEventListener("keydown", onKeyDown, { passive: true })
 
     return () => {
       window.removeEventListener("keydown", onKeyDown)
-      clearTimeout(timeout)
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
     }
   }, [shouldShow])
 

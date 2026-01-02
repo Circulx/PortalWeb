@@ -75,6 +75,9 @@ export function generateId(length = 8): string {
  * @returns URL-friendly slug
  */
 export function generateSlug(text: string): string {
+  if (!text || typeof text !== "string") {
+    return ""
+  }
   return text
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric characters with hyphens
@@ -85,12 +88,15 @@ export function generateSlug(text: string): string {
 /**
  * Generate SEO-friendly product URL
  * @param productId - Product ID
- * @param title - Product title
+ * @param title - Product title (optional, will use product ID if not provided)
  * @returns SEO-friendly URL path
  */
-export function generateProductUrl(productId: number | string, title: string): string {
+export function generateProductUrl(productId: number | string, title?: string): string {
+  if (!title || typeof title !== "string") {
+    return `/products/${productId}`
+  }
   const slug = generateSlug(title)
-  return `/products/${productId}-${slug}`
+  return slug ? `/products/${productId}-${slug}` : `/products/${productId}`
 }
 
 /**

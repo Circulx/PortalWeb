@@ -15,6 +15,7 @@ export function useIntersectionObserver({
 }: UseIntersectionObserverProps = {}) {
   const [hasIntersected, setHasIntersected] = useState(false)
   const elementRef = useRef<HTMLDivElement>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
 
   useEffect(() => {
     const element = elementRef.current
@@ -26,26 +27,29 @@ export function useIntersectionObserver({
       return
     }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setHasIntersected(true)
-          if (triggerOnce) {
-            observer.unobserve(element)
+    if (!observerRef.current) {
+      observerRef.current = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setHasIntersected(true)
+            if (triggerOnce && observerRef.current) {
+              observerRef.current.disconnect()
+            }
           }
-        }
-      },
-      {
-        threshold,
-        rootMargin,
-      },
-    )
+        },
+        {
+          threshold,
+          rootMargin,
+        },
+      )
+    }
 
-    observer.observe(element)
+    observerRef.current.observe(element)
 
     return () => {
-      if (observer && element) {
-        observer.unobserve(element)
+      if (observerRef.current) {
+        observerRef.current.disconnect()
+        observerRef.current = null
       }
     }
   }, [threshold, rootMargin, triggerOnce])

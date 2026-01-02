@@ -165,7 +165,7 @@ const ProductCarousel = memo(
                     price={product.price}
                     discount={product.discount}
                     image_link={product.image_link || "/placeholder.svg?height=200&width=200"}
-                    href={generateProductUrl(product.product_id)}
+                    href={generateProductUrl(product.product_id, product.title)}
                     rating={product.rating}
                     originalPrice={product.price + product.discount}
                     hoverImage={product.image_link || "/placeholder.svg?height=200&width=200"}

@@ -57,7 +57,6 @@ export const fetchAdvertisements = createAsyncThunk(
       (state.advertisements.deviceType === deviceType || state.advertisements.deviceType === "all") &&
       state.advertisements.status === "succeeded"
     ) {
-      console.log("[v0] Using cached advertisements:", state.advertisements.advertisements.length)
       return {
         advertisements: state.advertisements.advertisements,
         fromCache: true,
@@ -68,19 +67,17 @@ export const fetchAdvertisements = createAsyncThunk(
     }
 
     const startTime = Date.now()
-    console.log("[v0] Fetching ALL advertisements for:", { deviceType, position })
 
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // Increased timeout to 5 seconds
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
 
       const url = `/api/advertisements/active?deviceType=${deviceType}&position=all`
-      console.log("[v0] Fetching from URL:", url)
 
       const response = await fetch(url, {
         signal: controller.signal,
         headers: {
-          "Cache-Control": "no-cache", // Force fresh data
+          "Cache-Control": "no-cache",
           Accept: "application/json",
         },
       })
@@ -93,29 +90,22 @@ export const fetchAdvertisements = createAsyncThunk(
       }
 
       const result = await response.json()
-      console.log("[v0] API Response:", result)
-      console.log("[v0] Total advertisements received:", result.data?.length || 0)
 
       if (!result.success) {
         throw new Error(result.error || "Failed to fetch advertisements")
       }
 
-      console.log(`[v0] ALL advertisements fetched in ${responseTime}ms:`, result.data?.length || 0)
-
       return {
         advertisements: result.data || [],
         fromCache: false,
         deviceType,
-        position: "all", // Always set position to "all"
+        position: "all",
         responseTime,
       }
     } catch (error) {
       const responseTime = Date.now() - startTime
-      console.error(`[v0] Advertisement fetch failed after ${responseTime}ms:`, error)
 
       if (error instanceof Error && error.name === "AbortError") {
-        console.warn(`[v0] Advertisement fetch timeout after ${responseTime}ms`)
-
         if (state.advertisements.advertisements.length > 0) {
           return {
             advertisements: state.advertisements.advertisements,
@@ -172,7 +162,6 @@ const advertisementSlice = createSlice({
   extraReducers: (builder) => {
     builder
       .addCase(fetchAdvertisements.pending, (state) => {
-        // Only set loading if we don't have any data at all
         if (!state.isInitialized || state.advertisements.length === 0) {
           state.status = "loading"
         }
@@ -194,7 +183,6 @@ const advertisementSlice = createSlice({
           state.advertisements = action.payload.advertisements
           state.isInitialized = true
 
-          // Only update lastFetched if this wasn't from cache
           if (!action.payload.fromCache) {
             state.lastFetched = Date.now()
             state.deviceType = action.payload.deviceType || null
@@ -204,7 +192,6 @@ const advertisementSlice = createSlice({
         },
       )
       .addCase(fetchAdvertisements.rejected, (state, action) => {
-        // Don't change status to failed if we have cached data
         if (state.advertisements.length === 0) {
           state.status = "failed"
         }

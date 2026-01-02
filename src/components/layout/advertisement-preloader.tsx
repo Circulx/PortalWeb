@@ -1,14 +1,21 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useDispatch } from "react-redux"
 import { fetchAdvertisements } from "@/store/slices/advertisementSlice"
 import type { AppDispatch } from "@/store"
 
 export default function AdvertisementPreloader() {
   const dispatch = useDispatch<AppDispatch>()
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
+  const hasPreloadedRef = useRef(false)
 
   useEffect(() => {
+    isMountedRef.current = true
+
+    if (hasPreloadedRef.current) return
+
     const preloadAdvertisements = async () => {
       try {
         // Detect device type
@@ -19,21 +26,21 @@ export default function AdvertisementPreloader() {
           else if (width < 1024) deviceType = "tablet"
         }
 
-        console.log("[v0] Preloader: Starting advertisement preload for device:", deviceType)
-
-        // Preload advertisements for all positions
-        const result = await dispatch(fetchAdvertisements({ deviceType })).unwrap()
-        console.log("[v0] Preloader: Advertisements preloaded successfully:", result)
+        await dispatch(fetchAdvertisements({ deviceType })).unwrap()
+        hasPreloadedRef.current = true
       } catch (error) {
-        console.warn("[v0] Preloader: Failed to preload advertisements:", error)
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+        }
 
-        setTimeout(async () => {
-          try {
-            console.log("[v0] Preloader: Retrying advertisement preload")
-            await dispatch(fetchAdvertisements({ deviceType: "all" })).unwrap()
-            console.log("[v0] Preloader: Retry successful")
-          } catch (retryError) {
-            console.error("[v0] Preloader: Retry failed:", retryError)
+        timeoutRef.current = setTimeout(async () => {
+          if (isMountedRef.current && !hasPreloadedRef.current) {
+            try {
+              await dispatch(fetchAdvertisements({ deviceType: "all" })).unwrap()
+              hasPreloadedRef.current = true
+            } catch (retryError) {
+              // Silently fail - ads are not critical
+            }
           }
         }, 2000)
       }
@@ -42,22 +49,13 @@ export default function AdvertisementPreloader() {
     // Start preloading immediately
     preloadAdvertisements()
 
-    const preloadOtherDeviceTypes = async () => {
-      const deviceTypes = ["mobile", "tablet", "desktop"]
-      for (const type of deviceTypes) {
-        try {
-          await dispatch(fetchAdvertisements({ deviceType: type }))
-          console.log(`[v0] Preloader: Preloaded for ${type}`)
-        } catch (error) {
-          console.warn(`[v0] Preloader: Failed to preload for ${type}:`, error)
-        }
+    return () => {
+      isMountedRef.current = false
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
       }
     }
-
-    // Preload other device types after a delay
-    const timeoutId = setTimeout(preloadOtherDeviceTypes, 3000)
-
-    return () => clearTimeout(timeoutId)
   }, [dispatch])
 
   // This component doesn't render anything visible

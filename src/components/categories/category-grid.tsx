@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { Loader2, Package } from "lucide-react"
@@ -23,6 +23,9 @@ export default function CategoryGrid() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isMounted, setIsMounted] = useState(false)
 
+  const intervalRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
+
   const CATEGORIES_PER_PAGE = 7
   const AUTO_SCROLL_INTERVAL = 5000
   const FEATURED_CATEGORIES_COUNT = 6
@@ -30,8 +33,10 @@ export default function CategoryGrid() {
   const fetchCategories = useCallback(async () => {
     try {
       if (categoryCache && Date.now() - categoryCache.timestamp < CACHE_DURATION) {
-        setCategories(categoryCache.data)
-        setLoading(false)
+        if (isMountedRef.current) {
+          setCategories(categoryCache.data)
+          setLoading(false)
+        }
         return
       }
 
@@ -50,32 +55,52 @@ export default function CategoryGrid() {
         timestamp: Date.now(),
       }
 
-      setCategories(categoriesData)
+      if (isMountedRef.current) {
+        setCategories(categoriesData)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load categories")
-      console.error("Error fetching categories:", err)
+      if (isMountedRef.current) {
+        setError(err instanceof Error ? err.message : "Failed to load categories")
+        console.error("Error fetching categories:", err)
+      }
     } finally {
-      setLoading(false)
+      if (isMountedRef.current) {
+        setLoading(false)
+      }
     }
   }, [])
 
   useEffect(() => {
+    isMountedRef.current = true
     setIsMounted(true)
     fetchCategories()
+
+    return () => {
+      isMountedRef.current = false
+    }
   }, [fetchCategories])
 
   useEffect(() => {
     if (!isMounted || !categories || categories.length <= CATEGORIES_PER_PAGE) return
 
-    const interval = setInterval(() => {
-      setCurrentIndex((prevIndex) => {
-        const maxIndex = categories.length - 1
-        return prevIndex >= maxIndex ? 0 : prevIndex + 1
-      })
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+    }
+
+    intervalRef.current = setInterval(() => {
+      if (isMountedRef.current) {
+        setCurrentIndex((prevIndex) => {
+          const maxIndex = categories.length - 1
+          return prevIndex >= maxIndex ? 0 : prevIndex + 1
+        })
+      }
     }, AUTO_SCROLL_INTERVAL)
 
     return () => {
-      clearInterval(interval)
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
     }
   }, [categories, isMounted, CATEGORIES_PER_PAGE])
 
