@@ -197,7 +197,10 @@ export async function getCurrentUser() {
 
     return plainUser
   } catch (error) {
-    console.error("Error in getCurrentUser:", error)
+    // During build time, cookies() throws an error - return null gracefully
+    if (error instanceof Error && error.message.includes("Dynamic server usage")) {
+      return null
+    }
     return null
   }
 }

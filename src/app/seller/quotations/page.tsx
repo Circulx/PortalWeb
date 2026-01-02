@@ -1,6 +1,8 @@
 import type { Metadata } from "next"
 import QuotationRequests from "@/components/seller/quotation-requests"
 
+export const dynamic = "force-dynamic"
+
 export const metadata: Metadata = {
   title: "Quotation Requests - Seller Dashboard",
   description: "Manage and respond to customer quotation requests",
