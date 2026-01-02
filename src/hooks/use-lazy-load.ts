@@ -13,6 +13,7 @@ export function useLazyLoad({ delay = 0, threshold = 0.1, rootMargin = "100px" }
   const [shouldLoad, setShouldLoad] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
 
   const { elementRef, hasIntersected } = useIntersectionObserver({
     threshold,
@@ -21,7 +22,15 @@ export function useLazyLoad({ delay = 0, threshold = 0.1, rootMargin = "100px" }
   })
 
   useEffect(() => {
-    if (hasIntersected && !shouldLoad) {
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (hasIntersected && !shouldLoad && isMountedRef.current) {
       setIsLoading(true)
 
       if (timerRef.current) {
@@ -29,8 +38,10 @@ export function useLazyLoad({ delay = 0, threshold = 0.1, rootMargin = "100px" }
       }
 
       timerRef.current = setTimeout(() => {
-        setShouldLoad(true)
-        setIsLoading(false)
+        if (isMountedRef.current) {
+          setShouldLoad(true)
+          setIsLoading(false)
+        }
         timerRef.current = null
       }, delay)
 

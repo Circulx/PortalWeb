@@ -16,6 +16,7 @@ import { clearCart } from "@/store/slices/cartSlice"
 import { clearWishlist } from "@/store/slices/wishlistSlice"
 import { useRouter } from "next/navigation"
 import EnhancedSearchBar from "./enhanced-search-bar"
+import { requestIdleCallback } from "@/lib/request-idle-callback-polyfill"
 
 interface HeaderProps {
   user?: {
@@ -109,11 +110,7 @@ export default function Header({ user }: HeaderProps) {
       }
     }
 
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(fetchCategories)
-    } else {
-      setTimeout(fetchCategories, 100)
-    }
+    requestIdleCallback(fetchCategories)
   }, [isClient])
 
   useEffect(() => {

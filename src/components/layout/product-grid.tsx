@@ -9,6 +9,7 @@ import { fetchProducts, fetchProductsByCategory } from "@/store/slices/productSl
 import { LazySection } from "./lazy-section"
 import { SectionSkeleton } from "./section-skeleton"
 import { generateProductUrl } from "@/lib/utils"
+import { requestIdleCallback } from "@/lib/request-idle-callback-polyfill"
 
 // Optimized loading skeleton component
 const Skeleton = memo(({ className = "", ...props }: { className?: string; [key: string]: any }) => {

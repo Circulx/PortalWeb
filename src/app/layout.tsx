@@ -11,6 +11,7 @@ import { Suspense } from "react"
 import Clarity from "@/components/analytics/Clarity"
 import Script from "next/script"
 import { OnboardingPopupHandler } from "@/components/onboarding-popup-handler"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 export const metadata: Metadata = {
   title: "IND2B",
@@ -53,19 +54,42 @@ export default async function RootLayout({
       <head>
         <link rel="icon" href="/logo.webp" sizes="any" />
         <link rel="apple-touch-icon" href="/logo.webp" />
+        <Script id="polyfills" strategy="beforeInteractive">
+          {`
+            // requestIdleCallback polyfill for Safari/iOS
+            if (typeof window !== 'undefined' && !window.requestIdleCallback) {
+              window.requestIdleCallback = function(callback) {
+                const start = Date.now();
+                return setTimeout(function() {
+                  callback({
+                    didTimeout: false,
+                    timeRemaining: function() {
+                      return Math.max(0, 50 - (Date.now() - start));
+                    }
+                  });
+                }, 1);
+              };
+              window.cancelIdleCallback = function(id) {
+                clearTimeout(id);
+              };
+            }
+          `}
+        </Script>
       </head>
       <body className="bg-gray-100 prevent-overflow">
         <GoogleAnalytics />
         <Clarity />
-        <Providers>
-          <Header user={user} />
-          <Suspense fallback={null}>
-            <PageViewTracker />
-          </Suspense>
-          <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14 w-full max-w-full overflow-x-hidden">{children}</main>
-          <Footer />
-          <OnboardingPopupHandler />
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            <Header user={user} />
+            <Suspense fallback={null}>
+              <PageViewTracker />
+            </Suspense>
+            <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14 w-full max-w-full overflow-x-hidden">{children}</main>
+            <Footer />
+            <OnboardingPopupHandler />
+          </Providers>
+        </ErrorBoundary>
 
         <Script id="tawk-to-widget" strategy="afterInteractive">
           {`

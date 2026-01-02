@@ -16,6 +16,15 @@ export function useIntersectionObserver({
   const [hasIntersected, setHasIntersected] = useState(false)
   const elementRef = useRef<HTMLDivElement>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
+  const isMountedRef = useRef(true)
+
+  useEffect(() => {
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
 
   useEffect(() => {
     const element = elementRef.current
@@ -23,28 +32,38 @@ export function useIntersectionObserver({
 
     if (typeof window === "undefined" || !("IntersectionObserver" in window)) {
       // Fallback: immediately set as intersected if IntersectionObserver is not supported
-      setHasIntersected(true)
+      if (isMountedRef.current) {
+        setHasIntersected(true)
+      }
       return
     }
 
-    if (!observerRef.current) {
-      observerRef.current = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            setHasIntersected(true)
-            if (triggerOnce && observerRef.current) {
-              observerRef.current.disconnect()
+    try {
+      if (!observerRef.current) {
+        observerRef.current = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.isIntersecting && isMountedRef.current) {
+              setHasIntersected(true)
+              if (triggerOnce && observerRef.current) {
+                observerRef.current.disconnect()
+              }
             }
-          }
-        },
-        {
-          threshold,
-          rootMargin,
-        },
-      )
-    }
+          },
+          {
+            threshold,
+            rootMargin,
+          },
+        )
+      }
 
-    observerRef.current.observe(element)
+      observerRef.current.observe(element)
+    } catch (error) {
+      console.error("[v0] IntersectionObserver error:", error)
+      // Fallback on error
+      if (isMountedRef.current) {
+        setHasIntersected(true)
+      }
+    }
 
     return () => {
       if (observerRef.current) {
