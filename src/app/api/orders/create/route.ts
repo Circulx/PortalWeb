@@ -3,6 +3,7 @@ import { connectProfileDB } from "@/lib/profileDb"
 import { getCurrentUser } from "@/actions/auth"
 import { sendEmail } from "@/lib/email"
 import { generateOrderConfirmationEmail } from "@/lib/email-templates"
+import { getDisplayPrice } from "@/lib/price-helper" // Import price helper
 // import { whatsappService } from "@/lib/whatsapp-service"
 import type { Order } from "@/models/profile/order"
 
@@ -13,6 +14,7 @@ interface ProductData {
   seller_id: string
   title?: string
   price?: number
+  final_price?: number // Include final_price in interface
   [key: string]: any
 }
 
@@ -70,6 +72,7 @@ export async function POST(request: NextRequest) {
 
           // Fetch seller_id using product_id
           let seller_id = "unknown-seller"
+          let final_price = 0 // Initialize final_price variable
 
           try {
             const productDetails = (await ProductModel.findOne({ product_id: product_id }).lean()) as ProductData | null
@@ -77,7 +80,10 @@ export async function POST(request: NextRequest) {
             if (productDetails) {
               console.log(`Found product:`, productDetails)
               seller_id = productDetails.seller_id || "unknown-seller"
-              console.log(`Retrieved seller_id: ${seller_id} for product_id: ${product_id}`)
+              final_price = productDetails.final_price || 0
+              console.log(
+                `Retrieved seller_id: ${seller_id} and final_price: ${final_price} for product_id: ${product_id}`,
+              )
             } else {
               console.warn(`Product not found with product_id: ${product_id}`)
             }
@@ -85,14 +91,16 @@ export async function POST(request: NextRequest) {
             console.error(`Database error for product_id ${product_id}:`, dbError)
           }
 
+          const displayPrice = getDisplayPrice(product.price || 0, final_price)
+
           // Ensure all required fields are included
           const enhancedProduct = {
-            productId: product_id, // For backward compatibility
-            product_id: product_id, // New field
-            seller_id: seller_id, // Seller ID from database
+            productId: product_id,
+            product_id: product_id,
+            seller_id: seller_id,
             title: product.title || "Unknown Product",
             quantity: Number(product.quantity) || 1,
-            price: Number(product.price) || 0,
+            price: Number(displayPrice) || 0, // Use display price
             image_link: product.image_link || product.image || null,
           }
 

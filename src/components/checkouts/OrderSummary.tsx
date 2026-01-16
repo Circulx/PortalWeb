@@ -40,6 +40,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
 
   // Calculate totals
   useEffect(() => {
+    // from when they were added to cart via ProductCard/ProductActions
+    // So the calculation here remains the same, but the prices in cartItems
+    // are already using the display price logic
     const calculatedSubTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
     const couponDiscount = appliedCoupon?.discountAmount || 0

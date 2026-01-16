@@ -9,6 +9,7 @@ import getReviewModel from "@/models/profile/review"
 import RequestQuoteButton from "@/components/product/request-quote-button"
 import SponsoredAdvertisement from "@/components/product/sponsored-advertisement"
 import { extractProductId } from "@/lib/utils"
+import { getDisplayPrice } from "@/lib/price-helper" // Import price helper
 
 // Define the product interface
 interface Product {
@@ -18,6 +19,7 @@ interface Product {
   title: string
   description?: string
   price: number
+  final_price?: number // Added final_price field
   originalPrice: number
   discount?: number
   gst?: number
@@ -139,6 +141,7 @@ async function getProductById(id: string): Promise<Product | null> {
           title: String,
           description: String,
           price: Number,
+          final_price: Number,
           originalPrice: Number,
           discount: Number,
           gst: Number,
@@ -170,7 +173,7 @@ async function getProductById(id: string): Promise<Product | null> {
     if (!isNaN(productId)) {
       productDoc = await ProductModel.findOne({ product_id: productId })
         .select(
-          "product_id title description price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
+          "product_id title description price final_price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
         )
         .lean()
         .exec()
@@ -181,7 +184,7 @@ async function getProductById(id: string): Promise<Product | null> {
       if (mongoose.Types.ObjectId.isValid(id)) {
         productDoc = await ProductModel.findById(id)
           .select(
-            "product_id title description price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
+            "product_id title description price final_price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
           )
           .lean()
           .exec()
@@ -205,6 +208,7 @@ async function getProductById(id: string): Promise<Product | null> {
       title: doc.title || "Untitled Product",
       description: doc.description || "",
       price: doc.price || 0,
+      final_price: doc.final_price,
       originalPrice: doc.originalPrice || doc.price,
       discount: doc.discount || 0,
       gst: doc.gst || 0,
@@ -252,8 +256,10 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
       return notFound()
     }
 
-    // Calculate the final price with GST and discount
-    const priceCalculation = calculateFinalPrice(product.price, product.gst, product.discount)
+    const displayPrice = getDisplayPrice(product.price, product.final_price)
+
+    // Calculate the final price with GST and discount using display price
+    const priceCalculation = calculateFinalPrice(displayPrice, product.gst, product.discount)
 
     // Collect all available product images
     const productImages: string[] = []
@@ -430,22 +436,13 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                     <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm">Free Shipping & Fast Delivery</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                       <path
-                        fillRule="evenodd"
-                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 100-2h5a1 1 0 011 1v5a1 1 0 01-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                        d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 010 2H4a1 1 0 01-1-1v-6a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 100-2h5a1 1 0 011 1v5a1 1 0 01-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
                         clipRule="evenodd"
                       />
                     </svg>
                   </div>
-                  <span className="text-sm">100% Money-back guarantee</span>
+                  <span className="text-sm">Free Shipping & Fast Delivery</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -457,7 +454,7 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                       />
                     </svg>
                   </div>
-                  <span className="text-sm">24/7 Customer support</span>
+                  <span className="text-sm">100% Money-back guarantee</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -465,6 +462,18 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
                       <path
                         fillRule="evenodd"
                         d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-sm">24/7 Customer support</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                         clipRule="evenodd"
                       />
                     </svg>

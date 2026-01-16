@@ -12,6 +12,7 @@ type Product = {
   brand?: string
   category_name?: string
   price: number
+  final_price?: number // added final_price field
   original_price: number
   rating?: number
   stock?: number
@@ -188,6 +189,7 @@ function SearchResultsContent() {
               company={product.brand || product.seller_name || "Unknown Brand"}
               location={product.location || "Delhi"}
               price={product.price}
+              final_price={product.final_price} // pass final_price prop
               originalPrice={product.original_price || product.price}
               discount={product.discount || 0}
               image_link={product.image_link || "/placeholder.svg?height=200&width=200"}

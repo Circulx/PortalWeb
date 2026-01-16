@@ -48,6 +48,7 @@ interface Product {
   image_link: string
   stock: number
   price: number
+  final_price?: number
   discount: number
   SKU: string
   seller_id: number
@@ -164,6 +165,7 @@ const ProductCarousel = memo(
                     company={product.seller_name}
                     location={product.location}
                     price={product.price}
+                    final_price={product.final_price}
                     discount={product.discount}
                     image_link={product.image_link || "/placeholder.svg?height=200&width=200"}
                     href={generateProductUrl(product.product_id, product.title)}

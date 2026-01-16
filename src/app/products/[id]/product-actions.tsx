@@ -10,11 +10,13 @@ import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
 import { useWishlistSync } from "@/hooks/useWishlistSync"
+import { getDisplayPrice } from "@/lib/price-helper"
 
 interface ProductActionsProps {
   productId: string
   title: string
   price: number
+  final_price?: number
   imageUrl: string
   discount?: number
   sellerId: number
@@ -36,6 +38,7 @@ export default function ProductActions({
   productId,
   title,
   price,
+  final_price,
   imageUrl,
   discount = 0,
   sellerId,
@@ -97,6 +100,8 @@ export default function ProductActions({
     return () => clearTimeout(timeoutId)
   }, [productId, title, imageUrl])
 
+  const displayPrice = getDisplayPrice(price, final_price)
+
   // Handle adding to cart
   const handleAddToCart = useCallback(() => {
     addToCart({
@@ -104,7 +109,7 @@ export default function ProductActions({
         id: productId,
         title,
         image_link: imageUrl,
-        price: Math.round(price),
+        price: Math.round(displayPrice),
         discount,
         seller_id: sellerId,
         units,
@@ -117,7 +122,7 @@ export default function ProductActions({
       duration: 2000,
       position: "bottom-center",
     })
-  }, [addToCart, productId, title, imageUrl, price, discount, sellerId, units, stock])
+  }, [addToCart, productId, title, imageUrl, displayPrice, discount, sellerId, units, stock])
 
   // Handle Buy Now functionality
   const handleBuyNow = useCallback(async () => {
@@ -139,7 +144,7 @@ export default function ProductActions({
             id: productId,
             title,
             image_link: imageUrl,
-            price: Math.round(price),
+            price: Math.round(displayPrice),
             discount,
             seller_id: sellerId,
             units,
@@ -161,7 +166,7 @@ export default function ProductActions({
     } finally {
       setIsCheckingUser(false)
     }
-  }, [addToCart, productId, title, imageUrl, price, discount, sellerId, units, stock, router])
+  }, [addToCart, productId, title, imageUrl, displayPrice, discount, sellerId, units, stock, router])
 
   const handleAuthSuccess = useCallback(() => {
     // Close the auth modal
@@ -174,7 +179,7 @@ export default function ProductActions({
           id: productId,
           title,
           image_link: imageUrl,
-          price: Math.round(price),
+          price: Math.round(displayPrice),
           discount,
           seller_id: sellerId,
           units,
@@ -185,7 +190,7 @@ export default function ProductActions({
       router.push("/checkout")
       setBuyNowClicked(false)
     }
-  }, [addToCart, buyNowClicked, productId, title, imageUrl, price, discount, sellerId, units, stock, router])
+  }, [addToCart, buyNowClicked, productId, title, imageUrl, displayPrice, discount, sellerId, units, stock, router])
 
   // Handle toggling wishlist
   const handleToggleWishlist = useCallback(async () => {

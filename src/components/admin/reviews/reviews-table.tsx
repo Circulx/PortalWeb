@@ -5,7 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Check, Flag, Clock, ChevronDown, Filter, Calculator, X } from "lucide-react"
+import { Check, Flag, Clock, ChevronDown, Filter, Calculator, X, Search } from "lucide-react"
 import { useToast } from "@/components/ui/use-toast"
 
 interface Product {
@@ -31,6 +31,8 @@ export function ReviewsTable() {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [dateFilter, setDateFilter] = useState<string | null>(null)
+  const [searchProductName, setSearchProductName] = useState("")
+  const [searchProductId, setSearchProductId] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null)
@@ -44,15 +46,24 @@ export function ReviewsTable() {
 
   useEffect(() => {
     fetchProducts()
-  }, [currentPage, statusFilter, dateFilter])
+  }, [statusFilter, dateFilter])
+
+  useEffect(() => {
+    applySearchFilters()
+  }, [products, searchProductName, searchProductId, statusFilter])
 
   const fetchProducts = async () => {
     try {
       setLoading(true)
       const queryParams = new URLSearchParams()
 
-      queryParams.append("page", currentPage.toString())
-      queryParams.append("limit", productsPerPage.toString())
+      // Fetch all products when filters are active, otherwise use pagination
+      if (statusFilter || dateFilter) {
+        queryParams.append("limit", "10000") // Large number to get all products
+      } else {
+        queryParams.append("page", currentPage.toString())
+        queryParams.append("limit", productsPerPage.toString())
+      }
 
       if (statusFilter) {
         queryParams.append("status", statusFilter)
@@ -90,6 +101,28 @@ export function ReviewsTable() {
       setLoading(false)
       console.error("Error fetching products:", err)
     }
+  }
+
+  const applySearchFilters = () => {
+    let filtered = [...products]
+
+    // Filter by product name
+    if (searchProductName.trim()) {
+      filtered = filtered.filter((product) => product.title.toLowerCase().includes(searchProductName.toLowerCase()))
+    }
+
+    // Filter by product ID
+    if (searchProductId.trim()) {
+      filtered = filtered.filter((product) => product.product_id.toString().includes(searchProductId))
+    }
+
+    // Filter by status is already handled via API, but we reapply for consistency
+    if (statusFilter) {
+      filtered = filtered.filter((product) => product.status === statusFilter)
+    }
+
+    setFilteredProducts(filtered)
+    setCurrentPage(1)
   }
 
   const calculateFinalPrice = (originalPrice: number, commissionType: string, commissionValue: number) => {
@@ -275,6 +308,8 @@ export function ReviewsTable() {
   const resetFilters = () => {
     setStatusFilter(null)
     setDateFilter(null)
+    setSearchProductName("")
+    setSearchProductId("")
     setCurrentPage(1)
   }
 
@@ -307,6 +342,9 @@ export function ReviewsTable() {
   const closeImagePopup = () => {
     setSelectedImage(null)
   }
+
+  const paginatedProducts = filteredProducts.slice((currentPage - 1) * productsPerPage, currentPage * productsPerPage)
+  const totalFilteredPages = Math.ceil(filteredProducts.length / productsPerPage)
 
   const CommissionDetailsCell = ({ product }: { product: Product }) => {
     const [localCommissionType, setLocalCommissionType] = useState(product.commission_type || "percentage")
@@ -426,24 +464,60 @@ export function ReviewsTable() {
   }
 
   const handleNextPage = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+    setCurrentPage((prev) => Math.min(prev + 1, totalFilteredPages))
     window.scrollTo({ top: 0, behavior: "smooth" })
   }
 
   return (
     <div className="w-full">
       <div className="flex flex-col">
-        <div className="flex items-center justify-between py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-4 gap-4">
           <h2 className="text-xl font-semibold">Product Table</h2>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center">
-              <Filter className="mr-2 h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Filter By</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 flex-wrap">
+            {/* Filter Icon and Label */}
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filters:</span>
             </div>
 
+            {/* Search Product ID */}
+            <div className="flex items-center gap-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Product ID"
+                  value={searchProductId}
+                  onChange={(e) => {
+                    setSearchProductId(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="pl-7 pr-3 py-1 h-9 text-sm w-32"
+                />
+              </div>
+            </div>
+
+            {/* Search Product Name */}
+            <div className="flex items-center gap-1">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Product Name"
+                  value={searchProductName}
+                  onChange={(e) => {
+                    setSearchProductName(e.target.value)
+                    setCurrentPage(1)
+                  }}
+                  className="pl-7 pr-3 py-1 h-9 text-sm w-40"
+                />
+              </div>
+            </div>
+
+            {/* Status Filter Dropdown */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-2 bg-transparent">
+                <Button variant="outline" size="sm" className="bg-transparent h-9">
                   {statusFilter || "All Status"} <ChevronDown className="ml-2 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -483,12 +557,14 @@ export function ReviewsTable() {
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Reset Button */}
             <Button
               variant="ghost"
+              size="sm"
               onClick={resetFilters}
-              className="ml-2 text-red-500 hover:text-red-700 hover:bg-red-50"
+              className="text-red-500 hover:text-red-700 hover:bg-red-50 h-9"
             >
-              Reset Filter
+              Reset
             </Button>
           </div>
         </div>
@@ -523,14 +599,14 @@ export function ReviewsTable() {
                       {error}
                     </td>
                   </tr>
-                ) : filteredProducts.length === 0 ? (
+                ) : paginatedProducts.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="p-4 text-center">
                       No products found
                     </td>
                   </tr>
                 ) : (
-                  filteredProducts.map((product) => (
+                  paginatedProducts.map((product) => (
                     <tr key={product._id || product.product_id} className="border-b">
                       <td className="p-4 align-middle">
                         <div
@@ -554,47 +630,35 @@ export function ReviewsTable() {
                         </div>
                       </td>
                       <td className="p-4 align-middle">
-                        <div className="max-w-[150px] truncate" title={product.seller_name}>
-                          {product.seller_name}
-                        </div>
+                        <div className="max-w-[150px] truncate text-sm text-gray-600">{product.seller_name}</div>
                       </td>
                       <td className="p-4 align-middle">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              className={`${getStatusColor(product.status)} flex items-center gap-1 px-2 py-1 text-xs font-medium`}
+                              size="sm"
+                              className={`h-7 ${getStatusColor(product.status)}`}
                               disabled={updatingStatus === product.product_id}
                             >
-                              {updatingStatus === product.product_id ? (
-                                <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-current"></div>
-                              ) : (
-                                getStatusIcon(product.status)
-                              )}
-                              {product.status || "Pending"}
+                              <span className="flex items-center gap-1">
+                                {getStatusIcon(product.status)}
+                                {product.status}
+                              </span>
                               <ChevronDown className="ml-1 h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="flex items-center gap-2 text-green-600"
-                              onClick={() => handleStatusChange(product.product_id, "Approved")}
-                            >
-                              <Check className="h-4 w-4" />
-                              Approved
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="flex items-center gap-2 text-orange-600"
-                              onClick={() => handleStatusChange(product.product_id, "Pending")}
-                            >
-                              <Clock className="h-4 w-4" />
+                            <DropdownMenuItem onClick={() => handleStatusChange(product.product_id, "Pending")}>
+                              <Clock className="h-4 w-4 mr-2" />
                               Pending
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="flex items-center gap-2 text-red-600"
-                              onClick={() => handleStatusChange(product.product_id, "Flagged")}
-                            >
-                              <Flag className="h-4 w-4" />
+                            <DropdownMenuItem onClick={() => handleStatusChange(product.product_id, "Approved")}>
+                              <Check className="h-4 w-4 mr-2" />
+                              Approved
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleStatusChange(product.product_id, "Flagged")}>
+                              <Flag className="h-4 w-4 mr-2" />
                               Flagged
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -605,31 +669,19 @@ export function ReviewsTable() {
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              className={`${
-                                product.commission === "Yes"
-                                  ? "bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold"
-                                  : "bg-slate-100 text-slate-700 border border-slate-200 font-bold"
-                              } flex items-center gap-1 px-3 py-2 text-sm rounded-md hover:shadow-sm transition-all duration-200`}
+                              size="sm"
+                              className="h-7"
                               disabled={updatingCommission === product.product_id}
                             >
-                              {updatingCommission === product.product_id ? (
-                                <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-current"></div>
-                              ) : null}
-                              {product.commission || "No"}
-                              <ChevronDown className="ml-1 h-4 w-4" />
+                              {product.commission}
+                              <ChevronDown className="ml-1 h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="bg-white border border-gray-200 shadow-lg">
-                            <DropdownMenuItem
-                              className="flex items-center gap-2 text-emerald-700 font-semibold hover:bg-emerald-50 focus:bg-emerald-50 cursor-pointer"
-                              onClick={() => handleCommissionChange(product.product_id, "Yes")}
-                            >
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleCommissionChange(product.product_id, "Yes")}>
                               Yes
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="flex items-center gap-2 text-slate-600 font-semibold hover:bg-slate-50 focus:bg-slate-50 cursor-pointer"
-                              onClick={() => handleCommissionChange(product.product_id, "No")}
-                            >
+                            <DropdownMenuItem onClick={() => handleCommissionChange(product.product_id, "No")}>
                               No
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -644,46 +696,47 @@ export function ReviewsTable() {
               </tbody>
             </table>
           </div>
+        </div>
 
-          {selectedImage && (
-            <div
-              className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
-              onClick={closeImagePopup}
-            >
-              <div className="relative w-[90vw] h-[90vw] max-w-[400px] max-h-[400px] sm:w-[80vw] sm:h-[80vw] sm:max-w-[500px] sm:max-h-[500px] md:w-[500px] md:h-[500px]">
-                <button
-                  onClick={closeImagePopup}
-                  className="absolute -top-3 -right-3 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors duration-200 z-10"
-                >
-                  <X className="h-6 w-6 text-gray-600" />
-                </button>
-                <img
-                  src={selectedImage.src || "/placeholder.svg"}
-                  alt={selectedImage.alt}
-                  className="w-full h-full object-contain rounded-lg shadow-2xl bg-white"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            </div>
-          )}
-
-          {!loading && !error && totalPages > 0 && (
-            <div className="flex items-center justify-between px-4 py-4">
-              <div className="text-sm text-muted-foreground">
-                Showing page {currentPage} of {totalPages}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
-                  Previous
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage === totalPages}>
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+        {/* Pagination */}
+        <div className="flex items-center justify-between py-4">
+          <div className="text-sm text-gray-600">
+            Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * productsPerPage + 1} to{" "}
+            {Math.min(currentPage * productsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handlePreviousPage} disabled={currentPage === 1}>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleNextPage} disabled={currentPage >= totalFilteredPages}>
+              Next
+            </Button>
+          </div>
         </div>
       </div>
+
+      {/* Image Popup Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={closeImagePopup}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg max-w-2xl max-h-[90vh] overflow-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+              <h3 className="font-semibold">{selectedImage.alt}</h3>
+              <Button variant="ghost" size="sm" onClick={closeImagePopup}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <img src={selectedImage.src || "/placeholder.svg"} alt={selectedImage.alt} className="w-full h-auto" />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

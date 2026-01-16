@@ -10,6 +10,7 @@ interface Product {
   description?: string
   category_name: string
   price: number
+  final_price?: number // added final_price field
   discount: number
   image_link: string
   rating: number
@@ -72,6 +73,7 @@ export default function ProductsPage() {
           description: product.description || "",
           category_name: product.category_name || "Uncategorized",
           price: product.price || 0,
+          final_price: product.final_price || 0, // added final_price field
           discount: product.discount || 0,
           image_link: product.image_link || "",
           rating: product.rating || 0,
@@ -178,6 +180,7 @@ export default function ProductsPage() {
                 company={product.seller_name}
                 location={product.location}
                 price={product.price}
+                final_price={product.final_price} // pass final_price prop
                 originalPrice={product.price / (1 - product.discount / 100)}
                 discount={product.discount}
                 gst={product.gst}

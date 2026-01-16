@@ -15,6 +15,7 @@ export interface Product {
   image_link: string
   stock: number
   price: number
+  final_price?: number // Added final_price field to Product interface
   discount: number
   SKU: string
   seller_id: number
@@ -106,6 +107,7 @@ export const fetchProducts = createAsyncThunk(
           discount: product.discount || 0,
           image_link: product.image_link || "/placeholder.svg?height=200&width=200",
           price: price,
+          final_price: product.final_price || 0, // Added final_price to processed products
           originalPrice: Number(originalPrice.toFixed(0)),
         }
       })

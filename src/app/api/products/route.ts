@@ -103,6 +103,7 @@ export async function GET(request: Request) {
       units: 1,
       delivery_option: 1,
       created_at: 1,
+      final_price: 1, // Added final_price field to API query
     })
 
     // Apply pagination if specified
@@ -282,6 +283,7 @@ export async function GET(request: Request) {
         units: product.units || "",
         delivery_option: product.delivery_option || "Free Delivery Available",
         created_at: product.created_at,
+        final_price: product.final_price || 0, // Added final_price to transformed response
       }
     })
 

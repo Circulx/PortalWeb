@@ -10,12 +10,14 @@ import { useCartSync } from "@/hooks/useCartSync"
 import { useWishlistSync } from "@/hooks/useWishlistSync"
 import { toast } from "react-hot-toast"
 import { generateProductUrl } from "@/lib/utils"
+import { getDisplayPrice } from "@/lib/price-helper" // Import price helper
 
 interface ProductCardProps {
   title: string
   company: string
   location: string
   price: number
+  final_price?: number // Added final_price prop
   originalPrice: number
   discount: number
   gst?: number
@@ -89,6 +91,7 @@ const ProductCard = memo(function ProductCard({
   company,
   location,
   price,
+  final_price, // Added final_price destructuring
   originalPrice,
   discount,
   gst = 0,
@@ -114,8 +117,10 @@ const ProductCard = memo(function ProductCard({
 
   const seoFriendlyUrl = generateProductUrl(productId, title)
 
+  const displayPrice = getDisplayPrice(price, final_price)
+
   // Memoized price calculation
-  const calculatePrice = usePriceCalculation(price, gst, discount)
+  const calculatePrice = usePriceCalculation(displayPrice, gst, discount)
   const priceCalculation = calculatePrice()
 
   // Check if this product is in the wishlist - optimized
@@ -266,7 +271,7 @@ const ProductCard = memo(function ProductCard({
             <span className="text-xs">{company}</span>
           </div>
 
-          {/* Pricing - Optimized calculation */}
+          {/* Pricing - Updated to use display price */}
           <div className="flex items-center justify-between">
             <div className="text-left">
               <span className="text-sm font-bold text-green-900">₹{priceCalculation.finalPrice.toFixed(2)}</span>
