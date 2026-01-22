@@ -1,5 +1,5 @@
+// WhatsApp notification service using Twilio WhatsApp Business API (DISABLED)
 /*
-// WhatsApp notification service using Twilio WhatsApp Business API
 import twilio from "twilio"
 
 interface OrderDetails {
@@ -347,7 +347,7 @@ export class WhatsAppService {
                 console.log(
                   `[WhatsApp Marketing] 📱 Recipient must send "join ${this.getSandboxKeyword()}" to ${this.fromNumber}`,
                 )
-                console.log(`[WhatsApp Marketing] ⏰ Wait for confirmation before sending campaigns`)
+                console.log(`[WhatsApp Marketing] ��� Wait for confirmation before sending campaigns`)
               }
               resolve(false)
             } else if (messageStatus.status === "delivered" || messageStatus.status === "sent") {
@@ -641,4 +641,23 @@ export class WhatsAppService {
   }
 }
 
-export const whatsappService = new WhatsAppService()
+// WhatsApp service is disabled - Twilio configuration not available
+// export const whatsappService = new WhatsAppService()
+
+// Stub export for compatibility
+export const whatsappService = {
+  sendOrderNotification: async () => false,
+  sendMarketingMessage: async () => false,
+  testConnection: async () => false,
+  validateRecipient: async () => false,
+  checkRecipientOptIn: async () => ({
+    isOptedIn: false,
+    message: "WhatsApp service disabled - Twilio not configured",
+  }),
+  getSMSConfigurationStatus: () => ({
+    configured: false,
+    message: "WhatsApp service disabled - Twilio not configured",
+  }),
+  getSandboxInstructions: () => "WhatsApp service disabled - Twilio not configured",
+  isSandboxMode: () => false,
+}
