@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
+import { connectDB1 } from "@/lib/db"
 import mongoose from "mongoose"
 
 // Define interfaces for our data
@@ -33,6 +34,23 @@ interface ProfileProgress {
   status: "Approved" | "Reject" | "Review"
 }
 
+// Add User interface for lightweight sellers
+interface User {
+  _id: string
+  name: string
+  email: string
+  type: "admin" | "seller" | "customer"
+  onboardingStatus: "pending" | "light_completed" | "full_completed"
+  lightOnboardingData?: {
+    businessName: string
+    gstNumber: string
+    address: string
+    categories: string[]
+  }
+  createdAt: Date
+  updatedAt: Date
+}
+
 interface ContactMap {
   [userId: string]: Contact
 }
@@ -41,18 +59,24 @@ interface ProgressMap {
   [userId: string]: ProfileProgress
 }
 
+interface UserMap {
+  [userId: string]: User
+}
+
 export async function GET() {
   try {
-    console.log("Fetching sellers from profile database")
-    const db = await connectProfileDB()
+    console.log("Fetching sellers from profile database and user database")
+    
+    // Connect to both databases
+    const profileDb = await connectProfileDB()
+    const userDb = await connectDB1()
 
-    // Get the Business model
+    // Get models from profile database
     const BusinessSchema = new mongoose.Schema({}, { strict: false })
-    const Business = db.models.Business || db.model("Business", BusinessSchema)
+    const Business = profileDb.models.Business || profileDb.model("Business", BusinessSchema)
 
-    // Get the Contact model
     const ContactSchema = new mongoose.Schema({}, { strict: false })
-    const Contact = db.models.Contact || db.model("Contact", ContactSchema)
+    const Contact = profileDb.models.Contact || profileDb.model("Contact", ContactSchema)
 
     // Get the ProfileProgress model
     const ProfileProgressSchema = new mongoose.Schema(
@@ -68,7 +92,27 @@ export async function GET() {
       },
       { timestamps: true },
     )
-    const ProfileProgress = db.models.ProfileProgress || db.model("ProfileProgress", ProfileProgressSchema)
+    const ProfileProgress = profileDb.models.ProfileProgress || profileDb.model("ProfileProgress", ProfileProgressSchema)
+
+    // Get User model from user database
+    const UserSchema = new mongoose.Schema(
+      {
+        name: { type: String, required: true },
+        email: { type: String, required: true, unique: true },
+        password: { type: String, required: true },
+        type: { type: String, enum: ["admin", "seller", "customer"], default: "customer" },
+        gstNumber: { type: String },
+        onboardingStatus: { type: String, enum: ["pending", "light_completed", "full_completed"], default: "pending" },
+        lightOnboardingData: {
+          businessName: { type: String },
+          gstNumber: { type: String },
+          address: { type: String },
+          categories: [{ type: String }],
+        },
+      },
+      { timestamps: true },
+    )
+    const User = userDb.models.User || userDb.model("User", UserSchema)
 
     // Fetch all businesses
     const businesses = (await Business.find({}).lean()) as unknown as Business[]
@@ -81,6 +125,13 @@ export async function GET() {
     // Fetch all profile progresses
     const progresses = (await ProfileProgress.find({}).lean()) as unknown as ProfileProgress[]
     console.log(`Found ${progresses.length} profile progresses`)
+
+    // Fetch lightweight sellers (users with light_completed status)
+    const lightweightUsers = (await User.find({ 
+      type: "seller", 
+      onboardingStatus: "light_completed" 
+    }).lean()) as unknown as User[]
+    console.log(`Found ${lightweightUsers.length} lightweight sellers`)
 
     // Create a map of contacts by userId for quick lookup
     const contactsByUserId = contacts.reduce((acc: ContactMap, contact: Contact) => {
@@ -98,24 +149,51 @@ export async function GET() {
       return acc
     }, {})
 
-    // Combine business, contact, and profile progress data
-    const sellers = businesses.map((business: Business) => {
+    const usersByUserId = lightweightUsers.reduce((acc: UserMap, user: User) => {
+      acc[user._id] = user
+      return acc
+    }, {})
+
+    // Combine business, contact, and profile progress data (full sellers)
+    const fullSellers = businesses.map((business: Business) => {
       const contact = contactsByUserId[business.userId] || {}
-      const progress = progressesByUserId[business.userId] || { status: "Review" } // Default status
+      const progress = progressesByUserId[business.userId] || { status: "Review" }
 
       return {
-        _id: business.userId, // Include the userId as _id
-        id: business.gstin || "", // Use gstin instead of userId
+        _id: business.userId,
+        id: business.gstin || "",
         name: business.legalEntityName || "",
         tradeName: business.tradeName || "",
         email: contact.emailId || "",
         phone: contact.phoneNumber || "",
         registeredDate: business.createdAt ? new Date(business.createdAt).toLocaleDateString() : "",
-        status: progress.status || "Review", // Include the status
+        status: progress.status || "Review",
+        type: "full" // Mark as full seller
       }
     })
 
-    return NextResponse.json(sellers)
+    // Create lightweight sellers from User records
+    const lightweightSellers = lightweightUsers.map((user: User) => {
+      const progress = progressesByUserId[user._id] || { status: "Review" }
+      
+      return {
+        _id: user._id,
+        id: user.lightOnboardingData?.gstNumber || "",
+        name: user.lightOnboardingData?.businessName || user.name,
+        tradeName: user.lightOnboardingData?.businessName || user.name,
+        email: user.email,
+        phone: "", // No phone for lightweight sellers
+        registeredDate: user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "",
+        status: "Pending Completion", // Lightweight sellers have pending completion status
+        type: "light" // Mark as lightweight seller
+      }
+    })
+
+    // Combine both types of sellers
+    const allSellers = [...fullSellers, ...lightweightSellers]
+    console.log(`Total sellers: ${allSellers.length} (${fullSellers.length} full + ${lightweightSellers.length} lightweight)`)
+
+    return NextResponse.json(allSellers)
   } catch (error) {
     console.error("Error fetching sellers:", error)
     return NextResponse.json({ error: "Failed to fetch sellers" }, { status: 500 })

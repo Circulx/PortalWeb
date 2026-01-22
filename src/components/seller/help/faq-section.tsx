@@ -9,12 +9,6 @@ const faqs = [
       "You can track your order by logging into your account and visiting the Orders section. There you'll find detailed tracking information including current status, location, and estimated delivery date.",
   },
   {
-    question:
-      "Offending belonging promotion provision an be oh consulted ourselves it. Blessing welcomed ladyship she met humoured sir breeding her.",
-    answer:
-      "Our promotion provisions are designed to be fair and transparent. We welcome all customers to participate in our promotional offers while adhering to our terms and conditions. Please contact our support team for specific details about ongoing promotions.",
-  },
-  {
     question: "How can I update my profile details?",
     answer:
       "To update your profile details, go to your Account Settings, select the Profile section, and click on Edit Profile. You can update your personal information, contact details, and preferences. Remember to save your changes before leaving the page.",

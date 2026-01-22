@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
-import  ProductCard  from "@/components/layout/product-card"
+import ProductCard from "@/components/layout/product-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 
@@ -13,6 +13,7 @@ interface Product {
   image_link: string
   stock: number
   price: number
+  final_price?: number
   discount: number
   SKU: string
   seller_id: number
@@ -121,7 +122,24 @@ export default function BrandProductsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          
+          {products.map((product) => (
+            <ProductCard
+              key={product.product_id}
+              title={product.title}
+              company={product.seller_name}
+              location={product.location}
+              price={product.price}
+              final_price={product.final_price}
+              originalPrice={product.price / (1 - (product.discount || 0) / 100)}
+              discount={product.discount || 0}
+              image_link={product.image_link}
+              hoverImage={product.image_link}
+              href={`/products/${product.product_id}`}
+              rating={product.rating || 0}
+              seller_id={product.seller_id}
+              stock={product.stock}
+            />
+          ))}
         </div>
       )}
     </div>

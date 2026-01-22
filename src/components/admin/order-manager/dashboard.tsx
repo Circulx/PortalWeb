@@ -198,8 +198,8 @@ export function OrderManagerDashboard() {
       </div>
 
       {/* Keep original Stats and Charts sections */}
-            <StatsSection />
-            <ChartsSection />
+      <StatsSection />
+      <ChartsSection dateRange={dateRange} statusFilter={statusFilter} />
 
       <Tabs defaultValue="all" value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid grid-cols-3 md:grid-cols-6 mb-4">

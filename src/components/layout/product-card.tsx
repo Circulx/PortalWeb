@@ -9,12 +9,15 @@ import type { RootState } from "@/store"
 import { useCartSync } from "@/hooks/useCartSync"
 import { useWishlistSync } from "@/hooks/useWishlistSync"
 import { toast } from "react-hot-toast"
+import { generateProductUrl } from "@/lib/utils"
+import { getDisplayPrice } from "@/lib/price-helper" // Import price helper
 
 interface ProductCardProps {
   title: string
   company: string
   location: string
   price: number
+  final_price?: number // Added final_price prop
   originalPrice: number
   discount: number
   gst?: number
@@ -88,6 +91,7 @@ const ProductCard = memo(function ProductCard({
   company,
   location,
   price,
+  final_price, // Added final_price destructuring
   originalPrice,
   discount,
   gst = 0,
@@ -111,8 +115,12 @@ const ProductCard = memo(function ProductCard({
   // Extract product ID from href
   const productId = href.split("/").pop() || ""
 
+  const seoFriendlyUrl = generateProductUrl(productId, title)
+
+  const displayPrice = getDisplayPrice(price, final_price)
+
   // Memoized price calculation
-  const calculatePrice = usePriceCalculation(price, gst, discount)
+  const calculatePrice = usePriceCalculation(displayPrice, gst, discount)
   const priceCalculation = calculatePrice()
 
   // Check if this product is in the wishlist - optimized
@@ -140,8 +148,8 @@ const ProductCard = memo(function ProductCard({
       stock: stock,
     })
 
-    toast.success("Added to cart!", {
-      duration: 1500,
+    toast.success("Product added in cart!", {
+      duration: 2000,
       position: "bottom-center",
     })
   }, [addToCart, href, title, image_link, priceCalculation.finalPrice, discount, seller_id, units, stock])
@@ -215,7 +223,7 @@ const ProductCard = memo(function ProductCard({
         className={`bg-white rounded-lg overflow-hidden shadow-sm transition-all duration-200 
         border ${isHovered ? "border-green-900 border-2" : "border-gray-200 border"}`}
       >
-        <Link href={`/products/${productId}`}>
+        <Link href={seoFriendlyUrl} prefetch={true}>
           <div className="relative aspect-square overflow-hidden p-2 bg-white-100">
             <div className="relative w-full h-full transform group-hover:scale-105 transition-transform duration-300">
               <Image
@@ -236,7 +244,11 @@ const ProductCard = memo(function ProductCard({
 
         <div className="p-2 space-y-1.5">
           {/* Product Title with href */}
-          <Link href={`/products/${productId}`} className="block hover:text-green-900 transition-colors duration-200">
+          <Link
+            href={seoFriendlyUrl}
+            prefetch={true}
+            className="block hover:text-green-900 transition-colors duration-200"
+          >
             <h3 className="text-gray-800 font-medium text-sm line-clamp-2 min-h-[2.4rem] hover:text-gray-800">
               {title}
             </h3>
@@ -259,7 +271,7 @@ const ProductCard = memo(function ProductCard({
             <span className="text-xs">{company}</span>
           </div>
 
-          {/* Pricing - Optimized calculation */}
+          {/* Pricing - Updated to use display price */}
           <div className="flex items-center justify-between">
             <div className="text-left">
               <span className="text-sm font-bold text-green-900">₹{priceCalculation.finalPrice.toFixed(2)}</span>

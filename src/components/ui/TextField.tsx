@@ -25,7 +25,7 @@ const TextField: React.FC<CombinedTextFieldProps> = ({
   ...props
 }) => {
   const baseClasses =
-    "block w-full rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+    "block w-full rounded-md border border-gray-200 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-black placeholder-white bg-gray-700"
 
   const sizeClasses = {
     sm: "py-1 px-2 text-sm",

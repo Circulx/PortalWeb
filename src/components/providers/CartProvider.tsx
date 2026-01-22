@@ -1,7 +1,7 @@
 "use client"
 
 import type React from "react"
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useRef } from "react"
 import { useDispatch } from "react-redux"
 import { setCartFromDb } from "@/store/slices/cartSlice"
 import axios from "axios"
@@ -10,21 +10,18 @@ import type { AppDispatch } from "@/store"
 
 export default function CartProvider({ children }: { children: React.ReactNode }) {
   const dispatch = useDispatch<AppDispatch>()
-  const [isLoading, setIsLoading] = useState(false)
-  const initialized = useRef(false)
+  const hasInitialized = useRef(false)
 
   useEffect(() => {
-    const initializeCart = async () => {
-      // Only initialize once
-      if (initialized.current || isLoading) return
+    if (hasInitialized.current) return
 
+    const initializeCart = async () => {
       try {
-        setIsLoading(true)
-        initialized.current = true
+        hasInitialized.current = true
 
         const user = await getCurrentUser()
+
         if (!user) {
-          // If no user, just mark as initialized with empty cart
           dispatch(setCartFromDb([]))
           return
         }
@@ -33,14 +30,10 @@ export default function CartProvider({ children }: { children: React.ReactNode }
         const response = await axios.get("/api/cart")
         const dbItems = response.data.items || []
 
-        // Update Redux state with items from database
         dispatch(setCartFromDb(dbItems))
       } catch (error) {
         console.error("CartProvider: Error initializing cart:", error)
-        // Even if there's an error, mark as initialized to prevent blocking UI
         dispatch(setCartFromDb([]))
-      } finally {
-        setIsLoading(false)
       }
     }
 

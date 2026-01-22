@@ -310,6 +310,9 @@ export default function CheckoutPage() {
         }
       })
 
+      const appliedCoupon = sessionStorage.getItem("appliedCoupon")
+      const couponData = appliedCoupon ? JSON.parse(appliedCoupon) : null
+
       // Prepare order data
       const orderData = {
         userId: user.id,
@@ -318,6 +321,8 @@ export default function CheckoutPage() {
         totalAmount,
         subTotal: calculateSubTotal(),
         discount: calculateDiscount(),
+        couponCode: couponData?.code || null,
+        couponDiscount: couponData?.discountAmount || 0,
         tax: calculateTax(),
         warehouseSelected: warehouseNeeded,
         warehouseId: warehouseNeeded ? selectedWarehouse : null,
@@ -348,6 +353,14 @@ export default function CheckoutPage() {
         throw new Error(result.error || "Failed to create order")
       }
 
+      if (couponData?.code) {
+        await fetch("/api/coupons/apply", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ couponCode: couponData.code }),
+        })
+      }
+
       // Clear cart and redirect to success page
       dispatch(clearCart())
 
@@ -370,6 +383,7 @@ export default function CheckoutPage() {
 
       // Clear checkout data from sessionStorage after successful order
       sessionStorage.removeItem("checkoutData")
+      sessionStorage.removeItem("appliedCoupon")
 
       console.log("Redirecting to success page with orderId:", result.orderId)
       router.push(`/checkout/success?orderId=${result.orderId}`)

@@ -118,13 +118,16 @@ const availableCategories = [
 interface CategoryBrandFormProps {
   initialData?: CategoryBrandDetails
   onSaved?: () => void
+  isPrefilledData?: boolean
 }
 
-export function CategoryBrandForm({ initialData, onSaved }: CategoryBrandFormProps) {
+export function CategoryBrandForm({ initialData, onSaved, isPrefilledData = false }: CategoryBrandFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Simplified condition: Just check if initialData exists
-  const [isEditing, setIsEditing] = useState(!initialData)
+  // If data is prefilled from light form, start in edit mode
+  // If data is real saved data, start in read-only mode
+  // If no data, start in edit mode
+  const [isEditing, setIsEditing] = useState(!initialData || isPrefilledData)
 
   // Log the initialData to help debug
   console.log("CategoryBrandForm initialData:", initialData)

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
@@ -14,7 +14,6 @@ const SliderSkeleton = () => (
     <div className="absolute inset-0 flex items-center justify-center">
       <div className="flex flex-col items-center space-y-4">
         <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-        <p className="text-blue-600 text-sm"></p>
       </div>
     </div>
   </div>
@@ -26,24 +25,12 @@ export default function SimpleSlider() {
   const [deviceType, setDeviceType] = useState<string>("desktop")
   const [isInitializing, setIsInitializing] = useState(true)
 
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const resizeTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const isMountedRef = useRef(true)
+
   const dispatch = useDispatch<AppDispatch>()
   const { advertisements, status, error, isInitialized } = useSelector((state: RootState) => state.advertisements)
-
-  useEffect(() => {
-    console.log("[v0] SimpleSlider Debug:", {
-      advertisementsCount: advertisements.length,
-      status,
-      isInitialized,
-      deviceType,
-      advertisements: advertisements.map((ad) => ({
-        id: ad._id,
-        title: ad.title,
-        position: ad.position,
-        deviceType: ad.deviceType,
-        isActive: ad.isActive,
-      })),
-    })
-  }, [advertisements, status, isInitialized, deviceType])
 
   // Optimized device type detection with memoization
   const getDeviceType = useCallback(() => {
@@ -62,42 +49,15 @@ export default function SimpleSlider() {
   }, [])
 
   const slides = useMemo(() => {
-    console.log("[v0] Creating slides - advertisements count:", advertisements.length)
-    console.log(
-      "[v0] All advertisements:",
-      advertisements.map((ad) => ({
-        id: ad._id,
-        title: ad.title,
-        position: ad.position,
-        deviceType: ad.deviceType,
-        isActive: ad.isActive,
-      })),
-    )
-
     const allAds = advertisements.filter((ad) => {
       const isActive = ad.isActive
       const isDeviceMatch = ad.deviceType === deviceType || ad.deviceType === "all"
-
-      console.log("[v0] Advertisement filter check:", {
-        id: ad._id,
-        title: ad.title,
-        isActive,
-        position: ad.position,
-        deviceType: ad.deviceType,
-        currentDeviceType: deviceType,
-        isDeviceMatch,
-        passes: isActive && isDeviceMatch,
-      })
-
-      // Only filter by active status and device type, ignore position
       return isActive && isDeviceMatch
     })
 
-    console.log("[v0] All filtered ads:", allAds.length)
-
     // Show all advertisements from database
     if (allAds.length > 0) {
-      const dbSlides = allAds.map((ad) => ({
+      return allAds.map((ad) => ({
         id: ad._id,
         title: ad.title,
         subtitle: ad.subtitle,
@@ -105,64 +65,93 @@ export default function SimpleSlider() {
         image: getImageSource(ad),
         linkUrl: ad.linkUrl,
       }))
-      console.log("[v0] Using all database slides:", dbSlides)
-      return dbSlides
     }
 
-    console.log("[v0] No advertisements available")
     return []
   }, [advertisements, getImageSource, deviceType])
 
   useEffect(() => {
+    isMountedRef.current = true
+
     const initialDeviceType = getDeviceType()
     setDeviceType(initialDeviceType)
 
-    console.log("[v0] Fetching ALL advertisements for device type:", initialDeviceType)
     dispatch(fetchAdvertisements({ deviceType: initialDeviceType, position: "all" }))
       .unwrap()
-      .then((result) => {
-        console.log("[v0] Advertisement fetch successful:", result)
-        console.log("[v0] Total advertisements received:", result.advertisements?.length || 0)
+      .then(() => {
+        if (isMountedRef.current) {
+          setIsInitializing(false)
+        }
       })
       .catch((error) => {
-        console.error("[v0] Advertisement fetch failed:", error)
+        if (isMountedRef.current) {
+          console.error("Advertisement fetch failed:", error)
+          setIsInitializing(false)
+        }
       })
-      .finally(() => {
-        setIsInitializing(false)
-      })
+
+    return () => {
+      isMountedRef.current = false
+    }
   }, [dispatch, getDeviceType])
 
   useEffect(() => {
     const handleResize = () => {
-      const newDeviceType = getDeviceType()
-      if (newDeviceType !== deviceType) {
-        setDeviceType(newDeviceType)
-        console.log("[v0] Device type changed, fetching ALL ads for:", newDeviceType)
-        dispatch(fetchAdvertisements({ deviceType: newDeviceType, position: "all" }))
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
       }
+
+      resizeTimeoutRef.current = setTimeout(() => {
+        const newDeviceType = getDeviceType()
+        if (newDeviceType !== deviceType && isMountedRef.current) {
+          setDeviceType(newDeviceType)
+          dispatch(fetchAdvertisements({ deviceType: newDeviceType, position: "all" }))
+        }
+      }, 250)
     }
 
     window.addEventListener("resize", handleResize, { passive: true })
-    return () => window.removeEventListener("resize", handleResize)
+
+    return () => {
+      window.removeEventListener("resize", handleResize)
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current)
+      }
+    }
   }, [dispatch, deviceType, getDeviceType])
 
-  // Optimized auto-slide with better performance
   useEffect(() => {
     if (slides.length <= 1) return
 
-    const timer = setInterval(() => {
-      setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
+    // Clear existing timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+    }
+
+    timerRef.current = setInterval(() => {
+      if (isMountedRef.current) {
+        setCurrentSlide((prevSlide) => (prevSlide + 1) % slides.length)
+      }
     }, 5000)
 
-    return () => clearInterval(timer)
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
   }, [slides.length])
 
   const handleImageError = useCallback((slideId: string) => {
-    setImageErrors((prev) => ({ ...prev, [slideId]: true }))
+    if (isMountedRef.current) {
+      setImageErrors((prev) => ({ ...prev, [slideId]: true }))
+    }
   }, [])
 
   const goToSlide = useCallback((index: number) => {
-    setCurrentSlide(index)
+    if (isMountedRef.current) {
+      setCurrentSlide(index)
+    }
   }, [])
 
   const hasContent = useCallback((slide: (typeof slides)[0]) => {
@@ -180,43 +169,16 @@ export default function SimpleSlider() {
   }
 
   if (status === "failed" && advertisements.length === 0) {
-    console.warn("[v0] Failed to load advertisements:", error)
     return (
       <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-blue-50 to-blue-100">
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex flex-col items-center space-y-4">
-            
-            
-          </div>
+          <div className="flex flex-col items-center space-y-4"></div>
         </div>
       </div>
     )
   }
 
   if (slides.length === 0) {
-    console.log("[v0] No slides to display, current state:", {
-      advertisementsTotal: advertisements.length,
-      status,
-      deviceType,
-      isInitialized,
-    })
-
-    // Show a minimal placeholder for debugging
-    if (process.env.NODE_ENV === "development") {
-      return (
-        <div className="relative w-full h-[300px] sm:h-[400px] overflow-hidden bg-gradient-to-r from-yellow-50 to-yellow-100">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <p className="text-yellow-800 text-sm mb-2">No advertisements available</p>
-              <p className="text-yellow-600 text-xs">
-                Device: {deviceType} | Total ads: {advertisements.length}
-              </p>
-            </div>
-          </div>
-        </div>
-      )
-    }
-
     return null
   }
 
@@ -320,7 +282,6 @@ export default function SimpleSlider() {
             )}
           </div>
         )
-        // Now only the "Explore Now" button inside SlideContent is clickable, which is better UX
       })}
 
       {/* Optimized navigation dots */}

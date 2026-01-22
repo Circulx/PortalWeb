@@ -73,8 +73,8 @@ export default function WishlistPage() {
           stock: product.stock, // Use the stock from the fetched product
         })
 
-        toast.success("Added to cart successfully!", {
-          duration: 3000,
+        toast.success("Product added in cart!", {
+          duration: 2000,
           position: "bottom-center",
         })
       } else {
@@ -130,8 +130,8 @@ export default function WishlistPage() {
     })
 
     if (successCount > 0) {
-      toast.success(`Added ${successCount} items to cart successfully!`, {
-        duration: 3000,
+      toast.success(`${successCount} product${successCount > 1 ? "s" : ""} added in cart!`, {
+        duration: 2000,
         position: "bottom-center",
       })
     }

@@ -14,11 +14,18 @@ import { Button } from "@/components/ui/button"
 import { Loader2, Edit } from "lucide-react"
 
 const contactSchema = z.object({
-  contactName: z.string().min(2, "Contact name is required"),
-  phoneNumber: z.string().min(10, "Valid phone number required"),
-  emailId: z.string().email("Valid email is required"),
-  pickupTime: z.string().optional(), // Made optional
-})
+  contactName: z.string()
+    .min(2, "Contact name is required")
+    .regex(/^[A-Za-z\s\.\'\-]+$/, "Contact name can only contain letters, spaces, periods, apostrophes, and hyphens"),
+  
+  phoneNumber: z.string()
+    .regex(/^\d{10}$/, "Phone number must be exactly 10 digits"),
+  
+  emailId: z.string()
+    .email("Please enter a valid email address"),
+  
+  pickupTime: z.string().optional(),
+});
 
 interface ContactFormProps {
   initialData?: ContactDetails

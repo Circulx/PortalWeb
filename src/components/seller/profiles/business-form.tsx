@@ -30,9 +30,10 @@ const businessSchema = z.object({
 interface BusinessFormProps {
   initialData?: BusinessDetails
   onSaved?: () => void
+  isPrefilledData?: boolean
 }
 
-export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
+export function BusinessForm({ initialData, onSaved, isPrefilledData = false }: BusinessFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
 
@@ -60,6 +61,7 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
   // Initialize isEditing state and form data when component mounts or initialData changes
   useEffect(() => {
     console.log("BusinessForm useEffect - initialData changed:", initialData)
+    console.log("BusinessForm isPrefilledData:", isPrefilledData)
     
     if (initialData && Object.keys(initialData).length > 0) {
       console.log("Resetting form with initialData:", initialData)
@@ -74,14 +76,15 @@ export function BusinessForm({ initialData, onSaved }: BusinessFormProps) {
         businessEntityType: initialData.businessEntityType || "",
       })
       
-      // If we have data, start in read-only mode
-      setIsEditing(false)
+      // If data is prefilled from light form, start in edit mode
+      // If data is real saved data, start in read-only mode
+      setIsEditing(isPrefilledData)
     } else {
       console.log("No initialData, starting in edit mode")
       // If no data, start in edit mode
       setIsEditing(true)
     }
-  }, [initialData, form])
+  }, [initialData, form, isPrefilledData])
 
   async function onSubmit(data: BusinessDetails) {
     try {

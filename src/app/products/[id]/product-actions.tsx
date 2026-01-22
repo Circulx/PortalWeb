@@ -10,11 +10,13 @@ import { AuthModal } from "@/components/auth/auth-modal"
 import { getCurrentUser } from "@/actions/auth"
 import { useCartSync } from "@/hooks/useCartSync"
 import { useWishlistSync } from "@/hooks/useWishlistSync"
+import { getDisplayPrice } from "@/lib/price-helper"
 
 interface ProductActionsProps {
   productId: string
   title: string
   price: number
+  final_price?: number
   imageUrl: string
   discount?: number
   sellerId: number
@@ -23,10 +25,20 @@ interface ProductActionsProps {
   productImages: string[]
 }
 
+const sanitizeFilename = (title: string): string => {
+  return title
+    .trim()
+    .replace(/[^\w\s-]/g, "") // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
+    .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+    .toLowerCase()
+}
+
 export default function ProductActions({
   productId,
   title,
   price,
+  final_price,
   imageUrl,
   discount = 0,
   sellerId,
@@ -53,7 +65,6 @@ export default function ProductActions({
   const { addItem: addToCart } = useCartSync()
   const { addItem: addToWishlist, removeItem: removeFromWishlist, isLoading: wishlistLoading } = useWishlistSync()
 
-  // Record product view (user or guest)
   useEffect(() => {
     const recordView = async () => {
       try {
@@ -66,9 +77,10 @@ export default function ProductActions({
             title,
             image: imageUrl,
           }),
+          keepalive: true,
         }).catch(() => {})
 
-        // LocalStorage fallback for guests
+        // LocalStorage fallback for guests - wrapped in try-catch
         try {
           const key = "guest_browsing_history"
           const existing = JSON.parse(localStorage.getItem(key) || "[]") as Array<any>
@@ -77,15 +89,18 @@ export default function ProductActions({
           const limited = filtered.slice(0, 20)
           localStorage.setItem(key, JSON.stringify(limited))
         } catch (_e) {
-          // ignore
+          // ignore localStorage errors
         }
       } catch (_err) {
-        // ignore
+        // ignore all errors
       }
     }
 
-    recordView()
+    const timeoutId = setTimeout(recordView, 100)
+    return () => clearTimeout(timeoutId)
   }, [productId, title, imageUrl])
+
+  const displayPrice = getDisplayPrice(price, final_price)
 
   // Handle adding to cart
   const handleAddToCart = useCallback(() => {
@@ -94,7 +109,7 @@ export default function ProductActions({
         id: productId,
         title,
         image_link: imageUrl,
-        price: Math.round(price),
+        price: Math.round(displayPrice),
         discount,
         seller_id: sellerId,
         units,
@@ -103,12 +118,11 @@ export default function ProductActions({
       stock,
     })
 
-    // Show success toast
-    toast.success("Added to cart successfully!", {
-      duration: 3000,
+    toast.success("Product added in cart!", {
+      duration: 2000,
       position: "bottom-center",
     })
-  }, [addToCart, productId, title, imageUrl, price, discount, sellerId, units, stock])
+  }, [addToCart, productId, title, imageUrl, displayPrice, discount, sellerId, units, stock])
 
   // Handle Buy Now functionality
   const handleBuyNow = useCallback(async () => {
@@ -130,7 +144,7 @@ export default function ProductActions({
             id: productId,
             title,
             image_link: imageUrl,
-            price: Math.round(price),
+            price: Math.round(displayPrice),
             discount,
             seller_id: sellerId,
             units,
@@ -152,7 +166,7 @@ export default function ProductActions({
     } finally {
       setIsCheckingUser(false)
     }
-  }, [addToCart, productId, title, imageUrl, price, discount, sellerId, units, stock, router])
+  }, [addToCart, productId, title, imageUrl, displayPrice, discount, sellerId, units, stock, router])
 
   const handleAuthSuccess = useCallback(() => {
     // Close the auth modal
@@ -165,7 +179,7 @@ export default function ProductActions({
           id: productId,
           title,
           image_link: imageUrl,
-          price: Math.round(price),
+          price: Math.round(displayPrice),
           discount,
           seller_id: sellerId,
           units,
@@ -176,7 +190,7 @@ export default function ProductActions({
       router.push("/checkout")
       setBuyNowClicked(false)
     }
-  }, [addToCart, buyNowClicked, productId, title, imageUrl, price, discount, sellerId, units, stock, router])
+  }, [addToCart, buyNowClicked, productId, title, imageUrl, displayPrice, discount, sellerId, units, stock, router])
 
   // Handle toggling wishlist
   const handleToggleWishlist = useCallback(async () => {
@@ -255,7 +269,22 @@ export default function ProductActions({
             />
           </button>
 
-          <img src={productImages[0] || "/placeholder.svg"} alt={title} className="w-full h-[400px] object-contain" />
+          <a
+            href={productImages[0] || "/placeholder.svg"}
+            download={sanitizeFilename(title)}
+            className="block"
+            onClick={(e) => {
+              // Prevent navigation, only allow download
+              e.preventDefault()
+            }}
+          >
+            <img
+              src={productImages[0] || "/placeholder.svg"}
+              alt={title}
+              className="w-full h-[400px] object-contain"
+              crossOrigin="anonymous"
+            />
+          </a>
         </div>
 
         {/* Action Buttons */}

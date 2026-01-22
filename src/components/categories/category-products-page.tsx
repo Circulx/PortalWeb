@@ -15,6 +15,7 @@ interface Product {
   image_link: string
   stock: number
   price: number
+  final_price?: number // added final_price field
   discount: number
   SKU: string
   seller_id: number
@@ -240,6 +241,7 @@ export default function CategoryProductsPage({
                 company={product.seller_name}
                 location={product.location}
                 price={product.price}
+                final_price={product.final_price} // pass final_price prop
                 originalPrice={product.price / (1 - (product.discount || 0) / 100)}
                 discount={product.discount || 0}
                 image_link={product.image_link}

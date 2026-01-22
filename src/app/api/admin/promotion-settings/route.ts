@@ -15,10 +15,13 @@ export async function GET(request: NextRequest) {
     // Get the active promotion settings (there should only be one)
     const settings = await PromotionSettings.findOne({ isActive: true }).lean()
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
       data: settings,
     })
+    response.headers.set("Cache-Control", "public, s-maxage=1200, stale-while-revalidate=2400") // Cache for 20 minutes, stale for 40 minutes
+
+    return response
   } catch (error) {
     console.error("Error fetching promotion settings:", error)
     return NextResponse.json(

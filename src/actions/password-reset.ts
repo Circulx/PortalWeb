@@ -26,6 +26,18 @@ export async function resetPassword(email: string, newPassword: string) {
   try {
     const UserModel = await getUserModel()
 
+    if (newPassword.length < 6) {
+      return { error: "Password must be at least 6 characters long" }
+    }
+
+    const hasLetter = /[a-zA-Z]/.test(newPassword)
+    const hasNumber = /[0-9]/.test(newPassword)
+    const hasSpecial = /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(newPassword)
+
+    if (!hasLetter || !hasNumber || !hasSpecial) {
+      return { error: "Password must contain letters, numbers, and special characters" }
+    }
+
     // Hash the new password
     const hashedPassword = await bcrypt.hash(newPassword, 10)
 

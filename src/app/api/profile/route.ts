@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
+import { getUserModel } from "@/models/user"
 
 // Helper function to safely find one document
 async function safelyFindOne(model: any, query: any) {
@@ -136,6 +137,67 @@ export async function GET(request: NextRequest) {
     const document = await safelyFindOne(Document, { userId: user.id })
     const progress = await safelyFindOne(ProfileProgress, { userId: user.id })
 
+    // Get user data to check for light onboarding data
+    const UserModel = await getUserModel()
+    const userData = await UserModel.findById(user.id)
+    
+    // If user has light onboarding data and no heavy form data exists, prefill with light data
+    let prefilledBusiness = business
+    let prefilledCategory = category
+    let prefilledAddress = address
+    let isPrefilledData = false
+    
+    if (userData?.lightOnboardingData && userData.onboardingStatus === "light_completed") {
+      const lightData = userData.lightOnboardingData
+      
+      // Prefill business form with light onboarding data
+      if (!business && lightData.businessName) {
+        prefilledBusiness = {
+          legalEntityName: lightData.businessName,
+          tradeName: "", // Leave trade name empty
+          gstin: lightData.gstNumber || "",
+          country: "IN", // Default to India
+          pincode: "",
+          state: "",
+          city: "",
+          businessEntityType: "",
+        }
+        isPrefilledData = true
+      }
+      
+      // Prefill category form with light onboarding data
+      if (!category && lightData.categories && lightData.categories.length > 0) {
+        prefilledCategory = {
+          categories: lightData.categories,
+          authorizedBrands: "",
+        }
+        isPrefilledData = true
+      }
+      
+      // Prefill address form with light onboarding data (billing address only)
+      if (!address && lightData.address) {
+        prefilledAddress = {
+          billingAddress: {
+            country: "IN", // Default to India
+            state: "",
+            city: "",
+            addressLine1: lightData.address,
+            addressLine2: "",
+            phoneNumber: "",
+          },
+          pickupAddress: {
+            country: "IN", // Default to India
+            state: "",
+            city: "",
+            addressLine1: "", // Leave pickup address empty
+            addressLine2: "",
+            phoneNumber: "",
+          },
+        }
+        isPrefilledData = true
+      }
+    }
+
     // Debug: Log the raw data from database
     console.log("API - Raw business data:", business)
     console.log("API - Raw contact data:", contact)
@@ -151,6 +213,13 @@ export async function GET(request: NextRequest) {
     console.log("API - Address exists:", !!address)
     console.log("API - Bank exists:", !!bank)
     console.log("API - Document exists:", !!document)
+    
+    // Debug: Log light onboarding data and prefilling
+    console.log("API - User onboarding status:", userData?.onboardingStatus)
+    console.log("API - Light onboarding data:", userData?.lightOnboardingData)
+    console.log("API - Prefilled business data:", prefilledBusiness)
+    console.log("API - Prefilled category data:", prefilledCategory)
+    console.log("API - Prefilled address data:", prefilledAddress)
 
     // Debug: Test serialization
     console.log("API - Testing serialization for business:", business)
@@ -159,10 +228,10 @@ export async function GET(request: NextRequest) {
     
     // Ensure all data is properly serialized
     const serializedData = {
-      business: serializedBusiness,
+      business: serializeDocument(prefilledBusiness),
       contact: serializeDocument(contact),
-      category: serializeDocument(category),
-      address: serializeDocument(address),
+      category: serializeDocument(prefilledCategory),
+      address: serializeDocument(prefilledAddress),
       bank: serializeDocument(bank),
       document: serializeDocument(document),
       progress: progress
@@ -174,6 +243,7 @@ export async function GET(request: NextRequest) {
             completedSteps: [],
             currentStep: "business",
           },
+      isPrefilledData: isPrefilledData, // Flag to indicate if data is prefilled from light form
     }
 
     // Debug: Log the serialized data before JSON conversion

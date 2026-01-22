@@ -205,9 +205,130 @@ export function generateOrderConfirmationEmail(order: Order): string {
               
               <!-- Footer -->
               <tr>
-                <td style="padding: 24px; background-color: #F9FAFB; text-align: center; border-top: 1px solid #EAEAEC;">
+                <td style="padding: 24px; background-color: #F7FAFC; text-align: center; border-top: 1px solid #EAEAEC;">
                   <p style="margin: 0; font-size: 14px; color: #666;">© 2024 Your Company. All rights reserved.</p>
                   <p style="margin: 8px 0 0; font-size: 14px; color: #666;">This email was sent to ${billingDetails?.email || "you"}</p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `
+}
+
+/**
+ * Generate a responsive HTML email template for job application confirmation
+ */
+export function generateApplicationConfirmationEmail(applicant: {
+  fullName: string
+  email: string
+  careerTitle: string
+  applicationId: string
+  appliedAt: Date
+}): string {
+  const { fullName, careerTitle, applicationId, appliedAt } = applicant
+
+  const formattedDate = appliedAt.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  })
+
+  // Complete HTML email template
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Application Confirmation</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #F7FAFC; color: #1A202C;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td align="center" style="padding: 24px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);">
+              <!-- Header -->
+              <tr>
+                <td style="padding: 32px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-align: center;">
+                  <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 700;">Application Received!</h1>
+                  <p style="margin: 8px 0 0; color: rgba(255, 255, 255, 0.9); font-size: 16px;">Thank you for applying to IND2B</p>
+                </td>
+              </tr>
+              
+              <!-- Main Content -->
+              <tr>
+                <td style="padding: 32px 24px;">
+                  <p style="margin: 0; font-size: 16px;">Hi ${fullName},</p>
+                  <p style="margin: 16px 0 0; font-size: 16px; line-height: 1.6;">
+                    Thank you for applying for the <strong>${careerTitle}</strong> position at <strong>IND2B</strong>. 
+                    We're excited to review your application!
+                  </p>
+                  
+                  <!-- Application Details Card -->
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 24px; border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden;">
+                    <tr>
+                      <td style="padding: 20px; background-color: #F7FAFC;">
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                          <tr>
+                            <td style="padding: 8px 0;">
+                              <p style="margin: 0; font-size: 14px; color: #718096; font-weight: 500;">Position Applied For</p>
+                              <p style="margin: 4px 0 0; font-size: 16px; font-weight: 600; color: #2D3748;">${careerTitle}</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0;">
+                              <p style="margin: 0; font-size: 14px; color: #718096; font-weight: 500;">Application ID</p>
+                              <p style="margin: 4px 0 0; font-size: 14px; font-family: monospace; color: #2D3748;">${applicationId}</p>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td style="padding: 8px 0;">
+                              <p style="margin: 0; font-size: 14px; color: #718096; font-weight: 500;">Submitted On</p>
+                              <p style="margin: 4px 0 0; font-size: 14px; color: #2D3748;">${formattedDate}</p>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Next Steps -->
+                  <div style="margin-top: 32px; padding: 20px; background-color: #EBF8FF; border-left: 4px solid #3182CE; border-radius: 4px;">
+                    <h2 style="margin: 0; font-size: 18px; font-weight: 600; color: #2C5282;">What Happens Next?</h2>
+                    <ul style="margin: 12px 0 0; padding-left: 20px; color: #2D3748; line-height: 1.8;">
+                      <li style="margin: 8px 0;">Our recruitment team will carefully review your application and qualifications</li>
+                      <li style="margin: 8px 0;">We'll reach out to you within <strong>one week</strong> regarding the next steps</li>
+                      <li style="margin: 8px 0;">If your profile matches our requirements, we'll schedule an interview</li>
+                      <li style="margin: 8px 0;">Keep an eye on your email (including spam folder) for updates from us</li>
+                    </ul>
+                  </div>
+                  
+                  <p style="margin: 24px 0 0; font-size: 16px; line-height: 1.6;">
+                    We appreciate your interest in joining our team at IND2B. We're committed to finding the best talent, 
+                    and we're excited to learn more about your skills and experience.
+                  </p>
+                  
+                  <p style="margin: 24px 0 0; font-size: 16px; line-height: 1.6;">
+                    If you have any questions about your application or the hiring process, please don't hesitate to reach out to us.
+                  </p>
+                  
+                  <p style="margin: 24px 0 0; font-size: 16px;">Best regards,</p>
+                  <p style="margin: 8px 0 0; font-size: 16px; font-weight: 600;">The IND2B Recruitment Team</p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 24px; background-color: #F7FAFC; text-align: center; border-top: 1px solid #E2E8F0;">
+                  <p style="margin: 0; font-size: 14px; color: #718096;">© ${new Date().getFullYear()} IND2B. All rights reserved.</p>
+                  <p style="margin: 8px 0 0; font-size: 14px; color: #718096;">This email was sent to ${applicant.email}</p>
+                  <p style="margin: 12px 0 0; font-size: 12px; color: #A0AEC0;">
+                    Please do not reply directly to this email. For inquiries, contact our support team.
+                  </p>
                 </td>
               </tr>
             </table>

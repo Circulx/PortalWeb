@@ -134,6 +134,42 @@ interface ICustomerPreferences {
   updatedAt: Date
 }
 
+// Coupon interface for discount management
+interface ICoupon {
+  couponName: string
+  couponCode: string
+  discountType: "percentage" | "fixed"
+  discountValue: number
+  validFrom: Date
+  validUntil: Date
+  isActive: boolean
+  usageLimit?: number
+  usedCount: number
+  minOrderValue?: number
+  maxDiscountAmount?: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+interface ICareer {
+  title: string
+  type: "full-time" | "part-time" | "internship" | "contract"
+  location: string
+  isRemote: boolean
+  description: string
+  responsibilities: string[]
+  requirements: string[]
+  salaryMin?: number
+  salaryMax?: number
+  salaryCurrency: string
+  applyUrl?: string
+  applyEmail?: string
+  isActive: boolean
+  applicationDeadline?: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
 // BuyerAddress interface
 interface IBuyerAddress {
   userId: string
@@ -310,8 +346,8 @@ const ProfileProgressSchema = new mongoose.Schema<IProfileProgress>(
     currentStep: { type: String, required: true },
     status: {
       type: String,
-      enum: ["Approved", "Reject", "Review"],
-      default: "Review",
+      enum: ["Approved", "Reject", "Review", "Pending Completion"],
+      default: "Pending Completion",
     },
   },
   { timestamps: true },
@@ -417,6 +453,8 @@ const OrderSchema = new mongoose.Schema(
     totalAmount: { type: Number, required: true },
     subTotal: { type: Number, required: true },
     discount: { type: Number, default: 0 },
+    couponCode: { type: String },
+    couponDiscount: { type: Number, default: 0 },
     tax: { type: Number, default: 0 },
     warehouseSelected: { type: Boolean, default: false },
     warehouseId: String,
@@ -588,26 +626,31 @@ const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(
       type: String,
       required: true,
       trim: true,
+      maxlength: 500,
     },
     country: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
     state: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
     city: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 100,
     },
     zipCode: {
       type: String,
       required: true,
       trim: true,
+      maxlength: 20,
     },
     email: {
       type: String,
@@ -951,6 +994,372 @@ const CustomerPreferencesSchema = new mongoose.Schema<ICustomerPreferences>(
 CustomerPreferencesSchema.index({ userId: 1 })
 CustomerPreferencesSchema.index({ whatsappMarketing: 1 })
 
+// Coupon schema for discount management
+const CouponSchema = new mongoose.Schema<ICoupon>(
+  {
+    couponName: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    couponCode: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+      uppercase: true,
+      maxlength: 50,
+      index: true,
+    },
+    discountType: {
+      type: String,
+      enum: ["percentage", "fixed"],
+      required: true,
+    },
+    discountValue: {
+      type: Number,
+      required: true,
+      min: 0,
+    },
+    validFrom: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    validUntil: {
+      type: Date,
+      required: true,
+      index: true,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    usageLimit: {
+      type: Number,
+      min: 0,
+    },
+    usedCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    minOrderValue: {
+      type: Number,
+      min: 0,
+    },
+    maxDiscountAmount: {
+      type: Number,
+      min: 0,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "coupons",
+  },
+)
+
+// Add indexes for Coupon
+CouponSchema.index({ isActive: 1, validFrom: 1, validUntil: 1 })
+CouponSchema.index({ couponCode: 1, isActive: 1 })
+
+const CareerSchema = new mongoose.Schema<ICareer>(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    type: {
+      type: String,
+      enum: ["full-time", "part-time", "internship", "contract"],
+      required: true,
+      index: true,
+    },
+    location: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    isRemote: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    description: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 2000,
+    },
+    responsibilities: {
+      type: [String],
+      default: [],
+    },
+    requirements: {
+      type: [String],
+      default: [],
+    },
+    salaryMin: {
+      type: Number,
+      min: 0,
+    },
+    salaryMax: {
+      type: Number,
+      min: 0,
+    },
+    salaryCurrency: {
+      type: String,
+      default: "INR",
+      trim: true,
+      maxlength: 10,
+    },
+    applyUrl: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    applyEmail: {
+      type: String,
+      trim: true,
+      lowercase: true,
+      maxlength: 255,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+    applicationDeadline: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "careers",
+  },
+)
+
+CareerSchema.index({ isActive: 1, createdAt: -1 })
+CareerSchema.index({ type: 1, isActive: 1 })
+CareerSchema.index({ isRemote: 1, isActive: 1 })
+CareerSchema.index({ applicationDeadline: 1 })
+
+interface IApplicant {
+  careerId: string
+  careerTitle: string
+  fullName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  state: string
+  country: string
+  zipCode: string
+  education: string
+  collegeName: string // Added collegeName field
+  experience: string
+  skills: string[]
+  cvUrl: string
+  coverLetter: string
+  whyInterested: string
+  linkedinUrl?: string
+  portfolioUrl?: string
+  availableFrom?: Date
+  expectedSalary?: number
+  status: "pending" | "reviewing" | "shortlisted" | "rejected" | "hired"
+  appliedAt: Date
+  createdAt: Date
+  updatedAt: Date
+}
+
+const ApplicantSchema = new mongoose.Schema<IApplicant>(
+  {
+    careerId: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    careerTitle: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    email: {
+      type: String,
+      required: true,
+      trim: true,
+      lowercase: true,
+      maxlength: 255,
+      index: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 20,
+    },
+    address: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+    city: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    state: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    country: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100,
+    },
+    zipCode: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 20,
+    },
+    education: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 500,
+    },
+    collegeName: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 200,
+    },
+    experience: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    skills: {
+      type: [String],
+      required: true,
+      default: [],
+    },
+    cvUrl: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    coverLetter: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 2000,
+    },
+    whyInterested: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 1000,
+    },
+    linkedinUrl: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    portfolioUrl: {
+      type: String,
+      trim: true,
+      maxlength: 500,
+    },
+    availableFrom: {
+      type: Date,
+    },
+    expectedSalary: {
+      type: Number,
+      min: 0,
+    },
+    status: {
+      type: String,
+      enum: ["pending", "reviewing", "shortlisted", "rejected", "hired"],
+      default: "pending",
+      index: true,
+    },
+    appliedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "applicants",
+  },
+)
+
+ApplicantSchema.index({ careerId: 1, email: 1 }, { unique: true })
+ApplicantSchema.index({ status: 1, appliedAt: -1 })
+ApplicantSchema.index({ email: 1, appliedAt: -1 })
+ApplicantSchema.index({ appliedAt: -1 })
+
+// Define Newsletter Schema
+interface INewsletter {
+  email: string
+  subscribedAt: Date
+  unsubscribedAt?: Date
+  isActive: boolean
+}
+
+const NewsletterSchema = new mongoose.Schema<INewsletter>(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    subscribedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    unsubscribedAt: {
+      type: Date,
+      default: null,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "newsletter",
+  },
+)
+
+// Add indexes for Newsletter
+NewsletterSchema.index({ email: 1, isActive: 1 })
+NewsletterSchema.index({ subscribedAt: -1 })
+
 // Update the registerModels function to include all models
 function registerModels(connection: Connection) {
   console.log("Registering models...")
@@ -1036,6 +1445,22 @@ function registerModels(connection: Connection) {
     connection.model("PromotionSettings", PromotionSettingsSchema)
     console.log("Registered PromotionSettings model")
   }
+  if (!connection.models.Career) {
+    connection.model("Career", CareerSchema)
+    console.log("Registered Career model")
+  }
+  if (!connection.models.Applicant) {
+    connection.model("Applicant", ApplicantSchema)
+    console.log("Registered Applicant model")
+  }
+  if (!connection.models.Coupon) {
+    connection.model("Coupon", CouponSchema)
+    console.log("Registered Coupon model")
+  }
+  if (!connection.models.Newsletter) {
+    connection.model("Newsletter", NewsletterSchema)
+    console.log("Registered Newsletter model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -1061,7 +1486,11 @@ export {
   WhatsAppCampaignSchema,
   WhatsAppCampaignLogSchema,
   CustomerPreferencesSchema,
-  PromotionSettingsSchema, // Export PromotionSettings schema
+  PromotionSettingsSchema,
+  CareerSchema,
+  ApplicantSchema,
+  CouponSchema,
+  NewsletterSchema,
   PROFILE_DB,
 }
 

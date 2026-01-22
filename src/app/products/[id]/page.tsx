@@ -8,6 +8,8 @@ import { Toaster } from "react-hot-toast"
 import getReviewModel from "@/models/profile/review"
 import RequestQuoteButton from "@/components/product/request-quote-button"
 import SponsoredAdvertisement from "@/components/product/sponsored-advertisement"
+import { extractProductId } from "@/lib/utils"
+import { getDisplayPrice } from "@/lib/price-helper" // Import price helper
 
 // Define the product interface
 interface Product {
@@ -17,6 +19,7 @@ interface Product {
   title: string
   description?: string
   price: number
+  final_price?: number // Added final_price field
   originalPrice: number
   discount?: number
   gst?: number
@@ -79,12 +82,13 @@ async function getProductReviews(
 
     const ReviewModel = getReviewModel(connection)
 
-    // Fetch approved reviews for this product
     const reviews = await ReviewModel.find({
       product_id: productId,
       status: "approved",
     })
+      .select("userId orderId product_id title rating review status isVerifiedPurchase createdAt updatedAt")
       .sort({ createdAt: -1 })
+      .limit(50) // Limit initial reviews for faster page load
       .lean()
       .exec()
 
@@ -93,7 +97,7 @@ async function getProductReviews(
 
     if (totalReviews > 0) {
       const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0)
-      averageRating = Math.round((totalRating / totalReviews) * 10) / 10 // Round to 1 decimal place
+      averageRating = Math.round((totalRating / totalReviews) * 10) / 10
     }
 
     console.log(`Found ${totalReviews} reviews with average rating: ${averageRating}`)
@@ -137,6 +141,7 @@ async function getProductById(id: string): Promise<Product | null> {
           title: String,
           description: String,
           price: Number,
+          final_price: Number,
           originalPrice: Number,
           discount: Number,
           gst: Number,
@@ -166,13 +171,23 @@ async function getProductById(id: string): Promise<Product | null> {
     let productDoc = null
 
     if (!isNaN(productId)) {
-      productDoc = await ProductModel.findOne({ product_id: productId }).lean().exec()
+      productDoc = await ProductModel.findOne({ product_id: productId })
+        .select(
+          "product_id title description price final_price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
+        )
+        .lean()
+        .exec()
     }
 
     if (!productDoc) {
       console.log(`Product not found by product_id: ${productId}, trying _id`)
       if (mongoose.Types.ObjectId.isValid(id)) {
-        productDoc = await ProductModel.findById(id).lean().exec()
+        productDoc = await ProductModel.findById(id)
+          .select(
+            "product_id title description price final_price originalPrice discount gst stock SKU image_link additional_images category_name seller_name seller_id emailId location rating reviewCount units",
+          )
+          .lean()
+          .exec()
       }
     }
 
@@ -193,6 +208,7 @@ async function getProductById(id: string): Promise<Product | null> {
       title: doc.title || "Untitled Product",
       description: doc.description || "",
       price: doc.price || 0,
+      final_price: doc.final_price,
       originalPrice: doc.originalPrice || doc.price,
       discount: doc.discount || 0,
       gst: doc.gst || 0,
@@ -219,19 +235,20 @@ async function getProductById(id: string): Promise<Product | null> {
   }
 }
 
-// Product detail page component - Now a proper server component
-export default async function ProductPage({ params }: { params: { id: string } }) {
+// Product detail page component - Now a proper server component with ISR
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   try {
-    // Extract the ID parameter
-    const { id } = params
+    // Extract the ID parameter - must await params in Next.js 15
+    const { id } = await params
 
     if (!id) {
       console.error("No ID parameter provided")
       return notFound()
     }
 
-    // Fetch the product data and reviews
-    const [product, reviewData] = await Promise.all([getProductById(id), getProductReviews(id)])
+    const productId = extractProductId(id)
+
+    const [product, reviewData] = await Promise.all([getProductById(productId), getProductReviews(productId)])
 
     // If product not found, show 404 page
     if (!product) {
@@ -239,8 +256,10 @@ export default async function ProductPage({ params }: { params: { id: string } }
       return notFound()
     }
 
-    // Calculate the final price with GST and discount
-    const priceCalculation = calculateFinalPrice(product.price, product.gst, product.discount)
+    const displayPrice = getDisplayPrice(product.price, product.final_price)
+
+    // Calculate the final price with GST and discount using display price
+    const priceCalculation = calculateFinalPrice(displayPrice, product.gst, product.discount)
 
     // Collect all available product images
     const productImages: string[] = []
@@ -292,7 +311,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
 
                 {/* Product Actions Component */}
                 <ProductActions
-                  productId={id}
+                  productId={productId}
                   title={product.title}
                   price={priceCalculation.finalPrice}
                   imageUrl={productImages[0] || "/placeholder.svg"}
@@ -388,7 +407,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 Request a custom quotation from the seller and get the best deal for your requirements.
               </p>
               <RequestQuoteButton
-                productId={id}
+                productId={productId}
                 productTitle={product.title}
                 sellerId={product.seller_id || product.emailId || product.product_id?.toString() || ""}
                 currentPrice={priceCalculation.finalPrice}
@@ -417,22 +436,13 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                     <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" />
-                    </svg>
-                  </div>
-                  <span className="text-sm">Free Shipping & Fast Delivery</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
                       <path
-                        fillRule="evenodd"
-                        d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 100-2h5a1 1 0 011 1v5a1 1 0 01-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                        d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 010 2H4a1 1 0 01-1-1v-6a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 100-2h5a1 1 0 011 1v5a1 1 0 01-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
                         clipRule="evenodd"
                       />
                     </svg>
                   </div>
-                  <span className="text-sm">100% Money-back guarantee</span>
+                  <span className="text-sm">Free Shipping & Fast Delivery</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -444,7 +454,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
                       />
                     </svg>
                   </div>
-                  <span className="text-sm">24/7 Customer support</span>
+                  <span className="text-sm">100% Money-back guarantee</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
@@ -452,6 +462,18 @@ export default async function ProductPage({ params }: { params: { id: string } }
                       <path
                         fillRule="evenodd"
                         d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <span className="text-sm">24/7 Customer support</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <div className="w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                    <svg className="w-3 h-3 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
                         clipRule="evenodd"
                       />
                     </svg>
@@ -562,5 +584,36 @@ export default async function ProductPage({ params }: { params: { id: string } }
         <p className="mt-4">We're having trouble loading this product. Please try again later.</p>
       </div>
     )
+  }
+}
+
+export const revalidate = 300 // Revalidate every 5 minutes
+
+export const dynamicParams = true
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params
+    const product = await getProductById(id)
+
+    if (!product) {
+      return {
+        title: "Product Not Found",
+      }
+    }
+
+    return {
+      title: product.title,
+      description: product.description?.slice(0, 160) || `Buy ${product.title} at best price`,
+      openGraph: {
+        title: product.title,
+        description: product.description?.slice(0, 160),
+        images: [product.image_link || "/placeholder.svg"],
+      },
+    }
+  } catch (error) {
+    return {
+      title: "Product",
+    }
   }
 }

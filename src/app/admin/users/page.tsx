@@ -4,6 +4,8 @@ import { getCurrentUser } from "@/actions/auth"
 import { connectDB1 } from "@/lib/db"
 import { getUserModel } from "@/models/user"
 
+export const dynamic = "force-dynamic"
+
 // Fetch users directly from the database using connectDB1
 async function getUsers() {
   try {

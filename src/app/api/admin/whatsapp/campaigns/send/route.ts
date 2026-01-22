@@ -1,12 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
-import { whatsappService } from "@/lib/whatsapp-service"
 import mongoose from "mongoose"
+
+// WhatsApp service disabled - Twilio not configured
+// import { whatsappService } from "@/lib/whatsapp-service"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[v0] Starting WhatsApp campaign send process")
+    console.log("[v0] WhatsApp campaign send route called (service disabled)")
 
     // Verify admin authentication
     const user = await getCurrentUser()
@@ -75,16 +77,19 @@ export async function POST(request: NextRequest) {
     console.log("[v0] Valid recipients found:", recipients.length)
 
     if (recipients.length === 0) {
-      return NextResponse.json({ error: "No valid recipients found" }, { status: 400 })
+      return NextResponse.json(
+        { error: "No valid recipients found" },
+        { status: 400 }
+      )
     }
 
     // Update campaign status
     await WhatsAppCampaign.findByIdAndUpdate(campaignId, { status: "sent" })
 
-    let sentCount = 0
+    const sentCount = 0
     let failedCount = 0
 
-    console.log("[v0] Starting to send messages")
+    console.log("[v0] Starting to send messages (service disabled)")
 
     for (const recipient of recipients.slice(0, 50)) {
       // Limit to 50 for testing
@@ -106,38 +111,15 @@ export async function POST(request: NextRequest) {
           recipientName: recipient.name,
           recipientEmail: recipient.email,
           messageContent: personalizedMessage,
-          status: "pending",
+          status: "failed",
+          errorMessage: "WhatsApp service disabled - Twilio not configured",
         })
 
-        let success = false
-        try {
-          if (whatsappService && typeof whatsappService.sendMarketingMessage === "function") {
-            success = await whatsappService.sendMarketingMessage({
-              phone: recipient.phone,
-              name: recipient.name,
-              message: personalizedMessage,
-              campaignType,
-              productLink,
-              offerCode,
-            })
-          } else {
-            console.log("[v0] WhatsApp service not available, simulating send")
-            success = true // Simulate success for testing
-          }
-        } catch (serviceError) {
-          console.error("[v0] WhatsApp service error:", serviceError)
-          success = false
-        }
+        console.log("[v0] WhatsApp service disabled - Twilio not configured")
+        console.log("[v0] Campaign message would have been sent to:", recipient.phone)
 
-        if (success) {
-          logEntry.status = "sent"
-          logEntry.sentAt = new Date()
-          sentCount++
-        } else {
-          logEntry.status = "failed"
-          logEntry.errorMessage = "Failed to send message"
-          failedCount++
-        }
+        // Mark as failed since service is disabled
+        failedCount++
 
         await logEntry.save()
       } catch (error) {
@@ -149,7 +131,7 @@ export async function POST(request: NextRequest) {
     // Update campaign statistics
     await WhatsAppCampaign.findByIdAndUpdate(campaignId, {
       sentCount,
-      deliveredCount: sentCount, // Assume delivered = sent for now
+      deliveredCount: sentCount,
       failedCount,
       status: "sent",
     })
@@ -158,7 +140,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: "Campaign sent successfully",
+      message: "Campaign processed (WhatsApp service disabled - Twilio not configured)",
       data: {
         totalRecipients: Math.min(recipients.length, 50),
         sentCount,
@@ -174,13 +156,16 @@ export async function POST(request: NextRequest) {
         error: "Failed to send campaign",
         details: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 },
+      { status: 500 }
     )
   }
 }
 
 // Helper methods for campaign type detection and content extraction
-function detectCampaignType(campaignName: string, message: string): "product_launch" | "offer" | "update" | "general" {
+function detectCampaignType(
+  campaignName: string,
+  message: string
+): "product_launch" | "offer" | "update" | "general" {
   const lowerName = (campaignName || "").toLowerCase()
   const lowerMessage = (message || "").toLowerCase()
 

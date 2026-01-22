@@ -34,6 +34,7 @@ interface Product {
   image_link: string
   stock: number
   price: number
+  final_price?: number // added final_price field to Product interface
   discount: number
   SKU: string
   seller_id?: number
@@ -614,6 +615,7 @@ export default function Cart() {
               company={product.seller_name}
               location={product.location}
               price={product.price}
+              final_price={product.final_price} // pass final_price prop to ProductCard
               discount={product.discount}
               image_link={product.image_link}
               href={`/products/${product.product_id}`}

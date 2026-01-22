@@ -38,13 +38,16 @@ const addressSchema = z.object({
 interface AddressFormProps {
   initialData?: AddressDetails
   onSaved?: () => void
+  isPrefilledData?: boolean
 }
 
-export function AddressForm({ initialData, onSaved }: AddressFormProps) {
+export function AddressForm({ initialData, onSaved, isPrefilledData = false }: AddressFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Simplified condition: Just check if initialData exists
-  const [isEditing, setIsEditing] = useState(!initialData)
+  // If data is prefilled from light form, start in edit mode
+  // If data is real saved data, start in read-only mode
+  // If no data, start in edit mode
+  const [isEditing, setIsEditing] = useState(!initialData || isPrefilledData)
 
   // States for location dropdowns
   const [billingStates, setBillingStates] = useState<any[]>([])

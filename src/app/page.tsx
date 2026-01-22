@@ -11,18 +11,29 @@ import IdlePopup from "@/components/layout/idle-popup"
 import AdvertisementPreloader from "@/components/layout/advertisement-preloader"
 import SingleAdvertisement from "@/components/layout/single-advertisement"
 import SellerSignupOffer from "@/components/home/seller-signup-offer"
+import { ErrorBoundary } from "@/components/error-boundary"
+
+export const revalidate = 1200 // 20 minutes in seconds
 
 export default function Home() {
   return (
     <main className="min-h-screen">
       {/* Hero Section - Load immediately with highest priority - NO lazy loading for critical content */}
-      <LazySimpleSlider />
+      <ErrorBoundary>
+        <LazySimpleSlider />
+      </ErrorBoundary>
 
-      <IdlePopup />
+      <ErrorBoundary>
+        <IdlePopup />
+      </ErrorBoundary>
 
-      <AdvertisementPreloader />
+      <ErrorBoundary>
+        <AdvertisementPreloader />
+      </ErrorBoundary>
 
-      <SellerSignupOffer />
+      <ErrorBoundary>
+        <SellerSignupOffer />
+      </ErrorBoundary>
 
       {/* Brand Carousel - Reduced delay and optimized threshold 
       <LazySection delay={50} threshold={0.1} rootMargin="50px" fallback={<SectionSkeleton type="carousel" />}>
@@ -30,38 +41,52 @@ export default function Home() {
       </LazySection> */}
 
       {/* Category Grid - Optimized loading parameters */}
-      <LazySection delay={75} threshold={0.1} rootMargin="75px" fallback={<SectionSkeleton type="grid" />}>
-        <CategoryGrid />
-      </LazySection>
+      <ErrorBoundary>
+        <LazySection delay={75} threshold={0.1} rootMargin="75px" fallback={<SectionSkeleton type="grid" />}>
+          <CategoryGrid />
+        </LazySection>
+      </ErrorBoundary>
 
       {/* Delivery Poster - Reduced delay */}
-      <LazySection delay={100} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
-        <DeliveryPoster />
-      </LazySection>
+      <ErrorBoundary>
+        <LazySection delay={100} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
+          <DeliveryPoster />
+        </LazySection>
+      </ErrorBoundary>
 
       {/* Product Grid - Optimized for faster loading */}
-      <LazySection delay={150} threshold={0.1} rootMargin="150px" fallback={<SectionSkeleton type="grid" />}>
-        <LazyProductGrid />
-      </LazySection>
+      <ErrorBoundary>
+        <LazySection delay={150} threshold={0.1} rootMargin="150px" fallback={<SectionSkeleton type="grid" />}>
+          <LazyProductGrid />
+        </LazySection>
+      </ErrorBoundary>
 
       {/* Promotional Banner - Reduced delay */}
-      <LazySection delay={125} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
-        <PromotionalBanner />
-      </LazySection>
+      <ErrorBoundary>
+        <LazySection delay={125} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
+          <PromotionalBanner />
+        </LazySection>
+      </ErrorBoundary>
 
       {/* Promotion Section - Optimized loading */}
-      <LazySection delay={175} threshold={0.2} rootMargin="125px" fallback={<SectionSkeleton type="features" />}>
-        <LazyPromotionSection />
-      </LazySection>
+      <ErrorBoundary>
+        <LazySection delay={175} threshold={0.2} rootMargin="125px" fallback={<SectionSkeleton type="features" />}>
+          <LazyPromotionSection />
+        </LazySection>
+      </ErrorBoundary>
 
       {/* Features Section - Load last with minimal delay */}
-      <LazySection delay={100} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
-        <LazyFeatureCard />
-      </LazySection>
+      <ErrorBoundary>
+        <LazySection delay={100} threshold={0.2} rootMargin="100px" fallback={<SectionSkeleton type="features" />}>
+          <LazyFeatureCard />
+        </LazySection>
+      </ErrorBoundary>
 
-      <div className="container mx-auto px-4 py-6">
-        <SingleAdvertisement position="bottomofhomepage" className="max-w-6xl mx-auto" />
-      </div>
+      <ErrorBoundary>
+        <div className="container mx-auto px-4 py-6">
+          <SingleAdvertisement position="bottomofhomepage" className="max-w-6xl mx-auto" />
+        </div>
+      </ErrorBoundary>
     </main>
   )
 }
