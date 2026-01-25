@@ -8,7 +8,13 @@ import type { IProfileProgress } from "@/models/profile/progress"
 
 const PROFILE_DB =
   process.env.PROFILE_DB ||
+  process.env.MONGODB_URI ||
   "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+// Validate connection string exists during build
+if (!PROFILE_DB && process.env.NODE_ENV === "production") {
+  console.warn("Warning: PROFILE_DB and MONGODB_URI environment variables are not set. Using fallback URI.")
+}
 
 // Define the interface locally to avoid import issues
 interface ICategoryBrand {
@@ -572,16 +578,15 @@ PromotionSettingsSchema.index({ isActive: 1 })
 // Review schema with enhanced orderItems structure
 const ReviewSchema = new mongoose.Schema<IReview>(
   {
-    orderId: { type: String, required: true, index: true },
-    userId: { type: String, required: true, index: true },
-    product_id: { type: String, required: true, index: true },
+    orderId: { type: String, required: true },
+    userId: { type: String, required: true },
+    product_id: { type: String, required: true },
     rating: { type: Number, required: true, min: 1, max: 5 },
     review: { type: String, required: true },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
-      index: true,
     },
     isVerifiedPurchase: {
       type: Boolean,
@@ -598,7 +603,7 @@ const ReviewSchema = new mongoose.Schema<IReview>(
 ReviewSchema.index({ createdAt: -1 })
 ReviewSchema.index({ rating: 1 })
 ReviewSchema.index({ status: 1, createdAt: -1 })
-ReviewSchema.index({ orderId: 1, userId: 1 }, { unique: true }) // Prevent duplicate reviews
+ReviewSchema.index({ orderId: 1, userId: 1, product_id: 1 }, { unique: true }) // Prevent duplicate reviews
 
 // Define BuyerAddress schema
 const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(

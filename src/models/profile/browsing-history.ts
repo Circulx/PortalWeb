@@ -11,12 +11,12 @@ export interface IBrowsingHistory extends Document {
 
 const browsingHistorySchema = new Schema<IBrowsingHistory>(
   {
-    userId: { type: String, required: true, index: true },
-    productId: { type: String, required: true, index: true },
+    userId: { type: String, required: true },
+    productId: { type: String, required: true },
     title: { type: String },
     image: { type: String },
     category: { type: String },
-    viewedAt: { type: Date, default: Date.now, index: true },
+    viewedAt: { type: Date, default: Date.now },
   },
   {
     timestamps: true,
@@ -35,5 +35,3 @@ export default function getBrowsingHistoryModel(connection: Connection) {
     return connection.model<IBrowsingHistory>("BrowsingHistory", browsingHistorySchema)
   }
 }
-
-

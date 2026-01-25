@@ -18,17 +18,14 @@ const reviewSchema = new Schema<IReview>(
     userId: {
       type: String,
       required: true,
-      index: true,
     },
     orderId: {
       type: String,
       required: true,
-      index: true,
     },
     product_id: {
       type: String,
       required: true,
-      index: true,
     },
     title: {
       type: String,
