@@ -12,6 +12,8 @@ import Clarity from "@/components/analytics/Clarity"
 import Script from "next/script"
 import { OnboardingPopupHandler } from "@/components/onboarding-popup-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
+import Chatbot from "@/components/chat/Chatbot"
+
 
 export const metadata: Metadata = {
   title: "IND2B",
@@ -88,23 +90,11 @@ export default async function RootLayout({
             <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14 w-full max-w-full overflow-x-hidden">{children}</main>
             <Footer />
             <OnboardingPopupHandler />
+            <Chatbot user={user} />
           </Providers>
         </ErrorBoundary>
-
-        <Script id="tawk-to-widget" strategy="afterInteractive">
-          {`
-            var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-            (function(){
-              var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-              s1.async=true;
-              s1.src='https://embed.tawk.to/68b4158f8e5e8d7ad6a00aa0/1j3vn8f4e';
-              s1.charset='UTF-8';
-              s1.setAttribute('crossorigin','*');
-              s0.parentNode.insertBefore(s1,s0);
-            })();
-          `}
-        </Script>
       </body>
     </html>
   )
 }
+
