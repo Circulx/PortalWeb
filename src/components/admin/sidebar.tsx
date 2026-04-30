@@ -22,6 +22,7 @@ import {
   ShoppingBag,
   Settings,
   Video,
+  BookOpen,
 } from "lucide-react"
 
 const sidebarItems = [
@@ -35,6 +36,12 @@ const sidebarItems = [
     href: "/admin/users",
     title: "Users",
     icon: Users,
+    type: "single",
+  },
+  {
+    href: "/admin/blogs",
+    title: "Blogs",
+    icon: BookOpen,
     type: "single",
   },
   {
