@@ -78,6 +78,9 @@ export default function Footer() {
               <Link href="/" className="block text-white hover:text-gray-300">
                 Articles
               </Link>
+              <Link href="/blog" className="block text-white hover:text-gray-300">
+                Blog
+              </Link>
             </div>
           </div>
           {/* About Links */}
