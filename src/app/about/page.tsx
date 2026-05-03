@@ -29,7 +29,7 @@ const AboutUsPage = () => {
     {
       icon: <Users className="w-8 h-8" />,
       title: "Customer-Centricity",
-      description: "Our members are at the heart of everything we do. We are dedicated to understanding their needs and building a platform that exceeds their expectations."
+      description: "Our members are at the heartof everything we do. We are dedicated to understanding their needs and building a platform that exceeds their expectations."
     },
     {
       icon: <CheckCircle className="w-8 h-8" />,
