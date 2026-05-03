@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
 import Image from "next/image"
-import { Heart, LogOut, Menu, X, Search } from "lucide-react"
+import { BookOpen, Heart, LogOut, Menu, X, Search } from "lucide-react"
 import { AuthModal } from "../auth/auth-modal"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -278,6 +278,16 @@ export default function Header({ user }: HeaderProps) {
                 )}
               </button>
 
+              {/* Blog - Hidden on mobile when menu is open */}
+              <Link
+                href="/blog"
+                className={`relative p-1 sm:p-1.5 lg:p-2 hover:bg-gray-100 rounded-full transition-colors ${isMobileMenuOpen ? "hidden sm:flex" : "flex"}`}
+                aria-label="Blog"
+                title="Blog"
+              >
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 text-gray-600 hover:text-orange-600 transition-colors" />
+              </Link>
+
               {/* Wishlist - Hidden on mobile when menu is open */}
               <Link
                 href="/dashboard/wishlist"
@@ -364,6 +374,15 @@ export default function Header({ user }: HeaderProps) {
           {isMobileMenuOpen && (
             <div className="sm:hidden bg-white border-t border-gray-200 shadow-lg">
               <div className="px-4 py-4 space-y-4">
+                <Link
+                  href="/blog"
+                  className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <BookOpen className="w-5 h-5 text-gray-600" />
+                  <span className="text-sm font-medium">Blog</span>
+                </Link>
+
                 {/* Mobile User Actions */}
                 <div className="flex items-center justify-between">
                   <Link

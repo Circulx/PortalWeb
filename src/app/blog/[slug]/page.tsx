@@ -114,15 +114,17 @@ export default async function BlogDetailPage({ params }: { params: Promise<{ slu
   return (
     <main className="container mx-auto px-4 py-8">
       <article className="max-w-3xl mx-auto">
+        <h1 className="mt-8 md:mt-10 text-4xl font-bold mb-3">{blog.title}</h1>
+        <p className="text-sm text-gray-500 mb-4">
+          {blog.author} • {new Date(blog.publishedAt || blog.createdAt).toLocaleDateString()}
+        </p>
+        <div className="border-t border-gray-200 pt-6 mb-6">
+          <p className="text-lg text-gray-700">{blog.excerpt}</p>
+        </div>
+
         {blog.coverImage && (
           <img src={blog.coverImage} alt={blog.title} className="w-full max-h-[420px] object-cover rounded-lg mb-6" />
         )}
-
-        <p className="text-sm text-gray-500 mb-2">
-          {blog.author} • {new Date(blog.publishedAt || blog.createdAt).toLocaleDateString()}
-        </p>
-        <h1 className="text-4xl font-bold mb-4">{blog.title}</h1>
-        <p className="text-lg text-gray-700 mb-6">{blog.excerpt}</p>
 
         <div
           className="prose prose-lg max-w-none prose-img:rounded-lg prose-img:my-6"
