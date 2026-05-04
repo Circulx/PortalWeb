@@ -24,7 +24,7 @@ const AboutUsPage = () => {
     {
       icon: <Lightbulb className="w-8 h-8" />,
       title: "Innovation",
-      description: " The digital world is constantly evolving, and so are we. We are committed to continuous innovation, constantly adding new features and functionalities."
+      description: " The digital world is constantly evolving, and so are we. We are committed to  continuous innovation, constantly adding new features and functionalities."
     },
     {
       icon: <Users className="w-8 h-8" />,
