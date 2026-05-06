@@ -252,7 +252,7 @@ const AboutUsPage = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-4xl font-bold mb-6">Join the IND2B Community Today</h2>
             <p className="text-xl mb-8 leading-relaxed">
-              The future of Indian business is collaborative. Whether you are a manufacturer, a wholesaler, a distributor, or a retailer, our platform is your home.
+              The future of Indian business  & retails shopping is collaborative. Whether you are a manufacturer, a wholesaler, a distributor, or a retailer, our platform is your home.
             </p>
           </div>
         </div>
