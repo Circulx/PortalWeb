@@ -1362,6 +1362,52 @@ const NewsletterSchema = new mongoose.Schema<INewsletter>(
 )
 
 // Add indexes for Newsletter
+// Define OTPVerification schema
+const OTPVerificationSchema = new mongoose.Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      lowercase: true,
+      trim: true,
+      index: true,
+    },
+    otp: {
+      type: String,
+      required: true,
+    },
+    type: {
+      type: String,
+      enum: ["signup", "login", "password-reset"],
+      required: true,
+    },
+    expiresAt: {
+      type: Date,
+      required: true,
+      index: { expireAfterSeconds: 0 }, // TTL index for automatic deletion
+    },
+    attempts: {
+      type: Number,
+      default: 0,
+    },
+    maxAttempts: {
+      type: Number,
+      default: 5,
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "otpverifications",
+  },
+)
+
+// Create compound index for email and type
+OTPVerificationSchema.index({ email: 1, type: 1 })
+
 NewsletterSchema.index({ email: 1, isActive: 1 })
 NewsletterSchema.index({ subscribedAt: -1 })
 
@@ -1466,6 +1512,10 @@ function registerModels(connection: Connection) {
     connection.model("Newsletter", NewsletterSchema)
     console.log("Registered Newsletter model")
   }
+  if (!connection.models.OTPVerification) {
+    connection.model("OTPVerification", OTPVerificationSchema)
+    console.log("Registered OTPVerification model")
+  }
 
   console.log("All models registered successfully")
 }
@@ -1496,6 +1546,7 @@ export {
   ApplicantSchema,
   CouponSchema,
   NewsletterSchema,
+  OTPVerificationSchema,
   PROFILE_DB,
 }
 

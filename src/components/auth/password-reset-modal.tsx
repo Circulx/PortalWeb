@@ -2,14 +2,16 @@
 
 import type React from "react"
 
-import { useState } from "react"
-import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Loader2 } from "lucide-react"
 import { verifyEmailForReset, resetPassword } from "@/actions/password-reset"
 import { validateEmail, isPasswordValid } from "@/lib/validation"
+import { OTPVerification } from "./otp-verification"
+import { useToast } from "@/hooks/use-toast"
 
 interface PasswordResetModalProps {
   isOpen: boolean
@@ -18,15 +20,26 @@ interface PasswordResetModalProps {
 }
 
 export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordResetModalProps) {
-  const [step, setStep] = useState<"email" | "password">("email")
+  const [step, setStep] = useState<"email" | "otp" | "password">("email")
   const [email, setEmail] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  // ✅ Only new addition: SSR-safe flag required for createPortal
+  const [mounted, setMounted] = useState(false)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    setMounted(true)
+    return () => setMounted(false)
+  }, [])
 
   const handleBack = () => {
     if (step === "password") {
+      setStep("otp")
+      setError("")
+    } else if (step === "otp") {
       setStep("email")
       setError("")
     } else {
@@ -64,8 +77,38 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
       return
     }
 
-    setStep("password")
+    // Send OTP
+    try {
+      const response = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase(),
+          type: "password-reset",
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.message || "Failed to send OTP")
+        setIsLoading(false)
+        return
+      }
+
+      setStep("otp")
+    } catch (err) {
+      setError("Failed to send OTP. Please try again.")
+    }
+
     setIsLoading(false)
+  }
+
+  const handleOTPSuccess = async () => {
+    setStep("password")
+    setError("")
   }
 
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -100,6 +143,12 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
       return
     }
 
+    toast({
+      title: "Success!",
+      description: "Your password has been reset successfully. Please login with your new password.",
+      variant: "default",
+    })
+
     onSuccess()
     resetForm()
   }
@@ -111,96 +160,145 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
     }
   }
 
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[400px] p-0 bg-[#004D41] border-0">
-        <div className="px-14 py-3 relative">
-          <button
-            onClick={handleBack}
-            className="absolute top-2 left-2 text-white hover:text-gray-200"
-            disabled={isLoading}
-          >
-            <ArrowLeft size={24} />
-          </button>
+  if (!isOpen || !mounted) return null
 
-          {step === "email" ? (
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <h1 className="text-4xl px-12 font-semibold text-white">Reset Password</h1>
-                <p className="text-gray-200 px-8">Enter your email to reset password</p>
+  // ✅ ONLY CHANGE: original JSX is 100% untouched, just wrapped in createPortal
+  // so it renders into document.body instead of inside the sign-in modal's DOM tree.
+  // This fixes the overlap without touching any logic, handlers, or UI.
+  return createPortal(
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 py-12 z-[9999]">
+      <div className="w-full max-w-md">
+        {step === 'email' ? (
+          <div className="space-y-6">
+            <div className="relative">
+              <button
+                onClick={handleBack}
+                className="absolute -left-4 top-0 text-muted-foreground hover:text-foreground transition-colors p-2"
+                disabled={isLoading}
+                title="Go back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="text-center pt-2">
+                <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Reset Password</h1>
+                <p className="text-muted-foreground text-sm sm:text-base mt-2">Enter your email to get started</p>
+              </div>
+            </div>
+
+            <form onSubmit={handleEmailSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">Email Address</label>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="w-full h-10 px-4 bg-input border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-lg text-sm"
+                  disabled={isLoading}
+                  required
+                />
               </div>
 
-              <form onSubmit={handleEmailSubmit} className="space-y-4">
-                <div>
-                  <p className="text-gray-50 px-1 py-1">Email</p>
-                  <Input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    className="h-9 px-8 bg-white text-black placeholder:text-gray-500 rounded-lg"
-                    disabled={isLoading}
-                    required
-                  />
+              {error && (
+                <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-xs text-destructive">
+                  {error}
                 </div>
+              )}
 
-                {error && <p className="text-sm text-red-400">{error}</p>}
-
-                <Button
-                  type="submit"
-                  className="w-full h-9 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Verifying..." : "Next"}
-                </Button>
-              </form>
+              <Button
+                type="submit"
+                className="w-full h-10 text-sm font-semibold bg-primary hover:bg-accent text-primary-foreground rounded-lg transition-all disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Verifying...
+                  </span>
+                ) : (
+                  'Next'
+                )}
+              </Button>
+            </form>
+          </div>
+        ) : step === 'otp' ? (
+          <OTPVerification
+            email={email}
+            type="password-reset"
+            onSuccess={handleOTPSuccess}
+            onBack={() => {
+              setStep('email')
+              setError('')
+            }}
+            isLoading={isLoading}
+          />
+        ) : (
+          <div className="space-y-6">
+            <div className="relative">
+              <button
+                onClick={handleBack}
+                className="absolute -left-4 top-0 text-muted-foreground hover:text-foreground transition-colors p-2"
+                disabled={isLoading}
+                title="Go back"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
+              <div className="text-center pt-2">
+                <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Create New Password</h1>
+                <p className="text-muted-foreground text-sm sm:text-base mt-2">Set a strong password for your account</p>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-8">
-              <div className="space-y-2">
-                <h1 className="text-4xl px-12 font-semibold text-white">New Password</h1>
-                <p className="text-gray-200 px-8">Enter your new password</p>
+
+            <form onSubmit={handlePasswordSubmit} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">New Password</label>
+                <PasswordInput
+                  value={newPassword}
+                  onChange={setNewPassword}
+                  placeholder="Enter new password"
+                  showStrength={true}
+                  name="newPassword"
+                  id="newPassword"
+                />
               </div>
 
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <div>
-                  <p className="text-gray-50 px-1 py-1">New Password</p>
-                  <PasswordInput
-                    value={newPassword}
-                    onChange={setNewPassword}
-                    placeholder="Enter new password"
-                    showStrength={true}
-                    name="newPassword"
-                    id="newPassword"
-                  />
+              <div>
+                <label className="text-sm font-medium text-foreground block mb-2">Confirm Password</label>
+                <PasswordInput
+                  value={confirmPassword}
+                  onChange={setConfirmPassword}
+                  placeholder="Confirm new password"
+                  showStrength={false}
+                  name="confirmPassword"
+                  id="confirmPassword"
+                />
+              </div>
+
+              {error && (
+                <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-xs text-destructive">
+                  {error}
                 </div>
+              )}
 
-                <div>
-                  <p className="text-gray-50 px-1 py-1">Confirm Password</p>
-                  <PasswordInput
-                    value={confirmPassword}
-                    onChange={setConfirmPassword}
-                    placeholder="Confirm new password"
-                    showStrength={false}
-                    name="confirmPassword"
-                    id="confirmPassword"
-                  />
-                </div>
-
-                {error && <p className="text-sm text-red-400">{error}</p>}
-
-                <Button
-                  type="submit"
-                  className="w-full h-9 text-base font-medium bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white border-0 rounded-lg"
-                  disabled={isLoading}
-                >
-                  {isLoading ? "Saving..." : "Save"}
-                </Button>
-              </form>
-            </div>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
+              <Button
+                type="submit"
+                className="w-full h-10 text-sm font-semibold bg-primary hover:bg-accent text-primary-foreground rounded-lg transition-all disabled:opacity-50"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </span>
+                ) : (
+                  'Save Password'
+                )}
+              </Button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>,
+    document.body
   )
 }

@@ -4,9 +4,11 @@ import { connectDB1 } from "@/lib/db"
 export interface IUser extends Document {
   name: string
   email: string
+  phone: string
   password: string
   type: "admin" | "seller" | "customer"
   gstNumber?: string
+  emailVerified?: boolean
   onboardingStatus?: "pending" | "light_completed" | "full_completed"
   lightOnboardingData?: {
   businessName: string
@@ -29,6 +31,11 @@ const userSchema = new Schema<IUser>(
       required: true,
       unique: true,
     },
+    phone: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     password: {
       type: String,
       required: true,
@@ -40,6 +47,10 @@ const userSchema = new Schema<IUser>(
     },
     gstNumber: {
       type: String,
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
     onboardingStatus: {
       type: String,
