@@ -19,7 +19,7 @@ const AboutUsPage = () => {
     {
       icon: <Shield className="w-8 h-8" />,
       title: "Trust and Transparency",
-      description: "We believe that trust is the currency of commerce. We operate with complete transparency, from our verification process to our fee structure."
+      description: "We believe that trust is the currency  of commerce. We operate with complete transparency, from our verification process to our fee structure."
     },
     {
       icon: <Lightbulb className="w-8 h-8" />,
