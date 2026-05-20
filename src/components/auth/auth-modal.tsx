@@ -94,6 +94,9 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               onSuccess={handleSignInSuccess}
               onSignUp={() => setIsSignIn(false)}
               setIsLoading={setIsLoading}
+              onOpenPasswordReset={() => {
+                // Optional: could add additional logic here if needed
+              }}
             />
           ) : (
             <SignUpForm onSuccess={handleSignUpSuccess} onSignIn={() => setIsSignIn(true)} />

@@ -18,9 +18,10 @@ interface SignInFormProps {
   onSuccess: (user?: any) => void
   onSignUp: () => void
   setIsLoading: (isLoading: boolean) => void
+  onOpenPasswordReset?: () => void
 }
 
-export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProps) {
+export function SignInForm({ onSuccess, onSignUp, setIsLoading, onOpenPasswordReset }: SignInFormProps) {
   const [authMethod, setAuthMethod] = useState<'password' | 'email-otp'>('password')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -212,6 +213,9 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
       description: 'Your password has been reset successfully. Please login with your new password.',
       variant: 'default',
     })
+    // Reset form for fresh login after password reset
+    setEmail('')
+    setPassword('')
   }
 
   // ─── OTP Step ───────────────────────────────────────────────────────────────
@@ -352,7 +356,10 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
             </div>
             <button
               type="button"
-              onClick={() => setShowPasswordReset(true)}
+              onClick={() => {
+                setShowPasswordReset(true)
+                onOpenPasswordReset?.()
+              }}
               className="text-xs text-primary hover:text-accent font-medium transition-colors"
               disabled={isSubmitting}
             >

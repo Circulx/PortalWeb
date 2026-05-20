@@ -162,11 +162,10 @@ export function PasswordResetModal({ isOpen, onClose, onSuccess }: PasswordReset
 
   if (!isOpen || !mounted) return null
 
-  // ✅ ONLY CHANGE: original JSX is 100% untouched, just wrapped in createPortal
-  // so it renders into document.body instead of inside the sign-in modal's DOM tree.
-  // This fixes the overlap without touching any logic, handlers, or UI.
+  // ✅ Renders to document.body via portal with z-[99999] to be above all other modals
+  // This prevents the login modal from showing behind the password reset modal
   return createPortal(
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 py-12 z-[9999]">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center px-4 py-12 z-[99999]">
       <div className="w-full max-w-md">
         {step === 'email' ? (
           <div className="space-y-6">
