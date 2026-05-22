@@ -21,9 +21,6 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
   const [contactType, setContactType] = useState<'support' | 'customer-care'>('support')
-  const [userType, setUserType] = useState('customer')
-  const [gstError, setGstError] = useState('')
-  const [gstNumber, setGstNumber] = useState('')  // ✅ Fix: was referenced but never declared
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [phone, setPhone] = useState('')
@@ -37,30 +34,9 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
   const searchParams = useSearchParams()
 
-  useEffect(() => {
-    const type = searchParams.get('type')
-    const pathname = window.location.pathname
 
-    if (type === 'seller' || pathname.includes('/seller')) {
-      setUserType('seller')
-    }
-  }, [searchParams])
 
-  const validateGSTNumber = (gstNumber: string): boolean => {
-    const cleanGST = gstNumber.replace(/\s/g, '').toUpperCase()
-    const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[Z]{1}[0-9A-Z]{1}$/
-    return gstRegex.test(cleanGST)
-  }
 
-  const handleGSTChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setGstNumber(value)  // ✅ Fix: now updates state instead of being read-only
-    setGstError('')
-
-    if (value && !validateGSTNumber(value)) {
-      setGstError('Invalid GST format. Example: 22AAAAA0000A1Z5')
-    }
-  }
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -117,8 +93,6 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       }
     }
   }
-
-  const isSellerSignup = userType === 'seller'
 
   async function handleSendOTP(e: React.FormEvent) {
     e.preventDefault()
@@ -177,11 +151,8 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       formData.append('name', fullName)
       formData.append('email', email.toLowerCase())
       formData.append('phone', phone)
-      formData.append('userType', userType)
+      formData.append('userType', 'customer')
       formData.append('password', password)
-      if (userType === 'seller' && gstNumber) {
-        formData.append('gstNumber', gstNumber)  // ✅ Fix: now reads from state
-      }
 
       const result = await signUp(formData)
 
@@ -193,11 +164,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
       setStep('success')
       setTimeout(() => {
-        if (userType === 'seller') {
-          onSuccess('Email verified! Please sign in to continue with seller setup.')
-        } else {
-          onSuccess('Email verified! Please sign in.')
-        }
+        onSuccess('Email verified! Please sign in.')
       }, 1500)
     } catch (err) {
       setError('Failed to create account. Please try again.')
@@ -263,32 +230,6 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
         <p className="text-muted-foreground text-xs sm:text-sm mt-1">Join our marketplace today</p>
       </div>
 
-      {/* User Type Toggle */}
-      <div className="flex gap-2 bg-secondary rounded-lg p-1">
-        <button
-          onClick={() => setUserType('customer')}
-          className={`flex-1 py-2 px-3 rounded-md font-semibold transition-all text-xs sm:text-sm ${
-            userType === 'customer'
-              ? 'bg-primary text-primary-foreground shadow-md'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-          disabled={isLoading}
-        >
-          Customer
-        </button>
-        <button
-          onClick={() => setUserType('seller')}
-          className={`flex-1 py-2 px-3 rounded-md font-semibold transition-all text-xs sm:text-sm ${
-            userType === 'seller'
-              ? 'bg-primary text-primary-foreground shadow-md'
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-          disabled={isLoading}
-        >
-          Seller
-        </button>
-      </div>
-
       {/* Signup Form */}
       <form onSubmit={handleSendOTP} className="space-y-3">
         <div>
@@ -297,7 +238,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            placeholder="John Doe"
+            placeholder=""
             disabled={isLoading}
             className="w-full h-9 px-3 bg-input border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-md text-xs sm:text-sm"
           />
@@ -309,7 +250,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
             type="email"
             value={email}
             onChange={handleEmailChange}
-            placeholder="you@example.com"
+            placeholder=""
             disabled={isLoading}
             className="w-full h-9 px-3 bg-input border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-md text-xs sm:text-sm"
           />
@@ -323,7 +264,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
             type="tel"
             value={phone}
             onChange={handlePhoneChange}
-            placeholder="9999999999"
+            placeholder=""
             disabled={isLoading}
             maxLength={10}
             className="w-full h-9 px-3 bg-input border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-md text-xs sm:text-sm"
@@ -333,13 +274,13 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
         </div>
 
         <div>
-          <label className="text-xs font-medium text-foreground block mb-1">Password (Optional)</label>
+          <label className="text-xs font-medium text-foreground block mb-1">Password </label>
           <div className="relative">
             <Input
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={handlePasswordChange}
-              placeholder="Enter password (optional)"
+              placeholder=""
               disabled={isLoading}
               className="w-full h-9 px-3 pr-9 bg-input border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-md text-xs sm:text-sm"
             />
@@ -358,21 +299,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
           <p className="text-xs text-muted-foreground mt-0.5">Min 8 chars: letters, numbers & special chars</p>
         </div>
 
-        {userType === 'seller' && (
-          <div>
-            <label className="text-xs font-medium text-foreground block mb-1">GST Number (Optional)</label>
-            <Input
-              type="text"
-              value={gstNumber}
-              onChange={handleGSTChange}
-              placeholder="XXXXXXXXXXXX01Z5"
-              disabled={isLoading}
-              className="w-full h-9 px-3 bg-input border border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all rounded-md text-xs sm:text-sm"
-            />
-            {gstError && <p className="text-xs text-destructive mt-0.5">{gstError}</p>}
-            <p className="text-xs text-muted-foreground mt-0.5">15-character GST number</p>
-          </div>
-        )}
+
 
         {error && (
           <div className="p-2 bg-destructive/10 border border-destructive/30 rounded-md text-xs text-destructive">
@@ -388,8 +315,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
             !email ||
             !phone ||
             emailError !== '' ||
-            phoneError !== '' ||
-            (userType === 'seller' && gstError !== '')
+            phoneError !== ''
           }
           className="w-full h-9 text-xs sm:text-sm font-semibold bg-primary hover:bg-accent text-primary-foreground rounded-md transition-all disabled:opacity-50"
         >
