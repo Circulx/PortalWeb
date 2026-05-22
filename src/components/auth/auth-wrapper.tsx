@@ -11,9 +11,10 @@ import toast from "react-hot-toast"
 interface AuthWrapperProps {
   children: React.ReactNode
   requiredRole?: "admin" | "seller" | "customer"
+  portalMode?: "admin" | "seller"
 }
 
-export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps) {
+export default function AuthWrapper({ children, requiredRole, portalMode }: AuthWrapperProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -27,8 +28,15 @@ export default function AuthWrapper({ children, requiredRole }: AuthWrapperProps
         setUser(currentUser)
 
         if (!currentUser) {
-          // User is not logged in, show auth modal
-          setIsAuthModalOpen(true)
+          // User is not logged in
+          if (portalMode) {
+            // In portal mode, redirect to portal login page instead of showing modal
+            const loginUrl = portalMode === 'admin' ? '/admin/login' : '/seller/login'
+            router.push(loginUrl)
+          } else {
+            // In customer portal, show auth modal
+            setIsAuthModalOpen(true)
+          }
           setIsAuthenticated(false)
         } else if (requiredRole && currentUser.type !== requiredRole) {
           setIsAuthenticated(false)

@@ -12,7 +12,7 @@ export default function SellerLayout({
   children: React.ReactNode
 }) {
   return (
-    <AuthWrapper requiredRole="seller">
+    <AuthWrapper requiredRole="seller" portalMode="seller">
       <div className="flex flex-col md:flex-row min-h-screen bg-gray-50 pt-9 sm:pt-10 lg:pt-11">
         <Sidebar />
         <div className="flex-1 flex flex-col">

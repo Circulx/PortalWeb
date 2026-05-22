@@ -14,7 +14,7 @@ export default function AdminLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   return (
-    <AuthWrapper requiredRole="admin">
+    <AuthWrapper requiredRole="admin" portalMode="admin">
       <div className="min-h-screen bg-background">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
