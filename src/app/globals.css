@@ -22,25 +22,25 @@ body {
 
 @layer base {
   :root {
-    /* Dark theme - Modern enterprise */
-    --background: 0 0% 8%;
-    --foreground: 0 0% 95%;
-    --card: 0 0% 12%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 12%;
-    --popover-foreground: 0 0% 95%;
+    /* Light theme - Clean and modern */
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.6%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.6%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.6%;
     
     /* Primary - Teal/Green accent */
     --primary: 170 76% 44%;
     --primary-foreground: 0 0% 98%;
     
     /* Secondary - Light gray */
-    --secondary: 0 0% 25%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 3.6%;
     
-    /* Muted - Subtle gray */
-    --muted: 0 0% 35%;
-    --muted-foreground: 0 0% 70%;
+    /* Muted - Subtle light gray */
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 40%;
     
     /* Accent - Bright green/teal */
     --accent: 170 85% 50%;
@@ -51,8 +51,8 @@ body {
     --destructive-foreground: 0 0% 98%;
     
     /* Border and input */
-    --border: 0 0% 25%;
-    --input: 0 0% 15%;
+    --border: 0 0% 89%;
+    --input: 0 0% 100%;
     --ring: 170 76% 44%;
     
     /* Chart colors */

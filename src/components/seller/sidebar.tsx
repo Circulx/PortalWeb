@@ -1,8 +1,6 @@
-"use client"
-
-import { useState, useRef, useEffect } from "react"
+import { useRef } from "react"
 import Link from "next/link"
-import { usePathname, useSearchParams, useRouter } from "next/navigation"
+import { usePathname, useSearchParams } from "next/navigation"
 import {
   LayoutDashboard,
   Package2,
@@ -10,48 +8,22 @@ import {
   Star,
   UserCircle,
   HelpCircle,
-  Menu,
   MessageSquare,
 } from "lucide-react"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
-export function Sidebar() {
-  const [isOpen, setIsOpen] = useState(false)
+interface SidebarProps {
+  isMobileMenuOpen: boolean
+  setIsMobileMenuOpen: (open: boolean) => void
+}
+
+export function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps) {
   const sidebarRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
-
-  const toggleSidebar = () => setIsOpen(!isOpen)
-
-  useEffect(() => {
-    const handleOutsideClick = (event: MouseEvent) => {
-      if (sidebarRef.current && !sidebarRef.current.contains(event.target as Node) && isOpen) {
-        setIsOpen(false)
-      }
-    }
-
-    document.addEventListener("mousedown", handleOutsideClick)
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick)
-    }
-  }, [isOpen])
-
-  useEffect(() => {
-    setIsOpen(false)
-  }, [pathname])
-
-  // Only redirect on initial load when pathname is exactly /seller or /seller/
-  useEffect(() => {
-    // Only redirect if we're exactly at /seller or /seller/
-    if ((pathname === "/seller" || pathname === "/seller/") && !searchParams.toString()) {
-      router.push("/seller/profile")
-    }
-  }, []) // Empty dependency array means this only runs once on component mount
 
   const navItems = [
-    { href: "/seller?view=dashboard", icon: LayoutDashboard, label: "Dashboard" },
+    { href: "/seller/dashboard?view=dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/seller/products", icon: Package2, label: "Product Management" },
     { href: "/seller/orders", icon: ClipboardList, label: "Order Management" },
     { href: "/seller/quotations", icon: MessageSquare, label: "Quotation Requests" },
@@ -63,7 +35,7 @@ export function Sidebar() {
   // Check if the current path matches the nav item's href
   const isActive = (path: string) => {
     if (path.includes("?")) {
-      // For paths with query parameters (like /seller?view=dashboard)
+      // For paths with query parameters (like /seller/dashboard?view=dashboard)
       const [basePath, queryString] = path.split("?")
       const query = new URLSearchParams(queryString)
       const view = query.get("view")
@@ -75,32 +47,39 @@ export function Sidebar() {
     return pathname === path
   }
 
+  // Close sidebar only on mobile when a link is clicked, keep open on desktop
+  const handleNavClick = () => {
+    if (window.innerWidth < 768) {
+      setIsMobileMenuOpen(false)
+    }
+  }
+
   return (
-    <div className="relative h-full">
-      {/* Toggle button moved inside the main container and hidden when sidebar is open */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className={`md:hidden absolute top-4 left-4 z-30 ${isOpen ? "invisible" : "visible"}`}
-        onClick={toggleSidebar}
-      >
-        <Menu className="h-6 w-6" />
-      </Button>
+    <>
+      {/* Mobile overlay backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
       <div
         ref={sidebarRef}
         className={`
-          fixed inset-y-0 left-0 z-40 w-64 
-          bg-white shadow-lg
-          transform transition-transform duration-300 ease-in-out
-          ${isOpen ? "translate-x-0" : "-translate-x-full"} 
-          md:translate-x-0 md:static md:shadow-none
+          w-64 bg-white border-r border-gray-200 flex-shrink-0
+          fixed inset-y-0 left-0 pt-20
+          md:fixed md:left-0 md:top-0 md:pt-20 md:max-h-[calc(100vh-80px)] md:z-30 md:overflow-y-auto
+          ${isMobileMenuOpen ? "z-40 translate-x-0" : "-translate-x-full md:translate-x-0"} 
+          transition-transform duration-300 ease-in-out overflow-y-auto shadow-lg md:shadow-none
         `}
       >
         <div className="flex flex-col h-full">
-          <div className="px-4 py-2 border-b border-gray-200">
+          <div className="px-4 py-4 border-b border-gray-200 flex-shrink-0">
             <h1 className="text-xl font-bold text-green-900">Seller Portal</h1>
           </div>
-          <nav className="flex-1 overflow-y-auto px-4 py-1">
+          <nav className="flex-1 overflow-y-auto px-4 py-4 pt-4 pb-8">
             {navItems.map((item) => {
               const active = isActive(item.href)
               const Icon = item.icon
@@ -108,9 +87,12 @@ export function Sidebar() {
                 <Link
                   key={item.label}
                   href={item.href}
+                  onClick={handleNavClick}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all",
-                    active ? "bg-green-900 text-white" : "hover:bg-green-900 hover:text-white",
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                    active 
+                      ? "bg-green-900 text-white shadow-sm" 
+                      : "text-gray-700 hover:bg-green-100 hover:text-green-900",
                   )}
                 >
                   <Icon className="h-5 w-5" />
@@ -121,6 +103,6 @@ export function Sidebar() {
           </nav>
         </div>
       </div>
-    </div>
+    </>
   )
 }

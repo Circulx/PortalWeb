@@ -5,8 +5,16 @@ import type React from "react"
 import { useState } from "react"
 import Link from "next/link"
 import Image from "next/image"
+import { usePathname } from "next/navigation"
 
 export default function Footer() {
+  const pathname = usePathname()
+  
+  // Hide footer on admin and seller login pages
+  if (pathname === "/admin" || pathname === "/seller") {
+    return null
+  }
+
   const [email, setEmail] = useState("")
   const [message, setMessage] = useState("")
   const [error, setError] = useState("")
@@ -45,7 +53,7 @@ export default function Footer() {
   }
 
   return (
-    <footer className="bg-black text-white pt-16 pb-8">
+    <footer className="bg-black text-white pt-16 pb-8 relative z-40">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Logo and Description */}
