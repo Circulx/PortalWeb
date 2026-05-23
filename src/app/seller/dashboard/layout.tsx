@@ -14,7 +14,9 @@ export default function SellerDashboardLayout({
     <AuthWrapper requiredRole="seller">
       <div className="flex min-h-screen bg-white text-gray-900">
         {/* Fixed Sidebar - Always visible on desktop, toggleable on mobile */}
-        <Sidebar />
+        <Sidebar isMobileMenuOpen={false} setIsMobileMenuOpen={function (open: boolean): void {
+          throw new Error("Function not implemented.")
+        } } />
         
         {/* Main Content Area */}
         <div className="flex-1 flex flex-col">
