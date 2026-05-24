@@ -31,7 +31,7 @@ async function getWishlistModel() {
       "Wishlist",
       new mongoose.Schema(
         {
-          userId: { type: String, required: true, unique: true },
+          userId: { type: String, required: true, index: true, unique: true },
           items: [
             {
               productId: { type: String, required: true },

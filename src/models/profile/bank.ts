@@ -16,7 +16,7 @@ export interface IBank {
 
 const BankSchema = new Schema<IBank>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     accountHolderName: { type: String, required: true },
     accountNumber: { type: String, required: true },
     ifscCode: { type: String, required: true },

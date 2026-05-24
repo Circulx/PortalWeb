@@ -22,6 +22,7 @@ const BuyerAddressSchema = new Schema<IBuyerAddress>(
     userId: {
       type: String,
       required: true,
+      index: true,
     },
     firstName: {
       type: String,

@@ -12,7 +12,7 @@ export interface IContactDetails {
 
 const ContactSchema = new Schema<IContactDetails>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     contactName: { type: String, required: true },
     phoneNumber: { type: String, required: true },
     emailId: { type: String, required: true },

@@ -12,7 +12,7 @@ export interface IProfileProgress {
 
 const ProfileProgressSchema = new Schema<IProfileProgress>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     completedSteps: [{ type: String, required: true }],
     currentStep: { type: String, required: true },
     status: {

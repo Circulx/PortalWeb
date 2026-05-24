@@ -14,7 +14,7 @@ import { useSelector, useDispatch } from "react-redux"
 import type { RootState } from "@/store"
 import { clearCart } from "@/store/slices/cartSlice"
 import { clearWishlist } from "@/store/slices/wishlistSlice"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import EnhancedSearchBar from "./enhanced-search-bar"
 import { requestIdleCallback } from "@/lib/request-idle-callback-polyfill"
 
@@ -36,6 +36,13 @@ interface Category {
 }
 
 export default function Header({ user }: HeaderProps) {
+  const pathname = usePathname()
+  
+  // Hide header on admin and seller login pages
+  if (pathname === "/admin" || pathname === "/seller") {
+    return null
+  }
+
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -318,16 +325,16 @@ export default function Header({ user }: HeaderProps) {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="outline"
-                        className="h-7 sm:h-8 lg:h-10 px-1.5 sm:px-2 lg:px-3 flex items-center gap-1 sm:gap-1.5 lg:gap-2 border-gray-300 hover:border-gray-400 transition-colors bg-transparent min-w-0"
+                        className="h-10 px-3 flex items-center gap-2 border-gray-300 hover:border-gray-400 transition-colors bg-white hover:bg-gray-50 rounded-lg"
                       >
-                        <Avatar className="h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6">
+                        <Avatar className="h-6 w-6 flex-shrink-0">
                           <AvatarImage src={`https://avatar.vercel.sh/${displayUser.id}`} />
-                          <AvatarFallback className="text-[10px] sm:text-xs lg:text-sm">
-                            {displayUser.name[0]}
+                          <AvatarFallback className="text-xs font-bold">
+                            {displayUser.name[0]?.toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="hidden sm:inline text-[10px] sm:text-xs lg:text-sm font-medium truncate max-w-16 lg:max-w-20">
-                          {displayUser.name.split(" ")[0]}
+                        <span className="hidden sm:inline text-sm font-bold text-gray-900 whitespace-nowrap max-w-xs truncate">
+                          {displayUser.name}
                         </span>
                       </Button>
                     </DropdownMenuTrigger>
@@ -521,3 +528,4 @@ export default function Header({ user }: HeaderProps) {
     </header>
   )
 }
+ 

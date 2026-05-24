@@ -19,7 +19,7 @@ export interface IAddress {
 
 const AddressSchema = new Schema<IAddress>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     billingAddress: {
       country: { type: String, required: true },
       state: { type: String, required: true },

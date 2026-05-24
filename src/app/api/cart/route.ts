@@ -23,7 +23,7 @@ interface Cart {
 
 const CartSchema = new mongoose.Schema<Cart>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     items: [
       {
         id: { type: String, required: true },

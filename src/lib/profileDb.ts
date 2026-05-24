@@ -256,7 +256,7 @@ export async function disconnectProfileDB() {
 // Define schemas
 const BusinessSchema = new mongoose.Schema<IBusinessDetails>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     legalEntityName: { type: String, required: true },
     tradeName: { type: String, required: true },
     gstin: { type: String, required: true },
@@ -271,7 +271,7 @@ const BusinessSchema = new mongoose.Schema<IBusinessDetails>(
 
 const ContactSchema = new mongoose.Schema<IContactDetails>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     contactName: { type: String, required: true },
     phoneNumber: { type: String, required: true },
     emailId: { type: String, required: true },
@@ -282,7 +282,7 @@ const ContactSchema = new mongoose.Schema<IContactDetails>(
 
 const CategoryBrandSchema = new mongoose.Schema<ICategoryBrand>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     categories: [{ type: String, required: true }],
     authorizedBrands: [{ type: String, required: true }],
   },
@@ -291,7 +291,7 @@ const CategoryBrandSchema = new mongoose.Schema<ICategoryBrand>(
 
 const AddressSchema = new mongoose.Schema<IAddress>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     billingAddress: {
       country: { type: String, required: true },
       state: { type: String, required: true },
@@ -314,7 +314,7 @@ const AddressSchema = new mongoose.Schema<IAddress>(
 
 const BankSchema = new mongoose.Schema<IBank>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     accountHolderName: { type: String, required: true },
     accountNumber: { type: String, required: true },
     ifscCode: { type: String, required: true },
@@ -329,7 +329,7 @@ const BankSchema = new mongoose.Schema<IBank>(
 
 const DocumentSchema = new mongoose.Schema<IDocument>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     panCardUrl: { type: String, required: true },
     aadharCardUrl: { type: String, required: true },
     gstinUrl: { type: String, required: true },
@@ -347,7 +347,7 @@ const DocumentSchema = new mongoose.Schema<IDocument>(
 
 const ProfileProgressSchema = new mongoose.Schema<IProfileProgress>(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     completedSteps: [{ type: String, required: true }],
     currentStep: { type: String, required: true },
     status: {
@@ -423,7 +423,8 @@ const ProductSchema = new mongoose.Schema(
   },
 )
 
-// Add indexes for efficient querying (product_id is already unique, so skip it)
+// Add indexes for efficient querying
+ProductSchema.index({ product_id: 1 })
 ProductSchema.index({ status: 1 })
 ProductSchema.index({ commission: 1 })
 ProductSchema.index({ emailId: 1 })
@@ -433,7 +434,7 @@ ProductSchema.index({ commission: 1, status: 1 })
 // Define Order schema
 const OrderSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true },
+    userId: { type: String, required: true, index: true },
     products: [
       {
         productId: { type: String, required: true },
@@ -489,7 +490,7 @@ const OrderSchema = new mongoose.Schema(
 // Define Cart schema
 const CartSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true, unique: true },
+    userId: { type: String, required: true, index: true, unique: true },
     items: [
       {
         productId: { type: String, required: true },
@@ -510,7 +511,7 @@ const CartSchema = new mongoose.Schema(
 // Define Wishlist schema
 const WishlistSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true, unique: true },
+    userId: { type: String, required: true, index: true, unique: true },
     items: [
       {
         productId: { type: String, required: true },
@@ -598,7 +599,7 @@ const ReviewSchema = new mongoose.Schema<IReview>(
   },
 )
 
-// Add indexes for efficient querying (userId, orderId, product_id already have indexes from field definitions and unique composite)
+// Add indexes for efficient querying
 ReviewSchema.index({ createdAt: -1 })
 ReviewSchema.index({ rating: 1 })
 ReviewSchema.index({ status: 1, createdAt: -1 })
@@ -679,7 +680,7 @@ const BuyerAddressSchema = new mongoose.Schema<IBuyerAddress>(
   },
 )
 
-// Add indexes for BuyerAddress (userId is already indexed on field definition)
+// Add indexes for BuyerAddress
 BuyerAddressSchema.index({ userId: 1, createdAt: -1 })
 BuyerAddressSchema.index({ userId: 1, isDefault: 1 })
 

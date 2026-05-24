@@ -34,9 +34,9 @@ export default function DashboardSidebar({ isMobileMenuOpen, setIsMobileMenuOpen
       <aside
         className={`
         w-80 md:w-64 bg-white border-b md:border-r md:border-b-0 pt-6
-        md:relative md:translate-x-0 md:block
-        ${isMobileMenuOpen ? "fixed top-0 left-0 h-full z-50 transform translate-x-0" : "hidden md:block"}
-        transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 md:relative md:inset-auto md:translate-x-0 md:block
+        ${isMobileMenuOpen ? "z-40 translate-x-0" : "-translate-x-full md:translate-x-0"}
+        transition-transform duration-300 ease-in-out shadow-lg md:shadow-none overflow-y-auto md:overflow-visible
       `}
       >
         <div className="flex items-center justify-between p-4 border-b md:block">
