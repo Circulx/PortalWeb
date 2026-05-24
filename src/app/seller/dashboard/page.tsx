@@ -1,3 +1,5 @@
+
+
 import { Suspense } from "react"
 import { DashboardWrapper } from "./dashboard-wrapper"
 
@@ -13,7 +15,7 @@ function DashboardLoading() {
   )
 }
 
-// Main dashboard page component with Suspense boundary
+// Main dashboard page component
 export default function SellerDashboard() {
   return (
     <Suspense fallback={<DashboardLoading />}>
