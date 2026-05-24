@@ -30,7 +30,7 @@ import {
 
 const sidebarItems = [
   {
-    href: "/admin/dashboard",
+    href: "/admin",
     title: "Dashboard",
     icon: LayoutDashboard,
     type: "single",
@@ -186,22 +186,21 @@ export function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps)
     <>
       {isMobileMenuOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       <aside
         className={`
-          w-64 bg-white border-r border-gray-200 flex-shrink-0
-          fixed inset-y-0 left-0 pt-20
-          md:fixed md:left-0 md:top-0 md:pt-20 md:max-h-[calc(100vh-80px)] md:z-30 md:overflow-y-auto
-          ${isMobileMenuOpen ? "z-40 translate-x-0" : "-translate-x-full md:translate-x-0"}
-          transition-transform duration-300 ease-in-out overflow-y-auto shadow-lg md:shadow-none
-        `}
+        w-80 md:w-64 bg-white border-r flex-shrink-0
+        md:relative md:translate-x-0 md:block
+        ${isMobileMenuOpen ? "fixed top-0 left-0 h-full z-50 transform translate-x-0" : "hidden md:block"}
+        transition-transform duration-300 ease-in-out
+      `}
       >
-        <div className="flex flex-col h-full">
-          <div className="flex items-center justify-between py-6 px-4 border-b flex-shrink-0">
+        <div className="sticky top-0 h-screen flex flex-col">
+          <div className="flex items-center justify-between py-6 px-4 border-b">
             <h2 className="text-xl font-bold tracking-tight">Admin Dashboard</h2>
             <button
               onClick={() => setIsMobileMenuOpen(false)}
@@ -211,7 +210,7 @@ export function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps)
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto pt-4 pb-8 px-2">
+          <div className="py-4 px-2 flex-1 overflow-y-auto">
             <div className="space-y-1">
               {sidebarItems.map((item) => (
                 <div key={item.title}>
@@ -219,10 +218,8 @@ export function Sidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: SidebarProps)
                     <Link
                       href={item.href!}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
-                        pathname === item.href 
-                          ? "bg-blue-50 text-blue-900 border-l-2 border-blue-500" 
-                          : "text-gray-700 hover:bg-gray-100",
+                        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 hover:bg-gray-100 font-medium",
+                        pathname === item.href ? "bg-gray-100 text-gray-900" : "text-gray-600",
                       )}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >

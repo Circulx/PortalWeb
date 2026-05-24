@@ -54,7 +54,7 @@ async function getSellerEmail(connection: mongoose.Connection) {
     if (!connection.models.Contact) {
       const ContactSchema = new mongoose.Schema(
         {
-          userId: { type: String, required: true, index: true },
+          userId: { type: String, required: true },
           contactName: { type: String, required: true },
           phoneNumber: { type: String, required: true },
           emailId: { type: String, required: true },

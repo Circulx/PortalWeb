@@ -268,7 +268,7 @@ export default function AdvertisementsPage() {
               <select
                 value={filters.isActive}
                 onChange={(e) => setFilters((prev) => ({ ...prev, isActive: e.target.value }))}
-                className="w-full p-2 border border-gray-200 rounded-md bg-white text-gray-900"
+                className="w-full p-2 border rounded-md"
               >
                 <option value="">All Status</option>
                 <option value="true">Active</option>
@@ -280,7 +280,7 @@ export default function AdvertisementsPage() {
               <select
                 value={filters.position}
                 onChange={(e) => setFilters((prev) => ({ ...prev, position: e.target.value }))}
-                className="w-full p-2 border border-gray-200 rounded-md bg-white text-gray-900"
+                className="w-full p-2 border rounded-md"
               >
                 <option value="all">All Positions</option>
                 <option value="homepage">Homepage Slider</option>
@@ -295,7 +295,7 @@ export default function AdvertisementsPage() {
               <select
                 value={filters.deviceType}
                 onChange={(e) => setFilters((prev) => ({ ...prev, deviceType: e.target.value }))}
-                className="w-full p-2 border border-gray-200 rounded-md bg-white text-gray-900"
+                className="w-full p-2 border rounded-md"
               >
                 <option value="all">All Devices</option>
                 <option value="desktop">Desktop</option>

@@ -12,16 +12,16 @@ export function StatCard({ title, value, change, icon }: StatCardProps) {
   }
 
   return (
-    <Card className="bg-white border-gray-200">
+    <Card>
       <CardContent className="p-6">
         {/* Card content container */}
         <div className="flex items-center justify-between">
           {/* Left side - Statistics information */}
           <div>
             {/* Card title */}
-            <p className="text-sm text-gray-600">{title}</p>
+            <p className="text-sm text-muted-foreground">{title}</p>
             {/* Main value display */}
-            <h3 className="text-2xl font-bold mt-1 text-gray-900">{formatValue(value, title)}</h3>
+            <h3 className="text-2xl font-bold mt-1">{formatValue(value, title)}</h3>
             {/* Change indicator section */}
             <div className="flex items-center mt-1">
               {/* Conditional rendering of increase/decrease arrow */}
@@ -35,11 +35,11 @@ export function StatCard({ title, value, change, icon }: StatCardProps) {
                 {change.value}
               </span>
               {/* Time period text */}
-              <span className="text-sm text-gray-600 ml-1">{change.period}</span>
+              <span className="text-sm text-muted-foreground ml-1">{change.period}</span>
             </div>
           </div>
           {/* Right side - Icon container */}
-          <div className="p-3 bg-gray-100 rounded-full text-gray-600">{icon}</div>
+          <div className="p-3 bg-primary/10 rounded-full">{icon}</div>
         </div>
       </CardContent>
     </Card>

@@ -16,7 +16,7 @@ export async function GET() {
     // Define ProfileProgress schema
     const ProfileProgressSchema = new mongoose.Schema(
       {
-        userId: { type: String, required: true, index: true },
+        userId: { type: String, required: true },
         completedSteps: [{ type: String, required: true }],
         currentStep: { type: String, required: true },
         status: {

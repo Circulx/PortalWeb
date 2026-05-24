@@ -34,7 +34,7 @@ const blogSchema = new mongoose.Schema<IBlog>(
   },
 )
 
-blogSchema.index({ slug: 1 }, { unique: true })
+// slug index is already created via unique: true on the field definition
 blogSchema.index({ status: 1, publishedAt: -1 })
 blogSchema.index({ createdAt: -1 })
 

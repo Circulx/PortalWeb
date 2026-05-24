@@ -19,7 +19,7 @@ export interface IDocument {
 
 const DocumentSchema = new Schema<IDocument>(
   {
-    userId: { type: String, required: true, index: true },
+    userId: { type: String, required: true },
         panCardUrl: { type: String, required: true },
     aadharCardUrl: { type: String, required: true },
     gstinUrl: { type: String, required: true },

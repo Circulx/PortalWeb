@@ -3,11 +3,11 @@ import mongoose from "mongoose"
 // Define the order schema
 const orderSchema = new mongoose.Schema(
   {
-    userId: { type: String, required: true, index: true },
+    userId: { type: String, required: true },
     products: [
       {
         product_id: { type: String, required: true }, // Changed to product_id
-        seller_id: { type: String, required: true, index: true },
+        seller_id: { type: String, required: true },
         title: { type: String, required: true },
         quantity: { type: Number, required: true },
         price: { type: Number, required: true },

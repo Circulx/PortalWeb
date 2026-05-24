@@ -95,7 +95,6 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
       const formData = new FormData()
       formData.append('email', email.toLowerCase())
       formData.append('password', password)
-      formData.append('requiredRole', 'customer')
 
       const result = await signIn(formData)
 
@@ -174,7 +173,7 @@ export function SignInForm({ onSuccess, onSignUp, setIsLoading }: SignInFormProp
     setIsSubmitting(true)
     setIsLoading(true)
     try {
-      const result = await signInWithOTP(email.toLowerCase(), 'customer')
+      const result = await signInWithOTP(email.toLowerCase())
 
       if (result.error) {
         setError(result.error)

@@ -5,7 +5,7 @@ import mongoose from "mongoose"
 // Define Review schema
 const reviewSchema = new mongoose.Schema({
   orderId: { type: String, required: true, index: true },
-  userId: { type: String, required: true, index: true },
+  userId: { type: String, required: true },
   rating: { type: Number, required: true, min: 1, max: 5 },
   review: { type: String, required: true },
   orderItems: [

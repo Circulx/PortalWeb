@@ -15,21 +15,22 @@ export default function DashboardLayout({
 
   return (
     <AuthWrapper requiredRole="customer">
-      <div className="relative min-h-screen bg-white pt-20">
-        {/* Toggle Button for Mobile */}
+      <div className="flex min-h-screen flex-col md:flex-row mt-6">
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden fixed top-20 right-4 z-40 p-2 bg-white rounded-lg shadow-md border border-gray-200"
+          className="md:hidden fixed top-12 left-4 z-50 p-2 bg-white rounded-lg shadow-md border"
           aria-label="Toggle menu"
         >
           {isMobileMenuOpen ? <X className="w-5 h-5 text-gray-600" /> : <Menu className="w-5 h-5 text-gray-600" />}
         </button>
 
-        {/* Fixed Sidebar */}
         <DashboardSidebar isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
 
-        {/* Main Content with offset for sidebar */}
-        <main className="md:ml-64 min-h-screen p-4 md:p-8 bg-white text-gray-900">{children}</main>
+        {/* Vertical Line */}
+        <div className="hidden md:block w-px bg-gray-200" />
+
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-8 bg-gray-50">{children}</main>
       </div>
     </AuthWrapper>
   )

@@ -16,7 +16,7 @@ export interface IBusinessDetails {
 
 const BusinessSchema = new Schema<IBusinessDetails>(
   {
-    userId: { type: String, required: true, index: true },
+    userId: { type: String, required: true },
     legalEntityName: { type: String, required: true },
     tradeName: { type: String, required: true },
     gstin: { type: String, required: true },

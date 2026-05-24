@@ -25,7 +25,7 @@ const QuotationRequestSchema = new Schema<IQuotationRequest>(
     productId: { type: String, required: true, index: true },
     productTitle: { type: String, required: true },
     sellerId: { type: String, required: true, index: true },
-    userId: { type: String, index: true },
+    userId: { type: String },
     customerName: { type: String, required: true },
     customerEmail: { type: String, required: true },
     customerPhone: { type: String, required: true },

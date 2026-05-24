@@ -81,7 +81,7 @@ export async function GET() {
     // Get the ProfileProgress model
     const ProfileProgressSchema = new mongoose.Schema(
       {
-        userId: { type: String, required: true, index: true },
+        userId: { type: String, required: true },
         completedSteps: [{ type: String, required: true }],
         currentStep: { type: String, required: true },
         status: {
@@ -210,7 +210,7 @@ export async function POST(request: Request) {
     // Define Business schema
     const BusinessSchema = new mongoose.Schema(
       {
-        userId: { type: String, required: true, index: true },
+        userId: { type: String, required: true },
         legalEntityName: { type: String, required: true },
         tradeName: { type: String, required: true },
         gstin: { type: String, required: true },
@@ -249,7 +249,7 @@ export async function POST(request: Request) {
     if (values.name || values.emailId || values.phoneNumber) {
       const ContactSchema = new mongoose.Schema(
         {
-          userId: { type: String, required: true, index: true },
+          userId: { type: String, required: true },
           name: { type: String },
           emailId: { type: String },
           phoneNumber: { type: String },
@@ -274,7 +274,7 @@ export async function POST(request: Request) {
     // Create initial profile progress record
     const ProfileProgressSchema = new mongoose.Schema(
       {
-        userId: { type: String, required: true, index: true },
+        userId: { type: String, required: true },
         completedSteps: [{ type: String, required: true }],
         currentStep: { type: String, required: true },
         status: {

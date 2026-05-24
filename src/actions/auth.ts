@@ -29,7 +29,6 @@ export async function signIn(formData: FormData) {
     const UserModel = await getUserModel()
     const email = formData.get("email") as string
     const password = formData.get("password") as string
-    const requiredRole = formData.get("requiredRole") as string | null
 
     const user = await UserModel.findOne({ email })
     if (!user) {
@@ -39,19 +38,6 @@ export async function signIn(formData: FormData) {
     const isMatch = await bcrypt.compare(password, user.password)
     if (!isMatch) {
       return { error: "Invalid credentials" }
-    }
-
-    // If a specific role is required, check if user has that role
-    if (requiredRole && user.type !== requiredRole) {
-      return { 
-        error: `Access denied. Only ${requiredRole} users can access this portal.`,
-        user: {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          type: user.type,
-        }
-      }
     }
 
     const token = jwt.sign({ userId: user._id, type: user.type }, JWT_SECRET, { expiresIn: "1d" })
@@ -284,7 +270,7 @@ export async function updateUserType(userId: string, newType: "admin" | "seller"
 /**
  * Sign in using OTP - Only for verified email via OTP
  */
-export async function signInWithOTP(email: string, requiredRole?: string) {
+export async function signInWithOTP(email: string) {
   try {
     const UserModel = await getUserModel()
 
@@ -297,19 +283,6 @@ export async function signInWithOTP(email: string, requiredRole?: string) {
     const user = await UserModel.findOne({ email: email.toLowerCase() })
     if (!user) {
       return { error: "User not found" }
-    }
-
-    // If a specific role is required, check if user has that role
-    if (requiredRole && user.type !== requiredRole) {
-      return { 
-        error: `Access denied. Only ${requiredRole} users can access this portal.`,
-        user: {
-          id: user._id.toString(),
-          name: user.name,
-          email: user.email,
-          type: user.type,
-        }
-      }
     }
 
     const token = jwt.sign({ userId: user._id, type: user.type }, JWT_SECRET, { expiresIn: "1d" })
