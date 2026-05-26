@@ -1,11 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { connectDB1 } from "@/lib/db"
+import { connectProfileDB } from "@/lib/profileDb"
 import { getUserModel } from "@/models/user"
 
 export async function GET(request: NextRequest) {
   try {
-    // Use connectDB1 to ensure we're using the same database as login/signup
-    await connectDB1()
+    // Use connectProfileDB to ensure we're using the same database as login/signup
+    await connectProfileDB()
 
     // Get the User model with the correct connection
     const UserModel = await getUserModel()

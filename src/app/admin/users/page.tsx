@@ -1,16 +1,16 @@
 import { Suspense } from "react"
 import { UserTable } from "@/components/admin/user-table"
 import { getCurrentUser } from "@/actions/auth"
-import { connectDB1 } from "@/lib/db"
+import { connectProfileDB } from "@/lib/profileDb"
 import { getUserModel } from "@/models/user"
 
 export const dynamic = "force-dynamic"
 
-// Fetch users directly from the database using connectDB1
+// Fetch users directly from the database using connectProfileDB
 async function getUsers() {
   try {
-    // Use connectDB1 to ensure we're using the same database as login/signup
-    await connectDB1()
+    // Use connectProfileDB to ensure we're using the same database as login/signup
+    await connectProfileDB()
 
     // Get the User model with the correct connection
     const UserModel = await getUserModel()

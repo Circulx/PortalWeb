@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { connectProfileDB } from "@/lib/profileDb"
-import { connectDB1 } from "@/lib/db"
+
 import mongoose from "mongoose"
 
 // Define interfaces for our data
@@ -69,7 +69,7 @@ export async function GET() {
     
     // Connect to both databases
     const profileDb = await connectProfileDB()
-    const userDb = await connectDB1()
+    const userDb = await connectProfileDB()
 
     // Get models from profile database
     const BusinessSchema = new mongoose.Schema({}, { strict: false })

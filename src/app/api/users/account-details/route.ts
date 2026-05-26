@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getUserModel } from "@/models/user"
-import { connectDB1 } from "@/lib/db"
+import { connectProfileDB } from "@/lib/profileDb"
 import jwt from "jsonwebtoken"
 
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
 export async function GET(req: NextRequest) {
   try {
-    await connectDB1()
+    await connectProfileDB()
 
     // Get the auth token from cookies
     const cookieStore = req.cookies
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    await connectDB1()
+    await connectProfileDB()
 
     const { fullName, email, secondaryEmail, phoneNumber, country, state, zipCode } = await req.json()
 
