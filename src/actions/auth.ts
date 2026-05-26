@@ -7,6 +7,7 @@ import type { IUser } from "@/models/user"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
 import { isOTPVerified, deleteOTP } from "@/lib/otp-service"
+import { sendWelcomeEmail } from "@/lib/welcome-email"
 
 const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
@@ -186,6 +187,12 @@ export async function signUp(formData: FormData) {
 
     // Delete the OTP record after successful signup
     await deleteOTP(email, "signup")
+
+    // Send welcome email asynchronously (non-blocking) - doesn't affect signup success
+    sendWelcomeEmail(email, name).catch((error) => {
+      console.error("[SignUp] Error sending welcome email:", error)
+      // Don't throw error - signup already succeeded
+    })
 
     return {
       success: true,
