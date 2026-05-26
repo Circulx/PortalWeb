@@ -1,7 +1,16 @@
 import mongoose, { type Connection } from "mongoose"
 
-const MONGODB_URI1 = process.env.MONGODB_URI!
-const MONGODB_URI2 = process.env.PROD_DB!
+// Use MONGODB_URI1 if available, fall back to MONGODB_URI
+const MONGODB_URI1 =
+  process.env.MONGODB_URI1 ||
+  process.env.MONGODB_URI ||
+  "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
+// Use PROD_DB if available, otherwise fall back to MONGODB_URI
+const MONGODB_URI2 =
+  process.env.PROD_DB ||
+  process.env.MONGODB_URI ||
+  "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
 interface CachedConnections {
   conn1: Connection | null
