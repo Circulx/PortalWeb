@@ -1,5 +1,5 @@
 import { type Document, Schema } from "mongoose"
-import { connectDB1 } from "@/lib/db"
+import { connectProfileDB } from "@/lib/profileDb"
 
 export interface IUser extends Document {
   name: string
@@ -70,6 +70,6 @@ const userSchema = new Schema<IUser>(
 )
 
 export async function getUserModel() {
-  const connection = await connectDB1()
+  const connection = await connectProfileDB()
   return connection.models.User || connection.model<IUser>("User", userSchema)
 }
