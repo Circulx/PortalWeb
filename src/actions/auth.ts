@@ -188,11 +188,20 @@ export async function signUp(formData: FormData) {
     // Delete the OTP record after successful signup
     await deleteOTP(email, "signup")
 
-    // Send welcome email asynchronously (non-blocking) - doesn't affect signup success
-    sendWelcomeEmail(email, name).catch((error) => {
-      console.error("[SignUp] Error sending welcome email:", error)
-      // Don't throw error - signup already succeeded
-    })
+    // Send welcome email in background (fire-and-forget) - doesn't affect signup success
+    // We use setImmediate to ensure it runs after the response is sent
+    if (typeof setImmediate !== "undefined") {
+      setImmediate(() => {
+        sendWelcomeEmail(email, name).catch((error) => {
+          console.error("[SignUp] Error sending welcome email:", error)
+        })
+      })
+    } else {
+      // Fallback for environments without setImmediate
+      sendWelcomeEmail(email, name).catch((error) => {
+        console.error("[SignUp] Error sending welcome email:", error)
+      })
+    }
 
     return {
       success: true,

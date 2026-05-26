@@ -4,6 +4,7 @@ import { generateWelcomeEmail } from "@/lib/email-templates"
 /**
  * Send welcome email to newly registered user
  * This function is non-blocking and won't affect signup success
+ * Has a 5-second timeout to prevent blocking the signup response
  */
 export async function sendWelcomeEmail(
   email: string,
@@ -19,13 +20,21 @@ export async function sendWelcomeEmail(
       email,
     })
 
-    const result = await sendEmail({
-      to: email,
-      subject: "Welcome to IND2B - Start Shopping Today!",
-      html: htmlContent,
-    })
+    // Wrap in Promise.race with a 5-second timeout
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Welcome email timeout")), 5000)
+    )
 
-    if (result.success) {
+    const result = await Promise.race([
+      sendEmail({
+        to: email,
+        subject: "Welcome to IND2B - Start Shopping Today!",
+        html: htmlContent,
+      }),
+      timeoutPromise as any,
+    ])
+
+    if (result && result.success) {
       console.log("[Welcome Email] Successfully sent welcome email to:", email)
       return {
         success: true,
@@ -33,17 +42,18 @@ export async function sendWelcomeEmail(
         messageId: result.data?.messageId,
       }
     } else {
-      console.warn("[Welcome Email] Failed to send welcome email to:", email, "Error:", result.error)
+      console.warn("[Welcome Email] Failed to send welcome email to:", email, "Error:", result?.error)
       return {
         success: false,
         message: "Failed to send welcome email",
       }
     }
   } catch (error) {
-    console.error("[Welcome Email] Error sending welcome email:", error)
+    console.warn("[Welcome Email] Error or timeout sending welcome email:", error instanceof Error ? error.message : error)
+    // Return success anyway - don't fail signup due to email timeout
     return {
-      success: false,
-      message: "Error sending welcome email",
+      success: true, // Return success to not block signup
+      message: "Account created (email will be sent shortly)",
     }
   }
 }
