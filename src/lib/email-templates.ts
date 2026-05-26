@@ -1,6 +1,147 @@
 import type { Order, OrderProduct } from "@/models/profile/order"
 
 /**
+ * Generate welcome email template for new users
+ */
+export function generateWelcomeEmail({
+  name,
+  email,
+}: {
+  name: string
+  email: string
+}): string {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Welcome to IND2B - Your Marketplace Journey Begins</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f7fafc; color: #1a202c;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td align="center" style="padding: 24px 0;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
+              <!-- Header with Gradient -->
+              <tr>
+                <td style="padding: 50px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-align: center;">
+                  <h1 style="margin: 0; color: white; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Welcome to IND2B!</h1>
+                  <p style="margin: 12px 0 0; color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 300;">Your Account is Ready</p>
+                </td>
+              </tr>
+              
+              <!-- Main Content -->
+              <tr>
+                <td style="padding: 40px 32px;">
+                  <!-- Greeting -->
+                  <p style="margin: 0; font-size: 18px; line-height: 1.6; color: #2d3748;"><span style="font-weight: 600;">Hi ${name},</span></p>
+                  
+                  <!-- Welcome Message -->
+                  <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.8; color: #4a5568;">
+                    Congratulations! Your account has been successfully created. You're now part of a thriving community of buyers and sellers on IND2B. We're excited to have you on board!
+                  </p>
+                  
+                  <!-- Features Box -->
+                  <div style="margin: 32px 0; padding: 24px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 8px;">
+                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: #2d3748; text-transform: uppercase; letter-spacing: 0.5px;">What's Next?</p>
+                    
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 16px;">
+                      <tr>
+                        <td style="padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.3);">
+                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ Browse Products</strong> - Explore thousands of products from trusted sellers</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.3);">
+                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ Secure Shopping</strong> - Shop with confidence with our buyer protection program</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.3);">
+                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ Easy Checkout</strong> - Quick and secure payment options available</p>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td style="padding: 12px 0;">
+                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ 24/7 Support</strong> - Our support team is always ready to help</p>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
+                  
+                  <!-- CTA Button -->
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 32px 0;">
+                    <tr>
+                      <td align="center">
+                        <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: collapse;">
+                          <tr>
+                            <td style="border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0;">
+                              <a href="https://ind2b.com/products" style="display: inline-block; padding: 14px 32px; color: white; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">Start Shopping Now →</a>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  
+                  <!-- Account Security Tips -->
+                  <div style="margin: 32px 0; padding: 20px; background: #fef5e7; border-left: 4px solid #f39c12; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: #7d6608; text-transform: uppercase; letter-spacing: 0.5px;">Account Security Tips</p>
+                    <ul style="margin: 12px 0 0; padding-left: 20px; font-size: 14px; color: #5a4a0a; line-height: 1.8;">
+                      <li>Keep your password secure and never share it with anyone</li>
+                      <li>Use a strong password with a mix of letters, numbers, and symbols</li>
+                      <li>Always verify SSL certificates when shopping (look for 🔒 symbol)</li>
+                      <li>Enable two-factor authentication for extra security (if available)</li>
+                      <li>Report any suspicious activity to our support team immediately</li>
+                    </ul>
+                  </div>
+                  
+                  <!-- Additional Info -->
+                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.8; color: #4a5568;">
+                    Your account is all set with complete email verification. You can now enjoy full access to all IND2B features including browsing products, making purchases, and connecting with sellers.
+                  </p>
+                  
+                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.8; color: #4a5568;">
+                    If you have any questions or need assistance, please don't hesitate to reach out to our support team at <strong>support@ind2b.com</strong> or visit our Help Center.
+                  </p>
+                  
+                  <!-- Closing -->
+                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.8; color: #4a5568;">
+                    Happy shopping!<br>
+                    <span style="font-weight: 600; color: #2d3748;">The IND2B Team</span>
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="padding: 24px 32px; background-color: #f7fafc; text-align: center; border-top: 1px solid #e2e8f0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 16px;">
+                    <tr>
+                      <td align="center">
+                        <p style="margin: 0; font-size: 13px; color: #718096;">
+                          <a href="https://ind2b.com" style="color: #667eea; text-decoration: none; margin: 0 12px;">Visit Website</a> | 
+                          <a href="https://ind2b.com/about" style="color: #667eea; text-decoration: none; margin: 0 12px;">About Us</a> | 
+                          <a href="https://ind2b.com/contact" style="color: #667eea; text-decoration: none; margin: 0 12px;">Contact Us</a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                  <p style="margin: 0; font-size: 12px; color: #a0aec0;">© ${new Date().getFullYear()} IND2B. All rights reserved.</p>
+                  <p style="margin: 8px 0 0; font-size: 12px; color: #a0aec0;">Account email: <span style="color: #718096;">${email}</span></p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `
+}
+
+/**
  * Generate OTP email template for signup
  */
 export function generateSignupOTPEmail({
