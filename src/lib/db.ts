@@ -1,13 +1,15 @@
 import mongoose, { type Connection } from "mongoose"
 
-// Use MONGODB_URI1 if available, fall back to MONGODB_URI
+// Use PROFILE_DB as primary (same as profile database for consistency)
+// Fallback to MONGODB_URI if PROFILE_DB is not set
 const MONGODB_URI1 =
-  process.env.MONGODB_URI1 ||
+  process.env.PROFILE_DB ||
   process.env.MONGODB_URI ||
   "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 
-// Use PROD_DB if available, otherwise fall back to MONGODB_URI
+// Use PROFILE_DB for production database as well
 const MONGODB_URI2 =
+  process.env.PROFILE_DB ||
   process.env.PROD_DB ||
   process.env.MONGODB_URI ||
   "mongodb+srv://productcirc:Ranjesh12345@cluster0.c0jfv.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
