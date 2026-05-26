@@ -83,7 +83,10 @@ export async function signIn(formData: FormData) {
 
 export async function signUp(formData: FormData) {
   try {
+    console.log("[SignUp Action] Starting signup process")
+    
     const UserModel = await getUserModel()
+    console.log("[SignUp Action] UserModel loaded")
 
     const name = formData.get("name") as string
     const email = (formData.get("email") as string).toLowerCase()
@@ -92,8 +95,11 @@ export async function signUp(formData: FormData) {
     const gstNumber = formData.get("gstNumber") as string
     const passwordInput = formData.get("password") as string
 
+    console.log("[SignUp Action] Extracted form data:", { name, email, phone, userType })
+
     // Validate name
     if (!name || name.trim().length === 0) {
+      console.log("[SignUp Action] Name validation failed")
       return { error: "Full name is required" }
     }
 
@@ -108,10 +114,16 @@ export async function signUp(formData: FormData) {
     }
 
     // Check if email is OTP verified
+    console.log("[SignUp Action] Checking OTP verification status for:", email)
     const isOTPVerifiedStatus = await isOTPVerified(email, "signup")
+    console.log("[SignUp Action] OTP verification status:", isOTPVerifiedStatus)
+    
     if (!isOTPVerifiedStatus) {
+      console.log("[SignUp Action] OTP not verified for email:", email)
       return { error: "Please verify your email with OTP first" }
     }
+    
+    console.log("[SignUp Action] OTP verified, proceeding with signup")
 
     const existingUser = await UserModel.findOne({ email })
     if (existingUser) {
@@ -183,27 +195,30 @@ export async function signUp(formData: FormData) {
       userData.gstNumber = gstNumber.replace(/\s/g, "").toUpperCase()
     }
 
+    console.log("[SignUp Action] Creating user with data:", { name, email, userType })
     const user = await UserModel.create(userData)
+    console.log("[SignUp Action] User created successfully:", { userId: user._id, email: user.email })
 
     // Delete the OTP record after successful signup
+    console.log("[SignUp Action] Deleting OTP record for:", email)
     await deleteOTP(email, "signup")
+    console.log("[SignUp Action] OTP record deleted")
 
     // Send welcome email in background (fire-and-forget) - doesn't affect signup success
-    // We use setImmediate to ensure it runs after the response is sent
-    if (typeof setImmediate !== "undefined") {
-      setImmediate(() => {
+    // This runs asynchronously without blocking the response
+    try {
+      // Fire and forget - don't await this
+      Promise.resolve().then(() => {
         sendWelcomeEmail(email, name).catch((error) => {
           console.error("[SignUp] Error sending welcome email:", error)
         })
       })
-    } else {
-      // Fallback for environments without setImmediate
-      sendWelcomeEmail(email, name).catch((error) => {
-        console.error("[SignUp] Error sending welcome email:", error)
-      })
+    } catch (emailError) {
+      // Silently ignore email errors - they don't affect signup success
+      console.warn("[SignUp] Could not schedule welcome email:", emailError)
     }
 
-    return {
+    const response = {
       success: true,
       message: "Registered successfully.",
       user: {
@@ -213,8 +228,11 @@ export async function signUp(formData: FormData) {
         type: user.type,
       },
     }
+    
+    console.log("[SignUp Action] Returning success response:", response)
+    return response
   } catch (error) {
-    console.error("Error in signUp:", error)
+    console.error("[SignUp Action] Error in signUp:", error)
     return { error: "Something went wrong" }
   }
 }

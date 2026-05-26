@@ -146,6 +146,8 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
   async function handleOTPSuccess() {
     setIsLoading(true)
+    setError('')
+    
     try {
       const formData = new FormData()
       formData.append('name', fullName)
@@ -154,19 +156,38 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       formData.append('userType', 'customer')
       formData.append('password', password)
 
+      console.log('[SignUp] Starting account creation with data:', {
+        name: fullName,
+        email: email.toLowerCase(),
+        phone,
+        userType: 'customer'
+      })
+
       const result = await signUp(formData)
 
+      console.log('[SignUp] Account creation result:', result)
+
       if (result.error) {
+        console.error('[SignUp] Error from signUp action:', result.error)
         setError(result.error)
         setIsLoading(false)
         return
       }
 
+      if (!result.success) {
+        console.error('[SignUp] SignUp did not return success')
+        setError('Account creation failed. Please try again.')
+        setIsLoading(false)
+        return
+      }
+
+      console.log('[SignUp] Account created successfully')
       setStep('success')
       setTimeout(() => {
         onSuccess('Email verified! Please sign in.')
       }, 1500)
     } catch (err) {
+      console.error('[SignUp] Exception caught:', err)
       setError('Failed to create account. Please try again.')
       setIsLoading(false)
     }

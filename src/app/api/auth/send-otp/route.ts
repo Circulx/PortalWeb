@@ -5,11 +5,18 @@ import { connectToProfileDB } from "@/lib/mongodb"
 
 export async function POST(request: NextRequest) {
   try {
+    console.log("[Send OTP API] Request received")
+    
     await connectToProfileDB()
+    console.log("[Send OTP API] Connected to DB")
+    
     const User = await getUserModel()
+    console.log("[Send OTP API] User model loaded")
 
     const body = await request.json()
     const { email, type } = body
+    
+    console.log("[Send OTP API] Email:", email, "Type:", type)
 
     // Validation
     if (!email || !type) {
@@ -99,6 +106,8 @@ export async function POST(request: NextRequest) {
 
     // Send OTP
     let result
+    console.log("[Send OTP API] Sending OTP for type:", type)
+    
     if (type === "signup") {
       result = await sendSignupOTP(email)
     } else if (type === "login") {
@@ -107,7 +116,10 @@ export async function POST(request: NextRequest) {
       result = await sendPasswordResetOTP(email)
     }
 
+    console.log("[Send OTP API] OTP result:", result)
+
     if (!result.success) {
+      console.log("[Send OTP API] OTP sending failed:", result.message)
       return NextResponse.json(
         {
           success: false,
@@ -116,6 +128,8 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
+    
+    console.log("[Send OTP API] OTP sent successfully")
 
     return NextResponse.json(
       {
@@ -126,11 +140,15 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
   } catch (error) {
-    console.error("[Send OTP API] Error:", error)
+    console.error("[Send OTP API] Caught error:", error)
+    const errorMessage = error instanceof Error ? error.message : "Unknown error"
+    console.error("[Send OTP API] Error message:", errorMessage)
+    console.error("[Send OTP API] Error stack:", error instanceof Error ? error.stack : "No stack trace")
+    
     return NextResponse.json(
       {
         success: false,
-        message: "Internal server error",
+        message: "Internal server error: " + errorMessage,
       },
       { status: 500 }
     )
