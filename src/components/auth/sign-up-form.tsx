@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ContactModal } from './contact-modal'
 import { OTPVerification } from './otp-verification'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { validateEmail } from '@/lib/validation'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 
@@ -17,6 +17,7 @@ interface SignUpFormProps {
 }
 
 export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
+  const router = useRouter()
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [showContactModal, setShowContactModal] = useState(false)
@@ -144,56 +145,105 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     }
   }
 
-  async function handleOTPSuccess() {
-    console.log('[v0] OTP verified, starting account creation immediately')
+  const handleOTPSuccess = async () => {
+    console.log('[v0 SignUp] ===== STARTING ACCOUNT CREATION =====')
+    console.log('[v0 SignUp] Form data:', { fullName, email: email.toLowerCase(), phone, userType: 'customer' })
+    
+    // Clear any previous errors
     setError('')
     setIsLoading(true)
     
     try {
+      // Validate that we have all required form data
+      if (!fullName?.trim()) {
+        const errorMsg = 'Full name is required'
+        console.error('[v0 SignUp]', errorMsg)
+        setError(errorMsg)
+        setIsLoading(false)
+        return
+      }
+
+      if (!email?.trim()) {
+        const errorMsg = 'Email is required'
+        console.error('[v0 SignUp]', errorMsg)
+        setError(errorMsg)
+        setIsLoading(false)
+        return
+      }
+
+      if (!phone?.trim()) {
+        const errorMsg = 'Phone number is required'
+        console.error('[v0 SignUp]', errorMsg)
+        setError(errorMsg)
+        setIsLoading(false)
+        return
+      }
+
+      if (!password?.trim()) {
+        const errorMsg = 'Password is required'
+        console.error('[v0 SignUp]', errorMsg)
+        setError(errorMsg)
+        setIsLoading(false)
+        return
+      }
+
+      // Create form data for signup
       const formData = new FormData()
-      formData.append('name', fullName)
-      formData.append('email', email.toLowerCase())
-      formData.append('phone', phone)
+      formData.append('name', fullName.trim())
+      formData.append('email', email.toLowerCase().trim())
+      formData.append('phone', phone.trim())
       formData.append('userType', 'customer')
       formData.append('password', password)
 
-      console.log('[v0] Creating account with data:', {
-        name: fullName,
-        email: email.toLowerCase(),
-        phone,
-        userType: 'customer'
-      })
-
+      console.log('[v0 SignUp] Calling signUp action...')
+      
+      // Call the server action
       const result = await signUp(formData)
 
-      console.log('[v0] Account creation result:', result)
+      console.log('[v0 SignUp] SignUp action returned:', JSON.stringify(result, null, 2))
 
-      // Check for error response
-      if ('error' in result) {
-        console.error('[v0] Error from signUp action:', result.error)
+      // Check the response structure
+      if (!result) {
+        const errorMsg = 'No response from server'
+        console.error('[v0 SignUp]', errorMsg)
+        setError(errorMsg)
+        setIsLoading(false)
+        return
+      }
+
+      // Handle error response
+      if ('error' in result && result.error) {
+        console.error('[v0 SignUp] Error returned:', result.error)
         setError(result.error)
         setIsLoading(false)
         return
       }
 
-      // Check for success response
+      // Handle success response
       if ('success' in result && result.success) {
-        console.log('[v0] Account created successfully!')
+        console.log('[v0 SignUp] ✓ ACCOUNT CREATED SUCCESSFULLY!')
+        console.log('[v0 SignUp] User ID:', result.user?.id)
+        console.log('[v0 SignUp] Moving to success step...')
+        
         setIsLoading(false)
-      } else {
-        console.error('[v0] SignUp did not return success')
-        setError('Account creation failed. Please try again.')
-        setIsLoading(false)
+        setStep('success')
+        
+        // Notify parent component with success message
+        console.log('[v0 SignUp] Calling onSuccess callback')
+        onSuccess('Account created successfully! Welcome to IND2B. Please sign in.')
+        
         return
       }
-      setStep('success')
+
+      // If we get here, response doesn't have expected structure
+      console.error('[v0 SignUp] Invalid response structure:', result)
+      setError('Account creation failed. Please try again.')
+      setIsLoading(false)
       
-      // Notify parent to show success message
-      setTimeout(() => {
-        onSuccess('Account created successfully! Please sign in.')
-      }, 100)
     } catch (err) {
-      console.error('[v0] Exception during account creation:', err)
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.error('[v0 SignUp] EXCEPTION caught:', errorMessage)
+      console.error('[v0 SignUp] Full error:', err)
       setError('Failed to create account. Please try again.')
       setIsLoading(false)
     }

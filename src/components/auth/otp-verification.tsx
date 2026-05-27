@@ -82,6 +82,7 @@ export function OTPVerification({
 
     setError("")
     setIsVerifying(true)
+    console.log('[v0 OTP] Verifying OTP:', otpString, 'for email:', email)
 
     try {
       const response = await fetch("/api/auth/verify-otp", {
@@ -97,6 +98,7 @@ export function OTPVerification({
       })
 
       const data = await response.json()
+      console.log('[v0 OTP] Verification response:', data)
 
       if (!response.ok) {
         setError(data.message || "Failed to verify OTP")
@@ -104,13 +106,16 @@ export function OTPVerification({
         return
       }
 
+      console.log('[v0 OTP] OTP verified successfully! Setting success state...')
       setSuccess(true)
       setError("")
       setIsVerifying(false)
 
-      // Call onSuccess immediately without delay
+      // Immediately call onSuccess callback - don't wait for user interaction
+      console.log('[v0 OTP] Calling onSuccess callback immediately...')
       onSuccess()
     } catch (err) {
+      console.error('[v0 OTP] Verification error:', err)
       setError("Network error. Please try again.")
       setIsVerifying(false)
     }

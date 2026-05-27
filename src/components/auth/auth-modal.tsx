@@ -49,8 +49,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   }
 
   const handleSignUpSuccess = (message: string) => {
+    console.log('[v0 AuthModal] SignUp success:', message)
     setSuccessMessage(message)
-    setIsSignIn(true)
+    
+    // Show success message for a moment then switch to sign in
+    setTimeout(() => {
+      setIsSignIn(true)
+    }, 100)
   }
 
   const handleSignInSuccess = async (userData?: {
