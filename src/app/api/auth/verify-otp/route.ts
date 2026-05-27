@@ -4,19 +4,13 @@ import { connectToProfileDB } from "@/lib/mongodb"
 
 export async function POST(request: NextRequest) {
   try {
-    console.log("[Verify OTP API] Received request")
-    
     await connectToProfileDB()
-    console.log("[Verify OTP API] Connected to DB")
 
     const body = await request.json()
     const { email, otp, type } = body
 
-    console.log("[Verify OTP API] Request data:", { email, otp: otp?.substring(0, 3) + '***', type })
-
     // Validation
     if (!email || !otp || !type) {
-      console.log("[Verify OTP API] Missing required fields")
       return NextResponse.json(
         {
           success: false,
@@ -48,12 +42,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify OTP
-    console.log("[Verify OTP API] Calling verifyOTP for:", email)
     const result = await verifyOTP(email.toLowerCase(), otp, type)
-    console.log("[Verify OTP API] Verification result:", result)
 
     if (!result.success) {
-      console.log("[Verify OTP API] Verification failed:", result.message)
       return NextResponse.json(
         {
           success: false,
@@ -63,7 +54,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log("[Verify OTP API] OTP verified successfully for:", email)
     return NextResponse.json(
       {
         success: true,

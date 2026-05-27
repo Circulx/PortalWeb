@@ -31,7 +31,7 @@ export async function sendSignupOTP(email: string): Promise<{
 }> {
   try {
     const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000) // 2 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
     // Get OTP model from the profile DB connection
     const OTPModel = await getOTPModel()
@@ -53,7 +53,7 @@ export async function sendSignupOTP(email: string): Promise<{
     const htmlContent = generateSignupOTPEmail({
       otp,
       email,
-      expiresIn: 2,
+      expiresIn: 10,
     })
 
     await sendEmail({
@@ -86,7 +86,7 @@ export async function sendLoginOTP(email: string): Promise<{
 }> {
   try {
     const otp = generateOTP()
-    const expiresAt = new Date(Date.now() + 2 * 60 * 1000) // 2 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
 
     // Get OTP model from the profile DB connection
     const OTPModel = await getOTPModel()
@@ -108,7 +108,7 @@ export async function sendLoginOTP(email: string): Promise<{
     const htmlContent = generateLoginOTPEmail({
       otp,
       email,
-      expiresIn: 2,
+      expiresIn: 10,
     })
 
     await sendEmail({
@@ -120,7 +120,7 @@ export async function sendLoginOTP(email: string): Promise<{
     return {
       success: true,
       message: "OTP sent successfully",
-      expiresIn: 2 * 60, // 2 minutes in seconds
+      expiresIn: 10 * 60, // 10 minutes in seconds
     }
   } catch (error) {
     console.error("[OTP Service] Error sending login OTP:", error)

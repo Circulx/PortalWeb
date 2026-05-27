@@ -9,9 +9,6 @@ import TutorialDashboard from "@/components/seller/help/tutorial-dashboard"
 import FaqSection from "@/components/seller/help/faq-section"
 import ContactForm from "@/components/seller/help/contact-form"
 
-// Mark this page as dynamic since it uses client-side state
-export const dynamic = "force-dynamic"
-
 export default function SellerHelpPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "tutorial" | "faq">("overview")
 

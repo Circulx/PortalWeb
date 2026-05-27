@@ -23,7 +23,7 @@ export function OTPVerification({
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(120) // 2 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
   const [canResend, setCanResend] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
@@ -143,7 +143,7 @@ export function OTPVerification({
 
       // Reset OTP and timer
       setOtp(["", "", "", "", "", ""])
-      setTimeLeft(120)
+      setTimeLeft(600)
       setCanResend(false)
       setIsResending(false)
       inputRefs.current[0]?.focus()

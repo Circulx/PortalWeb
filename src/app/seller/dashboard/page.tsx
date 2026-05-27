@@ -3,9 +3,6 @@
 import { Suspense } from "react"
 import { DashboardWrapper } from "./dashboard-wrapper"
 
-// Mark this page as dynamic since it uses useSearchParams
-export const dynamic = "force-dynamic"
-
 // Loading fallback
 function DashboardLoading() {
   return (
