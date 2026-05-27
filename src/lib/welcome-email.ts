@@ -20,19 +20,11 @@ export async function sendWelcomeEmail(
       email,
     })
 
-    // Wrap in Promise.race with a 5-second timeout
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Welcome email timeout")), 5000)
-    )
-
-    const result = await Promise.race([
-      sendEmail({
-        to: email,
-        subject: "Welcome to IND2B - Start Shopping Today!",
-        html: htmlContent,
-      }),
-      timeoutPromise as any,
-    ])
+    const result = await sendEmail({
+      to: email,
+      subject: "Welcome to IND2B - Start Shopping Today!",
+      html: htmlContent,
+    })
 
     if (result && result.success) {
       console.log("[Welcome Email] Successfully sent welcome email to:", email)
@@ -49,7 +41,7 @@ export async function sendWelcomeEmail(
       }
     }
   } catch (error) {
-    console.warn("[Welcome Email] Error or timeout sending welcome email:", error instanceof Error ? error.message : error)
+    console.warn("[Welcome Email] Error sending welcome email:", error instanceof Error ? error.message : error)
     // Return success anyway - don't fail signup due to email timeout
     return {
       success: true, // Return success to not block signup

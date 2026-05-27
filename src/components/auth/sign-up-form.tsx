@@ -145,8 +145,9 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   }
 
   async function handleOTPSuccess() {
-    setIsLoading(true)
+    console.log('[SignUp] OTP verified, starting account creation')
     setError('')
+    setIsLoading(true)
     
     try {
       const formData = new FormData()
@@ -156,7 +157,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       formData.append('userType', 'customer')
       formData.append('password', password)
 
-      console.log('[SignUp] Starting account creation with data:', {
+      console.log('[SignUp] Creating account with data:', {
         name: fullName,
         email: email.toLowerCase(),
         phone,
@@ -167,25 +168,28 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
       console.log('[SignUp] Account creation result:', result)
 
-     if (result?.error) {
-  console.error('[SignUp] Error from signUp action:', result.error)
-  setError(result.error)
-  setIsLoading(false)
-  return
-}
+      if (result?.error) {
+        console.error('[SignUp] Error from signUp action:', result.error)
+        setError(result.error)
+        setIsLoading(false)
+        return
+      }
 
-if (!result?.success) {
-  console.error('[SignUp] SignUp did not return success')
-  setError('Account creation failed. Please try again.')
-  setIsLoading(false)
-  return
-}
+      if (!result?.success) {
+        console.error('[SignUp] SignUp did not return success')
+        setError('Account creation failed. Please try again.')
+        setIsLoading(false)
+        return
+      }
 
-      console.log('[SignUp] Account created successfully')
+      console.log('[SignUp] Account created successfully, moving to success step')
+      setIsLoading(false)
       setStep('success')
+      
+      // Notify parent after a brief moment to ensure UI update
       setTimeout(() => {
         onSuccess('Email verified! Please sign in.')
-      }, 1500)
+      }, 500)
     } catch (err) {
       console.error('[SignUp] Exception caught:', err)
       setError('Failed to create account. Please try again.')

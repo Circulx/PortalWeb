@@ -107,10 +107,8 @@ export function OTPVerification({
       setSuccess(true)
       setError("")
 
-      // Wait a moment before calling onSuccess
-      setTimeout(() => {
-        onSuccess()
-      }, 1000)
+      // Call onSuccess immediately without delay
+      onSuccess()
     } catch (err) {
       setError("Network error. Please try again.")
       setIsVerifying(false)
