@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { connectProfileDB } from "@/lib/profileDb"
+import { connectDB1 } from "@/lib/db"
 import { getUserModel } from "@/models/user"
 import mongoose from "mongoose"
 
@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid role. Must be admin, seller, or customer" }, { status: 400 })
     }
 
-    // Use connectProfileDB to ensure we're using the same database as login/signup
-    await connectProfileDB()
+    // Use connectDB1 to ensure we're using the same database as login/signup
+    await connectDB1()
 
     // Get the User model with the correct connection
     const UserModel = await getUserModel()

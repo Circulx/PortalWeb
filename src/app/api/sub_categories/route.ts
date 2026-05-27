@@ -1,4 +1,4 @@
-import { connectProfileDB } from "@/lib/profileDb"
+import { connectDB2 } from "@/lib/db"
 import { NextResponse } from "next/server"
 import mongoose from "mongoose"
 
@@ -20,7 +20,7 @@ const SubCategoryModel = mongoose.models.SubCategory || mongoose.model<SubCatego
 
 export async function GET() {
   try {
-    await connectProfileDB()
+    await connectDB2()
     const subCategories = await SubCategoryModel.find().lean()
     return NextResponse.json(subCategories, { status: 200 })
   } catch (error) {
@@ -31,7 +31,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    await connectProfileDB()
+    await connectDB2()
     const subCategoryData = await request.json()
     const newSubCategory = new SubCategoryModel(subCategoryData)
     await newSubCategory.save()

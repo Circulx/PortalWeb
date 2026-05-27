@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { connectProfileDB } from "@/lib/profileDb"
+import { connectDB1 } from "@/lib/db"
 import { getUserModel } from "@/models/user"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET || "gyuhiuhthoju2596rfyjhtfykjb"
 
 export async function POST(req: NextRequest) {
   try {
-    await connectProfileDB()
+    await connectDB1()
     const { currentPassword, newPassword } = await req.json()
 
     // Validate input

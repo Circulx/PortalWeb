@@ -1,4 +1,4 @@
-import { connectProfileDB } from "@/lib/profileDb"
+import { connectDB2 } from "@/lib/db"
 import { type NextRequest, NextResponse } from "next/server"
 import mongoose from "mongoose"
 import jwt from "jsonwebtoken"
@@ -59,7 +59,7 @@ const productSchema = new mongoose.Schema<Product>({
   sub_category_name: { type: String },
 })
 
-const db2 = await connectProfileDB()
+const db2 = await connectDB2()
 
 const ProductModel = db2.models.Product || db2.model<Product>("Product", productSchema)
 

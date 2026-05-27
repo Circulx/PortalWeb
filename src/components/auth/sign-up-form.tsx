@@ -167,19 +167,19 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
       console.log('[SignUp] Account creation result:', result)
 
-     if (result?.error) {
-  console.error('[SignUp] Error from signUp action:', result.error)
-  setError(result.error)
-  setIsLoading(false)
-  return
-}
+      if (result.error) {
+        console.error('[SignUp] Error from signUp action:', result.error)
+        setError(result.error)
+        setIsLoading(false)
+        return
+      }
 
-if (!result?.success) {
-  console.error('[SignUp] SignUp did not return success')
-  setError('Account creation failed. Please try again.')
-  setIsLoading(false)
-  return
-}
+      if (!result.success) {
+        console.error('[SignUp] SignUp did not return success')
+        setError('Account creation failed. Please try again.')
+        setIsLoading(false)
+        return
+      }
 
       console.log('[SignUp] Account created successfully')
       setStep('success')
