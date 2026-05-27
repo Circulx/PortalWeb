@@ -145,7 +145,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
   }
 
   async function handleOTPSuccess() {
-    console.log('[SignUp] OTP verified, starting account creation')
+    console.log('[v0] OTP verified, starting account creation immediately')
     setError('')
     setIsLoading(true)
     
@@ -157,7 +157,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       formData.append('userType', 'customer')
       formData.append('password', password)
 
-      console.log('[SignUp] Creating account with data:', {
+      console.log('[v0] Creating account with data:', {
         name: fullName,
         email: email.toLowerCase(),
         phone,
@@ -166,32 +166,32 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
       const result = await signUp(formData)
 
-      console.log('[SignUp] Account creation result:', result)
+      console.log('[v0] Account creation result:', result)
 
       if (result?.error) {
-        console.error('[SignUp] Error from signUp action:', result.error)
+        console.error('[v0] Error from signUp action:', result.error)
         setError(result.error)
         setIsLoading(false)
         return
       }
 
       if (!result?.success) {
-        console.error('[SignUp] SignUp did not return success')
+        console.error('[v0] SignUp did not return success')
         setError('Account creation failed. Please try again.')
         setIsLoading(false)
         return
       }
 
-      console.log('[SignUp] Account created successfully, moving to success step')
+      console.log('[v0] Account created successfully!')
       setIsLoading(false)
       setStep('success')
       
-      // Notify parent after a brief moment to ensure UI update
+      // Notify parent to show success message
       setTimeout(() => {
-        onSuccess('Email verified! Please sign in.')
-      }, 500)
+        onSuccess('Account created successfully! Please sign in.')
+      }, 100)
     } catch (err) {
-      console.error('[SignUp] Exception caught:', err)
+      console.error('[v0] Exception during account creation:', err)
       setError('Failed to create account. Please try again.')
       setIsLoading(false)
     }
@@ -212,7 +212,6 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
           setStep('details')
           setError('')
         }}
-        isLoading={isLoading}
       />
     )
   }

@@ -106,6 +106,7 @@ export function OTPVerification({
 
       setSuccess(true)
       setError("")
+      setIsVerifying(false)
 
       // Call onSuccess immediately without delay
       onSuccess()
