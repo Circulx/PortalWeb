@@ -168,22 +168,24 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
       console.log('[v0] Account creation result:', result)
 
-      if (result?.error) {
+      // Check for error response
+      if ('error' in result) {
         console.error('[v0] Error from signUp action:', result.error)
         setError(result.error)
         setIsLoading(false)
         return
       }
 
-      if (!result?.success) {
+      // Check for success response
+      if ('success' in result && result.success) {
+        console.log('[v0] Account created successfully!')
+        setIsLoading(false)
+      } else {
         console.error('[v0] SignUp did not return success')
         setError('Account creation failed. Please try again.')
         setIsLoading(false)
         return
       }
-
-      console.log('[v0] Account created successfully!')
-      setIsLoading(false)
       setStep('success')
       
       // Notify parent to show success message
