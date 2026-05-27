@@ -83,10 +83,11 @@ export async function signIn(formData: FormData) {
 
 export async function signUp(formData: FormData) {
   try {
-    console.log("[SignUp Action] Starting signup process")
+    console.log("[v0 SignUp Action] ===== SIGNUP ACTION CALLED =====")
+    console.log("[v0 SignUp Action] Starting signup process")
     
     const UserModel = await getUserModel()
-    console.log("[SignUp Action] UserModel loaded")
+    console.log("[v0 SignUp Action] UserModel loaded")
 
     const name = formData.get("name") as string
     const email = (formData.get("email") as string).toLowerCase()
@@ -95,35 +96,37 @@ export async function signUp(formData: FormData) {
     const gstNumber = formData.get("gstNumber") as string
     const passwordInput = formData.get("password") as string
 
-    console.log("[SignUp Action] Extracted form data:", { name, email, phone, userType })
+    console.log("[v0 SignUp Action] Extracted form data:", { name, email, phone, userType })
 
     // Validate name
     if (!name || name.trim().length === 0) {
-      console.log("[SignUp Action] Name validation failed")
+      console.log("[v0 SignUp Action] Name validation failed")
       return { error: "Full name is required" }
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
+      console.log("[v0 SignUp Action] Email validation failed")
       return { error: "Please enter a valid email address" }
     }
 
     // Validate phone
     if (!phone || phone.length < 10 || phone.length > 15) {
+      console.log("[v0 SignUp Action] Phone validation failed")
       return { error: "Phone number must be 10-15 digits" }
     }
 
     // Check if email is OTP verified
-    console.log("[SignUp Action] Checking OTP verification status for:", email)
+    console.log("[v0 SignUp Action] Checking OTP verification status for:", email)
     const isOTPVerifiedStatus = await isOTPVerified(email, "signup")
-    console.log("[SignUp Action] OTP verification status:", isOTPVerifiedStatus)
+    console.log("[v0 SignUp Action] OTP verification status:", isOTPVerifiedStatus)
     
     if (!isOTPVerifiedStatus) {
-      console.log("[SignUp Action] OTP not verified for email:", email)
+      console.log("[v0 SignUp Action] OTP not verified for email:", email)
       return { error: "Please verify your email with OTP first" }
     }
     
-    console.log("[SignUp Action] OTP verified, proceeding with signup")
+    console.log("[v0 SignUp Action] ✓ OTP verified, proceeding with signup")
 
     const existingUser = await UserModel.findOne({ email })
     if (existingUser) {
@@ -195,28 +198,30 @@ export async function signUp(formData: FormData) {
       userData.gstNumber = gstNumber.replace(/\s/g, "").toUpperCase()
     }
 
-    console.log("[SignUp Action] Creating user with data:", { name, email, userType })
+    console.log("[v0 SignUp Action] Creating user with data:", { name, email, userType })
     const user = await UserModel.create(userData)
-    console.log("[SignUp Action] User created successfully:", { userId: user._id, email: user.email })
+    console.log("[v0 SignUp Action] ✓ User created successfully:", { userId: user._id, email: user.email })
 
     // Delete the OTP record after successful signup
-    console.log("[SignUp Action] Deleting OTP record for:", email)
+    console.log("[v0 SignUp Action] Deleting OTP record for:", email)
     await deleteOTP(email, "signup")
-    console.log("[SignUp Action] OTP record deleted")
+    console.log("[v0 SignUp Action] ✓ OTP record deleted")
 
     // Send welcome email in background without blocking signup response
-    // Use setImmediate equivalent to schedule after current execution
+    console.log("[v0 SignUp Action] Scheduling welcome email...")
     if (typeof setImmediate !== 'undefined') {
       setImmediate(() => {
+        console.log("[v0 SignUp Action] Sending welcome email to:", email)
         sendWelcomeEmail(email, name).catch((error) => {
-          console.error("[SignUp] Error sending welcome email:", error)
+          console.error("[v0 SignUp Action] Error sending welcome email:", error)
         })
       })
     } else {
       // Fallback for environments without setImmediate
       setTimeout(() => {
+        console.log("[v0 SignUp Action] Sending welcome email to:", email)
         sendWelcomeEmail(email, name).catch((error) => {
-          console.error("[SignUp] Error sending welcome email:", error)
+          console.error("[v0 SignUp Action] Error sending welcome email:", error)
         })
       }, 0)
     }
@@ -232,11 +237,11 @@ export async function signUp(formData: FormData) {
       },
     }
     
-    console.log("[SignUp Action] Returning success response:", response)
+    console.log("[v0 SignUp Action] ✓✓✓ RETURNING SUCCESS RESPONSE:", response)
     return response
   } catch (error) {
-    console.error("[SignUp Action] Error in signUp:", error)
-    return { error: "Something went wrong" }
+    console.error("[v0 SignUp Action] ✗✗✗ ERROR IN SIGNUP:", error)
+    return { error: "Something went wrong during registration" }
   }
 }
 

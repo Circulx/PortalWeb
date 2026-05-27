@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { signUp } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -145,49 +145,25 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     }
   }
 
-  const handleOTPSuccess = async () => {
-    console.log('[v0 SignUp] ===== STARTING ACCOUNT CREATION =====')
-    console.log('[v0 SignUp] Form data:', { fullName, email: email.toLowerCase(), phone, userType: 'customer' })
+  // Create account immediately after OTP verification
+  const handleOTPSuccess = useCallback(async () => {
+    console.log('[v0] handleOTPSuccess called - STARTING ACCOUNT CREATION')
+    console.log('[v0] Form data available:', { fullName, email, phone })
     
-    // Clear any previous errors
     setError('')
     setIsLoading(true)
     
     try {
-      // Validate that we have all required form data
-      if (!fullName?.trim()) {
-        const errorMsg = 'Full name is required'
-        console.error('[v0 SignUp]', errorMsg)
-        setError(errorMsg)
+      // Quick validation
+      if (!fullName?.trim() || !email?.trim() || !phone?.trim() || !password?.trim()) {
+        const msg = 'Missing required fields'
+        console.error('[v0]', msg, { fullName: !!fullName, email: !!email, phone: !!phone, password: !!password })
+        setError(msg)
         setIsLoading(false)
         return
       }
 
-      if (!email?.trim()) {
-        const errorMsg = 'Email is required'
-        console.error('[v0 SignUp]', errorMsg)
-        setError(errorMsg)
-        setIsLoading(false)
-        return
-      }
-
-      if (!phone?.trim()) {
-        const errorMsg = 'Phone number is required'
-        console.error('[v0 SignUp]', errorMsg)
-        setError(errorMsg)
-        setIsLoading(false)
-        return
-      }
-
-      if (!password?.trim()) {
-        const errorMsg = 'Password is required'
-        console.error('[v0 SignUp]', errorMsg)
-        setError(errorMsg)
-        setIsLoading(false)
-        return
-      }
-
-      // Create form data for signup
+      // Create form data
       const formData = new FormData()
       formData.append('name', fullName.trim())
       formData.append('email', email.toLowerCase().trim())
@@ -195,59 +171,44 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
       formData.append('userType', 'customer')
       formData.append('password', password)
 
-      console.log('[v0 SignUp] Calling signUp action...')
+      console.log('[v0] Calling signUp action with:', { name: fullName, email, phone })
       
-      // Call the server action
+      // Call signUp
       const result = await signUp(formData)
+      console.log('[v0] signUp returned:', result)
 
-      console.log('[v0 SignUp] SignUp action returned:', JSON.stringify(result, null, 2))
-
-      // Check the response structure
       if (!result) {
-        const errorMsg = 'No response from server'
-        console.error('[v0 SignUp]', errorMsg)
-        setError(errorMsg)
+        setError('No response from server')
         setIsLoading(false)
         return
       }
 
-      // Handle error response
+      // Check for error
       if ('error' in result && result.error) {
-        console.error('[v0 SignUp] Error returned:', result.error)
+        console.error('[v0] signup error:', result.error)
         setError(result.error)
         setIsLoading(false)
         return
       }
 
-      // Handle success response
+      // Success
       if ('success' in result && result.success) {
-        console.log('[v0 SignUp] ✓ ACCOUNT CREATED SUCCESSFULLY!')
-        console.log('[v0 SignUp] User ID:', result.user?.id)
-        console.log('[v0 SignUp] Moving to success step...')
-        
+        console.log('[v0] ✓ ACCOUNT CREATED SUCCESSFULLY')
         setIsLoading(false)
         setStep('success')
-        
-        // Notify parent component with success message
-        console.log('[v0 SignUp] Calling onSuccess callback')
-        onSuccess('Account created successfully! Welcome to IND2B. Please sign in.')
-        
+        onSuccess('Account created successfully! Please sign in.')
         return
       }
 
-      // If we get here, response doesn't have expected structure
-      console.error('[v0 SignUp] Invalid response structure:', result)
-      setError('Account creation failed. Please try again.')
+      setError('Account creation failed')
       setIsLoading(false)
       
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err)
-      console.error('[v0 SignUp] EXCEPTION caught:', errorMessage)
-      console.error('[v0 SignUp] Full error:', err)
-      setError('Failed to create account. Please try again.')
+      console.error('[v0] Exception:', err)
+      setError('Failed to create account')
       setIsLoading(false)
     }
-  }
+  }, [fullName, email, phone, password, onSuccess])
 
   const handleContactClick = (type: 'support' | 'customer-care') => {
     setContactType(type)
