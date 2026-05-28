@@ -105,9 +105,9 @@ export async function GET(req: NextRequest) {
     console.log(`Inventory value calculated: ${inventoryValue}`)
 
     // Fetch orders containing seller's products with proper type assertion
+    // Note: Fetch all orders regardless of date to show recent orders on dashboard
     const allOrders = (await Order.find({
       $or: [{ "products.seller_id": user.id }, { "products.sellerId": user.id }],
-      createdAt: { $gte: firstDayOfMonth },
     })
       .sort({ createdAt: -1 })
       .lean()) as OrderData[]
@@ -151,15 +151,21 @@ export async function GET(req: NextRequest) {
       })
       .filter((order) => order.amount > 0) // Only include orders with seller products
 
-    // Calculate order metrics
-    const pendingOrders = processedOrders.filter((order) =>
+    // Separate monthly orders (for metrics) from all orders (for recent orders display)
+    const monthlyOrders = processedOrders.filter((order) => {
+      const orderDate = new Date(order.createdAt)
+      return orderDate >= firstDayOfMonth
+    })
+
+    // Calculate order metrics based on this month
+    const pendingOrders = monthlyOrders.filter((order) =>
       ["pending", "processing"].includes(order.status.toLowerCase()),
     ).length
 
-    // Calculate monthly sales
-    const monthlySales = processedOrders.reduce((total, order) => total + order.amount, 0)
+    // Calculate monthly sales based on this month
+    const monthlySales = monthlyOrders.reduce((total, order) => total + order.amount, 0)
 
-    // Get recent orders (last 5)
+    // Get recent orders (last 5 from all orders, not just this month)
     const recentOrders = processedOrders.slice(0, 5)
 
     // Calculate daily sales for the past week
