@@ -10,135 +10,162 @@ export function generateWelcomeEmail({
   name: string
   email: string
 }): string {
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Welcome to IND2B - Your Marketplace Journey Begins</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f7fafc; color: #1a202c;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-        <tr>
-          <td align="center" style="padding: 24px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
-              <!-- Header with Gradient -->
-              <tr>
-                <td style="padding: 50px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-align: center;">
-                  <h1 style="margin: 0; color: white; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Welcome to IND2B!</h1>
-                  <p style="margin: 12px 0 0; color: rgba(255, 255, 255, 0.95); font-size: 18px; font-weight: 300;">Your Account is Ready</p>
-                </td>
-              </tr>
-              
-              <!-- Main Content -->
-              <tr>
-                <td style="padding: 40px 32px;">
-                  <!-- Greeting -->
-                  <p style="margin: 0; font-size: 18px; line-height: 1.6; color: #2d3748;"><span style="font-weight: 600;">Hi ${name},</span></p>
-                  
-                  <!-- Welcome Message -->
-                  <p style="margin: 20px 0 0; font-size: 16px; line-height: 1.8; color: #4a5568;">
-                    Congratulations! Your account has been successfully created. You're now part of a thriving community of buyers and sellers on IND2B. We're excited to have you on board!
-                  </p>
-                  
-                  <!-- Features Box -->
-                  <div style="margin: 32px 0; padding: 24px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); border-radius: 8px;">
-                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: #2d3748; text-transform: uppercase; letter-spacing: 0.5px;">What's Next?</p>
-                    
-                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top: 16px;">
-                      <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.3);">
-                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ Browse Products</strong> - Explore thousands of products from trusted sellers</p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.3);">
-                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ Secure Shopping</strong> - Shop with confidence with our buyer protection program</p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.3);">
-                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ Easy Checkout</strong> - Quick and secure payment options available</p>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="padding: 12px 0;">
-                          <p style="margin: 0; font-size: 15px; color: #2d3748;"><strong>✓ 24/7 Support</strong> - Our support team is always ready to help</p>
-                        </td>
-                      </tr>
+  const year = new Date().getFullYear()
+  const firstName = name.split(" ")[0]
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to IND2B</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0fdf9;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f0fdf9;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <!-- Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:600px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,197,169,0.10),0 1px 4px rgba(0,0,0,0.06);">
+
+          <!-- Header Banner -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#149882 0%,#1ac5a9 55%,#13ebc7 100%);padding:48px 32px 40px;text-align:center;">
+              <!-- Logo mark -->
+              <div style="display:inline-block;width:56px;height:56px;background:rgba(255,255,255,0.18);border-radius:14px;margin-bottom:20px;line-height:56px;font-size:28px;"><img src="https://ind2b.com/logo1.webp" alt="IND2B Logo" style="width:100%;height:auto;"></div>
+              <h1 style="margin:0;color:#ffffff;font-size:30px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">Welcome to IND2B!</h1>
+              <p style="margin:10px 0 0;color:rgba(255,255,255,0.92);font-size:16px;font-weight:400;">Your marketplace journey starts now</p>
+            </td>
+          </tr>
+
+          <!-- Greeting strip -->
+          <tr>
+            <td style="padding:32px 36px 0;">
+              <p style="margin:0;font-size:20px;font-weight:600;color:#0f2027;">Hey ${firstName}! 👋</p>
+              <p style="margin:12px 0 0;font-size:15px;line-height:1.75;color:#4a5568;">
+                Congratulations — your IND2B account is live and ready to go. You're now part of a growing community of buyers and sellers across India. We're thrilled to have you with us!
+              </p>
+            </td>
+          </tr>
+
+          <!-- Divider -->
+          <tr><td style="padding:28px 36px 0;"><div style="height:1px;background:linear-gradient(90deg,transparent,#d0f5ee,transparent);"></div></td></tr>
+
+          <!-- Feature cards row -->
+          <tr>
+            <td style="padding:28px 36px 0;">
+              <p style="margin:0 0 16px;font-size:11px;font-weight:700;color:#1ac5a9;text-transform:uppercase;letter-spacing:1.2px;">What you can do</p>
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                  <td style="padding:0 6px 12px 0;width:50%;vertical-align:top;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf9;border-radius:10px;border:1px solid #c6f5ed;">
+                      <tr><td style="padding:16px;">
+                        <div style="font-size:22px;margin-bottom:8px;">🔍</div>
+                        <p style="margin:0;font-size:14px;font-weight:600;color:#0f2027;">Browse Products</p>
+                        <p style="margin:6px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">Explore thousands of products from verified sellers</p>
+                      </td></tr>
                     </table>
-                  </div>
-                  
-                  <!-- CTA Button -->
-                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin: 32px 0;">
-                    <tr>
-                      <td align="center">
-                        <table cellpadding="0" cellspacing="0" role="presentation" style="border-collapse: collapse;">
-                          <tr>
-                            <td style="border-radius: 6px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 0;">
-                              <a href="https://ind2b.com/products" style="display: inline-block; padding: 14px 32px; color: white; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 6px;">Start Shopping Now →</a>
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                  </table>
-                  
-                  <!-- Account Security Tips -->
-                  <div style="margin: 32px 0; padding: 20px; background: #fef5e7; border-left: 4px solid #f39c12; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; font-weight: 600; color: #7d6608; text-transform: uppercase; letter-spacing: 0.5px;">Account Security Tips</p>
-                    <ul style="margin: 12px 0 0; padding-left: 20px; font-size: 14px; color: #5a4a0a; line-height: 1.8;">
-                      <li>Keep your password secure and never share it with anyone</li>
-                      <li>Use a strong password with a mix of letters, numbers, and symbols</li>
-                      <li>Always verify SSL certificates when shopping (look for 🔒 symbol)</li>
-                      <li>Enable two-factor authentication for extra security (if available)</li>
-                      <li>Report any suspicious activity to our support team immediately</li>
+                  </td>
+                  <td style="padding:0 0 12px 6px;width:50%;vertical-align:top;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf9;border-radius:10px;border:1px solid #c6f5ed;">
+                      <tr><td style="padding:16px;">
+                        <div style="font-size:22px;margin-bottom:8px;">🛡️</div>
+                        <p style="margin:0;font-size:14px;font-weight:600;color:#0f2027;">Buyer Protection</p>
+                        <p style="margin:6px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">Shop with confidence — every purchase is protected</p>
+                      </td></tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 6px 0 0;width:50%;vertical-align:top;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf9;border-radius:10px;border:1px solid #c6f5ed;">
+                      <tr><td style="padding:16px;">
+                        <div style="font-size:22px;margin-bottom:8px;">⚡</div>
+                        <p style="margin:0;font-size:14px;font-weight:600;color:#0f2027;">Fast Checkout</p>
+                        <p style="margin:6px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">Quick, secure payments — UPI, cards & more</p>
+                      </td></tr>
+                    </table>
+                  </td>
+                  <td style="padding:0 0 0 6px;width:50%;vertical-align:top;">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#f0fdf9;border-radius:10px;border:1px solid #c6f5ed;">
+                      <tr><td style="padding:16px;">
+                        <div style="font-size:22px;margin-bottom:8px;">💬</div>
+                        <p style="margin:0;font-size:14px;font-weight:600;color:#0f2027;">24/7 Support</p>
+                        <p style="margin:6px 0 0;font-size:13px;color:#6b7280;line-height:1.5;">Our team is always here when you need help</p>
+                      </td></tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding:32px 36px;" align="center">
+              <table cellpadding="0" cellspacing="0" role="presentation">
+                <tr>
+                  <td style="border-radius:10px;background:linear-gradient(135deg,#149882,#1ac5a9);">
+                    <a href="https://ind2b.com/products" style="display:inline-block;padding:15px 40px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:0.3px;border-radius:10px;">Start Shopping Now &rarr;</a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Security tips -->
+          <tr>
+            <td style="padding:0 36px 28px;">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;">
+                <tr>
+                  <td style="padding:18px 20px;">
+                    <p style="margin:0;font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.8px;">🔒 Keep your account safe</p>
+                    <ul style="margin:10px 0 0;padding-left:18px;font-size:13px;color:#78350f;line-height:1.9;">
+                      <li>Never share your password or OTP with anyone, including IND2B staff</li>
+                      <li>Use a strong password with letters, numbers &amp; special characters</li>
+                      <li>Look for the 🔒 padlock in your browser before entering any details</li>
+                      <li>Report suspicious activity immediately to <strong>support@ind2b.com</strong></li>
                     </ul>
-                  </div>
-                  
-                  <!-- Additional Info -->
-                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.8; color: #4a5568;">
-                    Your account is all set with complete email verification. You can now enjoy full access to all IND2B features including browsing products, making purchases, and connecting with sellers.
-                  </p>
-                  
-                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.8; color: #4a5568;">
-                    If you have any questions or need assistance, please don't hesitate to reach out to our support team at <strong>support@ind2b.com</strong> or visit our Help Center.
-                  </p>
-                  
-                  <!-- Closing -->
-                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.8; color: #4a5568;">
-                    Happy shopping!<br>
-                    <span style="font-weight: 600; color: #2d3748;">The IND2B Team</span>
-                  </p>
-                </td>
-              </tr>
-              
-              <!-- Footer -->
-              <tr>
-                <td style="padding: 24px 32px; background-color: #f7fafc; text-align: center; border-top: 1px solid #e2e8f0;">
-                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom: 16px;">
-                    <tr>
-                      <td align="center">
-                        <p style="margin: 0; font-size: 13px; color: #718096;">
-                          <a href="https://ind2b.com" style="color: #667eea; text-decoration: none; margin: 0 12px;">Visit Website</a> | 
-                          <a href="https://ind2b.com/about" style="color: #667eea; text-decoration: none; margin: 0 12px;">About Us</a> | 
-                          <a href="https://ind2b.com/contact" style="color: #667eea; text-decoration: none; margin: 0 12px;">Contact Us</a>
-                        </p>
-                      </td>
-                    </tr>
-                  </table>
-                  <p style="margin: 0; font-size: 12px; color: #a0aec0;">© ${new Date().getFullYear()} IND2B. All rights reserved.</p>
-                  <p style="margin: 8px 0 0; font-size: 12px; color: #a0aec0;">Account email: <span style="color: #718096;">${email}</span></p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Sign-off -->
+          <tr>
+            <td style="padding:0 36px 32px;">
+              <p style="margin:0;font-size:15px;line-height:1.7;color:#4a5568;">
+                Have questions? Write to us at <a href="mailto:support@ind2b.com" style="color:#1ac5a9;font-weight:600;text-decoration:none;">support@ind2b.com</a> — we reply fast.
+              </p>
+              <p style="margin:20px 0 0;font-size:15px;color:#4a5568;">Happy shopping! 🎉<br>
+                <span style="font-weight:700;color:#0f2027;">The IND2B Team</span>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:20px 36px;background:#f8fffe;border-top:1px solid #d0f5ee;text-align:center;">
+              <p style="margin:0;font-size:13px;color:#6b7280;">
+                <a href="https://ind2b.com" style="color:#1ac5a9;text-decoration:none;font-weight:500;">Website</a>
+                &nbsp;&bull;&nbsp;
+                <a href="https://ind2b.com/about" style="color:#1ac5a9;text-decoration:none;font-weight:500;">About</a>
+                &nbsp;&bull;&nbsp;
+                <a href="https://ind2b.com/contact" style="color:#1ac5a9;text-decoration:none;font-weight:500;">Contact</a>
+              </p>
+              <p style="margin:10px 0 0;font-size:12px;color:#9ca3af;">&copy; ${year} IND2B. All rights reserved.</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#9ca3af;">This email was sent to <span style="color:#6b7280;">${email}</span></p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>`
 }
 
 /**
@@ -153,76 +180,122 @@ export function generateSignupOTPEmail({
   email: string
   expiresIn: number
 }): string {
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Email Verification - IND2B</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f7fafc; color: #1a202c;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-        <tr>
-          <td align="center" style="padding: 24px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 500px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);">
-              <!-- Header -->
-              <tr>
-                <td style="padding: 40px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); text-align: center;">
-                  <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Welcome to IND2B</h1>
-                  <p style="margin: 8px 0 0; color: rgba(255, 255, 255, 0.95); font-size: 16px;">Verify your email to complete signup</p>
-                </td>
-              </tr>
-              
-              <!-- Main Content -->
-              <tr>
-                <td style="padding: 40px 24px;">
-                  <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #2d3748;">Hi there,</p>
-                  
-                  <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                    Thank you for signing up with IND2B! To complete your registration and secure your account, please verify your email address using the code below.
-                  </p>
-                  
-                  <!-- OTP Box -->
-                  <div style="margin: 32px 0; padding: 24px; background: #f7fafc; border-radius: 8px; border: 2px dashed #cbd5e0; text-align: center;">
-                    <p style="margin: 0; font-size: 12px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">Your Verification Code</p>
-                    <p style="margin: 12px 0 0; font-size: 40px; font-weight: 700; color: #667eea; letter-spacing: 8px; font-family: 'Courier New', monospace;">${otp
-                      .split("")
-                      .join(" ")}</p>
-                    <p style="margin: 12px 0 0; font-size: 13px; color: #718096;">This code expires in <strong>${expiresIn} minutes</strong></p>
-                  </div>
-                  
-                  <div style="margin: 24px 0; padding: 16px; background: #fffaf0; border-left: 4px solid #f6ad55; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; color: #7c2d12;">
-                      <strong>Security Tip:</strong> Never share this code with anyone. IND2B support staff will never ask for it.
+  const year = new Date().getFullYear()
+  const digits = otp.split("")
+  const digitBoxes = digits
+    .map(
+      (d) =>
+        `<td style="padding:0 4px;"><div style="display:inline-block;width:44px;height:56px;line-height:56px;background:#ffffff;border:2px solid #1ac5a9;border-radius:10px;font-size:28px;font-weight:700;color:#149882;text-align:center;font-family:'Courier New',monospace;box-shadow:0 2px 8px rgba(26,197,169,0.15);">${d}</div></td>`,
+    )
+    .join("")
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification - IND2B</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0fdf9;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f0fdf9;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <!-- Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,197,169,0.12),0 1px 4px rgba(0,0,0,0.06);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#149882 0%,#1ac5a9 60%,#13ebc7 100%);padding:40px 32px 36px;text-align:center;">
+              <div style="display:inline-block;width:52px;height:52px;background:rgba(255,255,255,0.2);border-radius:14px;line-height:52px;font-size:26px;margin-bottom:16px;">
+                <img src="https://ind2b.com/logo1.webp" alt="IND2B Logo" style="width:100%;height:auto;">
+              </div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.3px;">Verify Your Email</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:15px;">Complete your IND2B signup</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 36px 0;">
+              <p style="margin:0;font-size:16px;line-height:1.7;color:#374151;">
+                Hi there! 👋 Use the verification code below to confirm your email address and activate your IND2B account.
+              </p>
+            </td>
+          </tr>
+
+          <!-- OTP Block -->
+          <tr>
+            <td style="padding:28px 36px;" align="center">
+              <p style="margin:0 0 16px;font-size:11px;font-weight:700;color:#1ac5a9;text-transform:uppercase;letter-spacing:1.2px;">Your verification code</p>
+
+              <!-- Digit boxes -->
+              <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto;">
+                <tr>${digitBoxes}</tr>
+              </table>
+
+              <!-- Expiry -->
+              <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
+                ⏱ Expires in <strong style="color:#374151;">${expiresIn} minutes</strong>
+              </p>
+
+              <!-- Copy button (mailto trick — widest email client support) -->
+              <table cellpadding="0" cellspacing="0" role="presentation" style="margin:20px auto 0;">
+                <tr>
+                  <td style="border-radius:8px;border:2px solid #1ac5a9;background:#f0fdf9;">
+                    <a href="mailto:?body=${otp}" onclick="try{navigator.clipboard.writeText('${otp}')}catch(e){}" style="display:inline-block;padding:10px 28px;color:#149882;text-decoration:none;font-size:14px;font-weight:600;border-radius:6px;letter-spacing:0.3px;">
+                      📋 Copy Code: ${otp}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:8px 0 0;font-size:11px;color:#9ca3af;">Tap the button above to copy the code instantly</p>
+            </td>
+          </tr>
+
+          <!-- Security notice -->
+          <tr>
+            <td style="padding:0 36px 28px;">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;">
+                <tr>
+                  <td style="padding:16px 18px;">
+                    <p style="margin:0;font-size:13px;color:#92400e;line-height:1.6;">
+                      <strong>🔒 Security reminder:</strong> IND2B will <em>never</em> ask you to share this code by phone, chat, or email. If someone asks — it's a scam.
                     </p>
-                  </div>
-                  
-                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                    Didn't sign up for an IND2B account? You can safely ignore this email. If you have questions, our support team is here to help.
-                  </p>
-                  
-                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                    Best regards,<br>
-                    <span style="font-weight: 600; color: #2d3748;">The IND2B Team</span>
-                  </p>
-                </td>
-              </tr>
-              
-              <!-- Footer -->
-              <tr>
-                <td style="padding: 24px; background-color: #f7fafc; text-align: center; border-top: 1px solid #e2e8f0;">
-                  <p style="margin: 0; font-size: 13px; color: #718096;">© ${new Date().getFullYear()} IND2B. All rights reserved.</p>
-                  <p style="margin: 8px 0 0; font-size: 12px; color: #a0aec0;">Sent to: <span style="color: #718096;">${email}</span></p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Not you -->
+          <tr>
+            <td style="padding:0 36px 32px;">
+              <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+                Didn't request this? You can safely ignore this email — your account won't be created without verification.
+              </p>
+              <p style="margin:18px 0 0;font-size:14px;color:#6b7280;">
+                Best regards,<br><strong style="color:#0f2027;">The IND2B Team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:18px 36px;background:#f8fffe;border-top:1px solid #d0f5ee;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">&copy; ${year} IND2B. All rights reserved.</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#9ca3af;">Sent to: <span style="color:#6b7280;">${email}</span></p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>`
 }
 
 /**
@@ -237,76 +310,122 @@ export function generateLoginOTPEmail({
   email: string
   expiresIn: number
 }): string {
-  return `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Login OTP - IND2B</title>
-    </head>
-    <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f7fafc; color: #1a202c;">
-      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-        <tr>
-          <td align="center" style="padding: 24px 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 500px; margin: 0 auto; background-color: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);">
-              <!-- Header -->
-              <tr>
-                <td style="padding: 40px 24px; background: linear-gradient(135deg, #4299e1 0%, #2d3748 100%); text-align: center;">
-                  <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">IND2B Login</h1>
-                  <p style="margin: 8px 0 0; color: rgba(255, 255, 255, 0.95); font-size: 16px;">Your secure login code</p>
-                </td>
-              </tr>
-              
-              <!-- Main Content -->
-              <tr>
-                <td style="padding: 40px 24px;">
-                  <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #2d3748;">Hi,</p>
-                  
-                  <p style="margin: 16px 0 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                    We received a login request for your IND2B account. Use the code below to complete your login. This code is valid for the next <strong>${expiresIn} minutes</strong>.
-                  </p>
-                  
-                  <!-- OTP Box -->
-                  <div style="margin: 32px 0; padding: 24px; background: #f7fafc; border-radius: 8px; border: 2px dashed #cbd5e0; text-align: center;">
-                    <p style="margin: 0; font-size: 12px; font-weight: 600; color: #718096; text-transform: uppercase; letter-spacing: 0.5px;">Your Login Code</p>
-                    <p style="margin: 12px 0 0; font-size: 40px; font-weight: 700; color: #4299e1; letter-spacing: 8px; font-family: 'Courier New', monospace;">${otp
-                      .split("")
-                      .join(" ")}</p>
-                    <p style="margin: 12px 0 0; font-size: 13px; color: #718096;">Expires in <strong>${expiresIn} minutes</strong></p>
-                  </div>
-                  
-                  <div style="margin: 24px 0; padding: 16px; background: #fee; border-left: 4px solid #f56565; border-radius: 4px;">
-                    <p style="margin: 0; font-size: 14px; color: #742a2a;">
-                      <strong>Security Alert:</strong> If you didn't request this code, someone may be trying to access your account. Change your password immediately and contact support.
+  const year = new Date().getFullYear()
+  const digits = otp.split("")
+  const digitBoxes = digits
+    .map(
+      (d) =>
+        `<td style="padding:0 4px;"><div style="display:inline-block;width:44px;height:56px;line-height:56px;background:#ffffff;border:2px solid #1ac5a9;border-radius:10px;font-size:28px;font-weight:700;color:#149882;text-align:center;font-family:'Courier New',monospace;box-shadow:0 2px 8px rgba(26,197,169,0.15);">${d}</div></td>`,
+    )
+    .join("")
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Code - IND2B</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f0fdf9;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased;">
+
+  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#f0fdf9;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+
+        <!-- Card -->
+        <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width:520px;background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,197,169,0.12),0 1px 4px rgba(0,0,0,0.06);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background:linear-gradient(135deg,#0f766e 0%,#149882 50%,#1ac5a9 100%);padding:40px 32px 36px;text-align:center;">
+              <div style="display:inline-block;width:52px;height:52px;background:rgba(255,255,255,0.2);border-radius:14px;line-height:52px;font-size:26px;margin-bottom:16px;">
+                <img src="https://ind2b.com/logo1.webp" alt="IND2B Logo" style="width:100%;height:auto;">
+              </div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.3px;">Your Login Code</h1>
+              <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:15px;">IND2B secure sign-in</p>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:36px 36px 0;">
+              <p style="margin:0;font-size:16px;line-height:1.7;color:#374151;">
+                Hi! 👋 We received a login request for your IND2B account. Use the code below to sign in securely.
+              </p>
+            </td>
+          </tr>
+
+          <!-- OTP Block -->
+          <tr>
+            <td style="padding:28px 36px;" align="center">
+              <p style="margin:0 0 16px;font-size:11px;font-weight:700;color:#1ac5a9;text-transform:uppercase;letter-spacing:1.2px;">Your login code</p>
+
+              <!-- Digit boxes -->
+              <table cellpadding="0" cellspacing="0" role="presentation" style="margin:0 auto;">
+                <tr>${digitBoxes}</tr>
+              </table>
+
+              <!-- Expiry -->
+              <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
+                ⏱ Valid for <strong style="color:#374151;">${expiresIn} minutes</strong> only
+              </p>
+
+              <!-- Copy button -->
+              <table cellpadding="0" cellspacing="0" role="presentation" style="margin:20px auto 0;">
+                <tr>
+                  <td style="border-radius:8px;border:2px solid #1ac5a9;background:#f0fdf9;">
+                    <a href="mailto:?body=${otp}" onclick="try{navigator.clipboard.writeText('${otp}')}catch(e){}" style="display:inline-block;padding:10px 28px;color:#149882;text-decoration:none;font-size:14px;font-weight:600;border-radius:6px;letter-spacing:0.3px;">
+                      📋 Copy Code: ${otp}
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:8px 0 0;font-size:11px;color:#9ca3af;">Tap the button above to copy the code instantly</p>
+            </td>
+          </tr>
+
+          <!-- Security alert -->
+          <tr>
+            <td style="padding:0 36px 28px;">
+              <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;">
+                <tr>
+                  <td style="padding:16px 18px;">
+                    <p style="margin:0;font-size:13px;color:#991b1b;line-height:1.6;">
+                      <strong>🚨 Didn't request this?</strong> If you didn't try to log in, someone may have your email. Please change your password immediately and contact <a href="mailto:support@ind2b.com" style="color:#b91c1c;font-weight:600;">support@ind2b.com</a>.
                     </p>
-                  </div>
-                  
-                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                    Never share this code with anyone, including IND2B staff.
-                  </p>
-                  
-                  <p style="margin: 24px 0 0; font-size: 15px; line-height: 1.6; color: #4a5568;">
-                    Best regards,<br>
-                    <span style="font-weight: 600; color: #2d3748;">The IND2B Team</span>
-                  </p>
-                </td>
-              </tr>
-              
-              <!-- Footer -->
-              <tr>
-                <td style="padding: 24px; background-color: #f7fafc; text-align: center; border-top: 1px solid #e2e8f0;">
-                  <p style="margin: 0; font-size: 13px; color: #718096;">© ${new Date().getFullYear()} IND2B. All rights reserved.</p>
-                  <p style="margin: 8px 0 0; font-size: 12px; color: #a0aec0;">Sent to: <span style="color: #718096;">${email}</span></p>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </body>
-    </html>
-  `
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Sign-off -->
+          <tr>
+            <td style="padding:0 36px 32px;">
+              <p style="margin:0;font-size:14px;line-height:1.7;color:#6b7280;">
+                Never share this code with anyone — IND2B staff will never ask for it.
+              </p>
+              <p style="margin:18px 0 0;font-size:14px;color:#6b7280;">
+                Best regards,<br><strong style="color:#0f2027;">The IND2B Team</strong>
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:18px 36px;background:#f8fffe;border-top:1px solid #d0f5ee;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">&copy; ${year} IND2B. All rights reserved.</p>
+              <p style="margin:4px 0 0;font-size:12px;color:#9ca3af;">Sent to: <span style="color:#6b7280;">${email}</span></p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>`
 }
 
 /**
