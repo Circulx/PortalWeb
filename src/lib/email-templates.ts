@@ -32,7 +32,8 @@ export function generateWelcomeEmail({
           <tr>
             <td style="background:linear-gradient(135deg,#149882 0%,#1ac5a9 55%,#13ebc7 100%);padding:48px 32px 40px;text-align:center;">
               <!-- Logo mark -->
-              <div style="display:inline-block;width:56px;height:56px;background:rgba(255,255,255,0.18);border-radius:14px;margin-bottom:20px;line-height:56px;font-size:28px;"><img src="https://ind2b.com/logo1.webp" alt="IND2B Logo" style="width:100%;height:auto;"></div>
+              <div style="display:inline-block;width:56px;height:56px;background:rgba(255,255,255,0.18);border-radius:14px;margin-bottom:20px;line-height:56px;font-size:28px;"><img src="https://ind2b.com/logo1.webp" alt="IND2B" width="140" height="auto"
+  style="filter:brightness(0) invert(1);" /></div>
               <h1 style="margin:0;color:#ffffff;font-size:30px;font-weight:700;letter-spacing:-0.5px;line-height:1.2;">Welcome to IND2B!</h1>
               <p style="margin:10px 0 0;color:rgba(255,255,255,0.92);font-size:16px;font-weight:400;">Your marketplace journey starts now</p>
             </td>
@@ -209,7 +210,8 @@ export function generateSignupOTPEmail({
           <tr>
             <td style="background:linear-gradient(135deg,#149882 0%,#1ac5a9 60%,#13ebc7 100%);padding:40px 32px 36px;text-align:center;">
               <div style="display:inline-block;width:52px;height:52px;background:rgba(255,255,255,0.2);border-radius:14px;line-height:52px;font-size:26px;margin-bottom:16px;">
-                <img src="https://ind2b.com/logo1.webp" alt="IND2B Logo" style="width:100%;height:auto;">
+                <img src="https://ind2b.com/logo1.webp" alt="IND2B" width="140" height="auto"
+  style="filter:brightness(0) invert(1);" />
               </div>
               <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.3px;">Verify Your Email</h1>
               <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:15px;">Complete your IND2B signup</p>
@@ -339,7 +341,8 @@ export function generateLoginOTPEmail({
           <tr>
             <td style="background:linear-gradient(135deg,#0f766e 0%,#149882 50%,#1ac5a9 100%);padding:40px 32px 36px;text-align:center;">
               <div style="display:inline-block;width:52px;height:52px;background:rgba(255,255,255,0.2);border-radius:14px;line-height:52px;font-size:26px;margin-bottom:16px;">
-                <img src="https://ind2b.com/logo1.webp" alt="IND2B Logo" style="width:100%;height:auto;">
+               <img src="https://ind2b.com/logo1.webp" alt="IND2B" width="140" height="auto"
+  style="filter:brightness(0) invert(1);" />
               </div>
               <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.3px;">Your Login Code</h1>
               <p style="margin:8px 0 0;color:rgba(255,255,255,0.9);font-size:15px;">IND2B secure sign-in</p>
