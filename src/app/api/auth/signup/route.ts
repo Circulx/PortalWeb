@@ -3,6 +3,7 @@ import { getUserModel } from "@/models/user"
 import { isOTPVerified, deleteOTP } from "@/lib/otp-service"
 import { connectToProfileDB } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
+import { sendWelcomeEmail } from "@/lib/welcome-email"
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,6 +81,12 @@ export async function POST(request: NextRequest) {
 
     // Clean up OTP record
     await deleteOTP(email, "signup")
+
+    // Send welcome email asynchronously (non-blocking) - doesn't affect signup success
+    sendWelcomeEmail(email, name.trim()).catch((error) => {
+      console.error("[Signup API] Error sending welcome email:", error)
+      // Don't throw error - signup already succeeded
+    })
 
     return NextResponse.json(
       {
