@@ -100,7 +100,7 @@ export function DashboardWrapper() {
   if (loading && !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <Loader2 className="h-8 w-8 animate-spin text-orange-600 mb-4" />
         <p className="text-lg text-gray-600">Loading dashboard data...</p>
       </div>
     )
@@ -109,10 +109,14 @@ export function DashboardWrapper() {
   if (error && !data) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-lg w-full">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-lg w-full text-center">
           <h3 className="text-lg font-medium text-red-800 mb-2">Error loading dashboard</h3>
-          <p className="text-red-700 mb-4">{error}</p>
-          <Button onClick={fetchDashboardData} variant="outline">
+          <p className="text-red-700 mb-4 text-sm">{error}</p>
+          <Button onClick={() => {
+            setError(null)
+            setLoading(true)
+            fetchDashboardData()
+          }} variant="outline">
             Try Again
           </Button>
         </div>
@@ -164,16 +168,25 @@ export function DashboardWrapper() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Orders Table */}
         <div className="lg:col-span-2">
           <Card>
             <CardContent className="p-0">
               <div className="p-4 border-b flex justify-between items-center">
                 <h2 className="text-xl font-semibold">Recent Orders</h2>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => router.push("/seller/order-management")}>
-                    View All
-                  </Button>
-                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    try {
+                      router.push("/seller/order-management")
+                    } catch (e) {
+                      console.error("[v0] Navigation error:", e)
+                    }
+                  }}
+                >
+                  View All
+                </Button>
               </div>
 
               <div className="overflow-x-auto">
@@ -185,41 +198,45 @@ export function DashboardWrapper() {
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">CUSTOMER</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">STATUS</th>
                       <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">AMOUNT</th>
-                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">VIEW</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">ACTION</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {data?.recentOrders && data.recentOrders.length > 0 ? (
-                      data.recentOrders.map((order) => (
-                        <tr key={order._id} className="hover:bg-gray-50">
-                          <td className="px-4 py-4 text-sm">{order.orderNumber}</td>
-                          <td className="px-4 py-4 text-sm">
-                            {order.products[0]?.title || "Product"}
-                            {order.products.length > 1 && ` +${order.products.length - 1} more`}
-                          </td>
-                          <td className="px-4 py-4 text-sm">
-                            {order.customer}
-                            {order.customerCompany && (
-                              <div className="text-xs text-gray-500">{order.customerCompany}</div>
-                            )}
-                          </td>
-                          <td className="px-4 py-4 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(order.status)}`}>
-                              {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-4 text-sm font-medium">{formatCurrency(order.amount)}</td>
-                          <td className="px-4 py-4 text-sm">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => router.push(`/seller/order-management/${order.orderId}`)}
-                            >
-                              View
-                            </Button>
-                          </td>
-                        </tr>
-                      ))
+                    {data?.recentOrders && Array.isArray(data.recentOrders) && data.recentOrders.length > 0 ? (
+                      data.recentOrders.map((order) => {
+                        const productTitle = Array.isArray(order.products) && order.products.length > 0 
+                          ? order.products[0].title 
+                          : "Product"
+                        const moreCount = Array.isArray(order.products) ? order.products.length - 1 : 0
+                        return (
+                          <tr key={order._id} className="hover:bg-gray-50">
+                            <td className="px-4 py-4 text-sm font-medium">{order.orderNumber}</td>
+                            <td className="px-4 py-4 text-sm">{productTitle}{moreCount > 0 && ` +${moreCount} more`}</td>
+                            <td className="px-4 py-4 text-sm">{order.customer}</td>
+                            <td className="px-4 py-4 text-sm">
+                              <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
+                                {order.status ? order.status.charAt(0).toUpperCase() + order.status.slice(1) : 'Unknown'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-4 text-sm font-medium">{formatCurrency(order.amount || 0)}</td>
+                            <td className="px-4 py-4 text-sm">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  try {
+                                    router.push(`/seller/order-management/${order.orderId}`)
+                                  } catch (e) {
+                                    console.error("[v0] Navigation error:", e)
+                                  }
+                                }}
+                              >
+                                View
+                              </Button>
+                            </td>
+                          </tr>
+                        )
+                      })
                     ) : (
                       <tr>
                         <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
@@ -234,44 +251,30 @@ export function DashboardWrapper() {
           </Card>
         </div>
 
+        {/* Sales Trend Chart */}
         <div className="lg:col-span-1">
           <Card className="h-full">
             <CardContent className="p-0">
-              <div className="p-4 border-b flex justify-between items-center">
+              <div className="p-4 border-b">
                 <h2 className="text-xl font-semibold">Sales Trend</h2>
-                <div className="text-sm font-medium">This Week</div>
+                <p className="text-xs text-gray-500 mt-1">This Week</p>
               </div>
 
-              <div className="p-4 h-[350px]">
-                {data?.dailySales && data.dailySales.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={data.dailySales} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 12 }} />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => `₹${value.toLocaleString()}`}
-                      />
-                      <Tooltip
-                        formatter={(value) => [`₹${Number(value).toLocaleString()}`, "Sales"]}
-                        labelFormatter={(label) => `${label}`}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="sales"
-                        stroke="#f97316"
-                        strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500">No sales data available</p>
+              <div className="p-4 h-[350px] flex items-center justify-center">
+                {data?.dailySales && Array.isArray(data.dailySales) && data.dailySales.length > 0 ? (
+                  <div className="w-full h-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={data.dailySales} margin={{ top: 5, right: 10, left: -20, bottom: 20 }}>
+                        <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                        <XAxis dataKey="day" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} />
+                        <Tooltip formatter={(value) => `₹${Number(value).toLocaleString()}`} />
+                        <Line type="monotone" dataKey="sales" stroke="#f97316" dot={{ r: 3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
+                ) : (
+                  <p className="text-gray-500 text-center">No sales data available</p>
                 )}
               </div>
             </CardContent>
