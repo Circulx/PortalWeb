@@ -10,6 +10,7 @@ interface OTPVerificationProps {
   onSuccess: () => void
   onBack: () => void
   isLoading?: boolean
+  parentError?: string
 }
 
 export function OTPVerification({
@@ -18,15 +19,23 @@ export function OTPVerification({
   onSuccess,
   onBack,
   isLoading = false,
+  parentError = "",
 }: OTPVerificationProps) {
   const [otp, setOtp] = useState(["", "", "", "", "", ""])
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
   const [isVerifying, setIsVerifying] = useState(false)
-  const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(120) // 2 minutes in seconds
   const [canResend, setCanResend] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+
+  // If parent signals an error after success (e.g. account creation failed), reset so user can act
+  useEffect(() => {
+    if (parentError && success) {
+      setSuccess(false)
+    }
+  }, [parentError])
 
   // Timer for OTP expiry
   useEffect(() => {
@@ -105,12 +114,11 @@ export function OTPVerification({
       }
 
       setSuccess(true)
+      setIsVerifying(false)
       setError("")
 
-      // Wait a moment before calling onSuccess
-      setTimeout(() => {
-        onSuccess()
-      }, 1000)
+      // Call onSuccess immediately to proceed with account creation
+      onSuccess()
     } catch (err) {
       setError("Network error. Please try again.")
       setIsVerifying(false)
@@ -143,7 +151,7 @@ export function OTPVerification({
 
       // Reset OTP and timer
       setOtp(["", "", "", "", "", ""])
-      setTimeLeft(600)
+      setTimeLeft(120)
       setCanResend(false)
       setIsResending(false)
       inputRefs.current[0]?.focus()
@@ -173,10 +181,10 @@ export function OTPVerification({
       )}
 
       {/* Error State */}
-      {error && !success && (
+      {(error || parentError) && !success && (
         <div className="p-2 bg-destructive/10 border border-destructive/30 rounded-md flex items-start gap-2">
           <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
-          <p className="text-xs sm:text-sm font-medium text-destructive">{error}</p>
+          <p className="text-xs sm:text-sm font-medium text-destructive">{error || parentError}</p>
         </div>
       )}
 
@@ -245,15 +253,15 @@ export function OTPVerification({
         disabled={isVerifying || success || otp.some((d) => !d) || isLoading}
         className="w-full h-9 text-xs sm:text-sm font-semibold bg-primary hover:bg-accent text-primary-foreground rounded-md transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {isVerifying ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            Verifying...
-          </span>
-        ) : success ? (
+        {success ? (
           <span className="flex items-center justify-center gap-2">
             <CheckCircle className="w-4 h-4" />
             Verified
+          </span>
+        ) : isVerifying ? (
+          <span className="flex items-center justify-center gap-2">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Verifying...
           </span>
         ) : (
           'Verify Code'

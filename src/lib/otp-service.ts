@@ -325,7 +325,7 @@ export async function sendPasswordResetOTP(email: string): Promise<{
     return {
       success: true,
       message: "OTP sent successfully",
-      expiresIn: 10 * 60, // 10 minutes in seconds
+      expiresIn: 2 * 60, // 2 minutes in seconds
     }
   } catch (error) {
     console.error("[OTP Service] Error sending password reset OTP:", error)

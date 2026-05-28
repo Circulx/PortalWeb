@@ -2,7 +2,6 @@
 
 import type React from 'react'
 import { useState, useEffect } from 'react'
-import { signUp } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ContactModal } from './contact-modal'
@@ -146,28 +145,34 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
 
   async function handleOTPSuccess() {
     setIsLoading(true)
+    setError('')
     try {
-      const formData = new FormData()
-      formData.append('name', fullName)
-      formData.append('email', email.toLowerCase())
-      formData.append('phone', phone)
-      formData.append('userType', 'customer')
-      formData.append('password', password)
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: fullName,
+          email: email.toLowerCase(),
+          phone,
+          password,
+          userType: 'customer',
+        }),
+      })
 
-      const result = await signUp(formData)
+      const result = await response.json()
 
-      if (result.error) {
-        setError(result.error)
+      if (!response.ok || !result.success) {
+        setError(result.message || 'Failed to create account. Please try again.')
         setIsLoading(false)
         return
       }
 
       setStep('success')
       setTimeout(() => {
-        onSuccess('Email verified! Please sign in.')
+        onSuccess('Account created! Please sign in.')
       }, 1500)
     } catch (err) {
-      setError('Failed to create account. Please try again.')
+      setError('Network error. Failed to create account. Please try again.')
       setIsLoading(false)
     }
   }
@@ -188,6 +193,7 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
           setError('')
         }}
         isLoading={isLoading}
+        parentError={error}
       />
     )
   }
@@ -368,4 +374,3 @@ export function SignUpForm({ onSuccess, onSignIn }: SignUpFormProps) {
     </div>
   )
 }
- 
