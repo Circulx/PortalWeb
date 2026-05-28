@@ -87,7 +87,11 @@ export default async function RootLayout({
             <Suspense fallback={null}>
               <PageViewTracker />
             </Suspense>
-            <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14 w-full max-w-full overflow-x-hidden">{children}</main>
+            <main className="min-h-screen pt-10 sm:pt-12 lg:pt-14 w-full max-w-full overflow-x-hidden">
+              <Suspense fallback={null}>
+                {children}
+              </Suspense>
+            </main>
             <Footer />
             <OnboardingPopupHandler />
             <Chatbot user={user} />
@@ -97,4 +101,3 @@ export default async function RootLayout({
     </html>
   )
 }
-
