@@ -15,7 +15,7 @@ export default function DashboardLayout({
 
   return (
     <AuthWrapper requiredRole="customer">
-      <div className="relative min-h-screen bg-white flex flex-col">
+      <div className="relative min-h-screen bg-white flex">
         {/* Toggle Button for Mobile */}
         <button
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -29,7 +29,7 @@ export default function DashboardLayout({
         <DashboardSidebar isMobileMenuOpen={isMobileMenuOpen} setIsMobileMenuOpen={setIsMobileMenuOpen} />
 
         {/* Main Content with offset for sidebar */}
-        <main className="md:ml-64 flex-1 p-4 md:p-8 bg-white text-gray-900">{children}</main>
+        <main className="flex-1 w-full md:w-auto p-4 md:p-8 bg-white text-gray-900 overflow-y-auto">{children}</main>
       </div>
     </AuthWrapper>
   )
