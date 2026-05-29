@@ -72,7 +72,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     }
 
     const title = body.title ? String(body.title).trim() : current.title
-    const excerpt = body.excerpt ? String(body.excerpt).trim() : current.excerpt
+    const rawExcerpt = body.excerpt ? String(body.excerpt).trim() : current.excerpt
+    const excerpt = rawExcerpt.length > 497 ? rawExcerpt.slice(0, 497).replace(/\s+\S*$/, "") + "..." : rawExcerpt
     const content = body.content ? String(body.content).trim() : current.content
     const author = body.author ? String(body.author).trim() : current.author
     const coverImage = body.coverImage !== undefined ? String(body.coverImage || "").trim() : current.coverImage

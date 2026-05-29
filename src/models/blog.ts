@@ -20,7 +20,7 @@ const blogSchema = new mongoose.Schema<IBlog>(
   {
     title: { type: String, required: true, trim: true, maxlength: 180 },
     slug: { type: String, required: true, unique: true, trim: true, lowercase: true, maxlength: 220 },
-    excerpt: { type: String, required: true, trim: true, maxlength: 320 },
+    excerpt: { type: String, required: true, trim: true, maxlength: 700 },
     content: { type: String, required: true, trim: true },
     coverImage: { type: String, trim: true, default: "" },
     author: { type: String, required: true, trim: true, maxlength: 80 },

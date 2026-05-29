@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const title = String(body.title || "").trim()
-    const excerpt = String(body.excerpt || "").trim()
+    const excerpt = String(body.excerpt || "").trim().slice(0, 497).replace(/\s+\S*$/, "") + (String(body.excerpt || "").trim().length > 497 ? "..." : "")
     const content = String(body.content || "").trim()
     const author = String(body.author || user.name || "Admin").trim()
     const status = (body.status === "published" ? "published" : "draft") as BlogStatus
