@@ -1,6 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectDB1 } from "@/lib/db"
 import { getUserModel } from "@/models/user"
+import { sendEmail } from "@/lib/email"
+import { generateRoleUpdateEmail } from "@/lib/email-templates"
 import mongoose from "mongoose"
 
 export async function POST(request: NextRequest) {
@@ -25,12 +27,40 @@ export async function POST(request: NextRequest) {
     // Convert string ID to ObjectId
     const objectId = new mongoose.Types.ObjectId(userId)
 
+    // Get current user to capture previous role and name/email
+    const currentUser = await UserModel.findById(objectId).select("name email type")
+    if (!currentUser) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    }
+
+    const previousRole = currentUser.type || "customer"
+
     // Update user type in the correct database
     const updatedUser = await UserModel.findByIdAndUpdate(objectId, { type: role }, { new: true })
 
     if (!updatedUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 })
     }
+
+    // Send role update email asynchronously (don't block the response)
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      (request.headers.get("origin") ?? "http://localhost:3000")
+
+    sendEmail({
+      to: updatedUser.email,
+      subject: `Your IND2B Account Role Has Been Updated to ${role.charAt(0).toUpperCase() + role.slice(1)}`,
+      html: generateRoleUpdateEmail({
+        name: updatedUser.name,
+        email: updatedUser.email,
+        newRole: role as "admin" | "seller" | "customer",
+        previousRole,
+        appUrl,
+      }),
+    }).catch((err) => {
+      // Log but don't fail — role is already updated in DB
+      console.error("[update-role] Failed to send role update email:", err)
+    })
 
     return NextResponse.json({
       message: "User role updated successfully",

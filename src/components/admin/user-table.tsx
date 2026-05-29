@@ -75,8 +75,8 @@ export function UserTable({ users }: UserTableProps) {
       }
 
       toast({
-        title: "Success",
-        description: `User role updated to ${newRole}`,
+        title: "Role Updated",
+        description: `User role updated to ${newRole}. A notification email has been sent to the user.`,
       })
 
       router.refresh()

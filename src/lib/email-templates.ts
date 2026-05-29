@@ -770,3 +770,235 @@ export function generateApplicationConfirmationEmail(applicant: {
     </html>
   `
 }
+
+
+
+
+
+/**
+ * Role config per role type
+ */
+const ROLE_CONFIG = {
+  admin: {
+    label: "Administrator",
+    emoji: "🛡️",
+    color: "#7c3aed",
+    gradientFrom: "#7c3aed",
+    gradientTo: "#4f46e5",
+    badgeBg: "#ede9fe",
+    badgeColor: "#5b21b6",
+    loginPath: "/admin",
+    loginLabel: "Go to Admin Dashboard",
+    perks: [
+      "Full platform management access",
+      "User & seller management",
+      "Analytics & reporting dashboard",
+      "Content & blog management",
+      "Order & inventory oversight",
+    ],
+  },
+  seller: {
+    label: "Seller",
+    emoji: "🏪",
+    color: "#059669",
+    gradientFrom: "#059669",
+    gradientTo: "#0d9488",
+    badgeBg: "#d1fae5",
+    badgeColor: "#065f46",
+    loginPath: "/seller",
+    loginLabel: "Go to Seller Dashboard",
+    perks: [
+      "List and manage your products",
+      "Track orders in real-time",
+      "Sales analytics & revenue reports",
+      "Customer messages & reviews",
+      "Promotional tools & discounts",
+    ],
+  },
+  customer: {
+    label: "Customer",
+    emoji: "🛒",
+    color: "#2563eb",
+    gradientFrom: "#2563eb",
+    gradientTo: "#7c3aed",
+    badgeBg: "#dbeafe",
+    badgeColor: "#1e40af",
+    loginPath: "/",
+    loginLabel: "Start Shopping Now",
+    perks: [
+      "Browse thousands of products",
+      "Exclusive member deals & offers",
+      "Order tracking & history",
+      "Wishlist & saved items",
+      "Priority customer support",
+    ],
+  },
+} as const
+ 
+/**
+ * Generate role update email template
+ */
+export function generateRoleUpdateEmail({
+  name,
+  email,
+  newRole,
+  previousRole,
+  appUrl,
+}: {
+  name: string
+  email: string
+  newRole: "admin" | "seller" | "customer"
+  previousRole: string
+  appUrl: string
+}): string {
+  const role = ROLE_CONFIG[newRole]
+  const loginUrl = `${appUrl}${role.loginPath}`
+  const year = new Date().getFullYear()
+ 
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Account Role Updated - IND2B</title>
+    </head>
+    <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f1f5f9;">
+ 
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="min-height:100vh;">
+        <tr>
+          <td align="center" style="padding:32px 16px;">
+ 
+            <!-- Card -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+              style="max-width:540px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.10);">
+ 
+              <!-- Header gradient banner -->
+              <tr>
+                <td style="background:linear-gradient(135deg,${role.gradientFrom} 0%,${role.gradientTo} 100%);padding:44px 32px 36px;text-align:center;">
+                  <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50%;width:72px;height:72px;line-height:72px;text-align:center;font-size:36px;margin-bottom:16px;">
+                    ${role.emoji}
+                  </div>
+                  <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.3px;">Role Updated Successfully</h1>
+                  <p style="margin:8px 0 0;color:rgba(255,255,255,0.88);font-size:15px;">Your IND2B account access has changed</p>
+                </td>
+              </tr>
+ 
+              <!-- Greeting -->
+              <tr>
+                <td style="padding:36px 32px 0;">
+                  <p style="margin:0;font-size:16px;color:#1e293b;line-height:1.6;">
+                    Hi <strong>${name}</strong>,
+                  </p>
+                  <p style="margin:12px 0 0;font-size:15px;color:#475569;line-height:1.7;">
+                    Your account role on <strong>IND2B</strong> has been updated by an administrator. Here's a summary of the change:
+                  </p>
+                </td>
+              </tr>
+ 
+              <!-- Role change summary -->
+              <tr>
+                <td style="padding:24px 32px 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                    style="background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+                    <tr>
+                      <td style="padding:20px 24px;">
+                        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                          <tr>
+                            <!-- Previous role -->
+                            <td style="width:42%;text-align:center;padding:12px;">
+                              <p style="margin:0;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;">Previous Role</p>
+                              <div style="margin:8px auto 0;display:inline-block;background:#f1f5f9;border:1px solid #cbd5e1;border-radius:20px;padding:6px 16px;">
+                                <span style="font-size:14px;font-weight:600;color:#64748b;text-transform:capitalize;">${previousRole}</span>
+                              </div>
+                            </td>
+                            <!-- Arrow -->
+                            <td style="width:16%;text-align:center;vertical-align:middle;">
+                              <span style="font-size:22px;color:${role.color};">→</span>
+                            </td>
+                            <!-- New role -->
+                            <td style="width:42%;text-align:center;padding:12px;">
+                              <p style="margin:0;font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.8px;">New Role</p>
+                              <div style="margin:8px auto 0;display:inline-block;background:${role.badgeBg};border:1px solid ${role.color}33;border-radius:20px;padding:6px 16px;">
+                                <span style="font-size:14px;font-weight:700;color:${role.badgeColor};text-transform:capitalize;">${role.label} ${role.emoji}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+ 
+              <!-- What you can do now -->
+              <tr>
+                <td style="padding:28px 32px 0;">
+                  <p style="margin:0;font-size:15px;font-weight:600;color:#1e293b;">What you can do as a ${role.label}:</p>
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-top:14px;">
+                    ${role.perks.map((perk) => `
+                    <tr>
+                      <td style="padding:5px 0;">
+                        <table cellpadding="0" cellspacing="0" role="presentation">
+                          <tr>
+                            <td style="width:24px;vertical-align:top;padding-top:1px;">
+                              <div style="width:20px;height:20px;background:${role.badgeBg};border-radius:50%;text-align:center;line-height:20px;font-size:11px;">✓</div>
+                            </td>
+                            <td style="padding-left:10px;font-size:14px;color:#475569;line-height:1.5;">${perk}</td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>`).join("")}
+                  </table>
+                </td>
+              </tr>
+ 
+              <!-- CTA Button -->
+              <tr>
+                <td style="padding:32px 32px 0;text-align:center;">
+                  <a href="${loginUrl}"
+                    style="display:inline-block;background:linear-gradient(135deg,${role.gradientFrom},${role.gradientTo});color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 36px;border-radius:10px;letter-spacing:0.2px;box-shadow:0 4px 14px ${role.color}44;">
+                    ${role.loginLabel} &rarr;
+                  </a>
+                  <p style="margin:12px 0 0;font-size:12px;color:#94a3b8;">
+                    Or copy this link: <span style="color:${role.color};">${loginUrl}</span>
+                  </p>
+                </td>
+              </tr>
+ 
+              <!-- Security note -->
+              <tr>
+                <td style="padding:24px 32px 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                    style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;padding:0;">
+                    <tr>
+                      <td style="padding:14px 16px;">
+                        <p style="margin:0;font-size:13px;color:#92400e;line-height:1.6;">
+                          <strong>⚠️ Didn't expect this?</strong> If you believe this change was made in error, please contact our support team immediately at
+                          <a href="mailto:support@ind2b.com" style="color:#b45309;text-decoration:underline;">support@ind2b.com</a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+ 
+              <!-- Footer -->
+              <tr>
+                <td style="padding:32px;text-align:center;border-top:1px solid #e2e8f0;margin-top:32px;">
+                  <p style="margin:0;font-size:13px;color:#94a3b8;">© ${year} IND2B. All rights reserved.</p>
+                  <p style="margin:6px 0 0;font-size:12px;color:#cbd5e1;">This email was sent to <strong style="color:#94a3b8;">${email}</strong></p>
+                </td>
+              </tr>
+ 
+            </table>
+            <!-- End Card -->
+ 
+          </td>
+        </tr>
+      </table>
+ 
+    </body>
+    </html>
+  `
+}
