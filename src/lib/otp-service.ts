@@ -325,7 +325,7 @@ export async function sendPasswordResetOTP(email: string): Promise<{
     return {
       success: true,
       message: "OTP sent successfully",
-      expiresIn: 2 * 60, // 2 minutes in seconds
+      expiresIn: 10 * 60, // 10 minutes in seconds
     }
   } catch (error) {
     console.error("[OTP Service] Error sending password reset OTP:", error)
@@ -340,19 +340,93 @@ export async function sendPasswordResetOTP(email: string): Promise<{
  * Generate password reset OTP email template
  */
 function generatePasswordResetOTPEmail(data: { otp: string; email: string; expiresIn: number }): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://ind2b.com"
+  const year = new Date().getFullYear()
   return `
-    <div style="font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;">
-      <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; max-width: 500px; margin: 0 auto;">
-        <h2 style="color: #333; margin-bottom: 20px;">Password Reset Request</h2>
-        <p style="color: #666; margin-bottom: 15px;">We received a request to reset your password. Use the OTP below to proceed:</p>
-        <div style="background-color: #004D41; color: #ffffff; padding: 15px; border-radius: 5px; text-align: center; margin: 20px 0;">
-          <h1 style="margin: 0; letter-spacing: 5px; font-size: 32px;">${data.otp}</h1>
-        </div>
-        <p style="color: #999; font-size: 14px; margin-bottom: 15px;">This OTP will expire in ${data.expiresIn} minutes.</p>
-        <p style="color: #999; font-size: 14px;">If you didn't request this, please ignore this email.</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="color: #999; font-size: 12px;">© 2024 IND2B. All rights reserved.</p>
-      </div>
-    </div>
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Password Reset OTP - IND2B</title>
+    </head>
+    <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f1f5f9;">
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td align="center" style="padding:32px 16px;">
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+              style="max-width:500px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.10);">
+
+              <!-- Logo header -->
+              <tr>
+                <td align="center" style="padding:20px 24px 16px;background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                  <a href="${appUrl}" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">
+                    <img src="${appUrl}/logo1.webp" alt="IND2B" width="40" height="40"
+                      style="display:inline-block;border-radius:8px;vertical-align:middle;" />
+                    <span style="font-size:20px;font-weight:800;color:#ef4444;vertical-align:middle;letter-spacing:-0.5px;">IND2B</span>
+                  </a>
+                </td>
+              </tr>
+
+              <!-- Header -->
+              <tr>
+                <td style="padding:36px 24px 28px;background:linear-gradient(135deg,#ef4444 0%,#dc2626 100%);text-align:center;">
+                  <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:50%;width:60px;height:60px;line-height:60px;text-align:center;font-size:28px;margin-bottom:14px;">🔐</div>
+                  <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:-0.3px;">Password Reset</h1>
+                  <p style="margin:8px 0 0;color:rgba(255,255,255,0.88);font-size:14px;">Your IND2B account security</p>
+                </td>
+              </tr>
+
+              <!-- Body -->
+              <tr>
+                <td style="padding:32px 32px 0;">
+                  <p style="margin:0;font-size:15px;color:#475569;line-height:1.7;">
+                    We received a request to reset your password for <strong style="color:#1e293b;">${data.email}</strong>.
+                    Use the code below to proceed. Do not share this code with anyone.
+                  </p>
+                </td>
+              </tr>
+
+              <!-- OTP Box -->
+              <tr>
+                <td style="padding:28px 32px 0;text-align:center;">
+                  <div style="background:linear-gradient(135deg,#fef2f2,#fee2e2);border:2px dashed #ef4444;border-radius:12px;padding:24px;">
+                    <p style="margin:0 0 8px;font-size:12px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">Your Reset Code</p>
+                    <div style="letter-spacing:12px;font-size:38px;font-weight:800;color:#dc2626;font-family:monospace;">${data.otp}</div>
+                    <p style="margin:10px 0 0;font-size:13px;color:#94a3b8;">Expires in <strong style="color:#ef4444;">${data.expiresIn} minutes</strong></p>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Warning -->
+              <tr>
+                <td style="padding:24px 32px 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                    style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;">
+                    <tr>
+                      <td style="padding:14px 16px;">
+                        <p style="margin:0;font-size:13px;color:#92400e;line-height:1.6;">
+                          <strong>⚠️ Didn't request this?</strong> Ignore this email — your password remains unchanged. If you're concerned, contact us at
+                          <a href="mailto:support@ind2b.com" style="color:#b45309;">support@ind2b.com</a>
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="padding:28px 32px;text-align:center;border-top:1px solid #e2e8f0;margin-top:28px;">
+                  <p style="margin:0;font-size:13px;color:#94a3b8;">© ${year} IND2B. All rights reserved.</p>
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
   `
 }

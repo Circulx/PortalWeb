@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
     // Send role update email asynchronously (don't block the response)
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL ||
-      (request.headers.get("origin") ?? "http://localhost:3000")
+      (request.headers.get("origin") ?? "https://ind2b.com")
 
     sendEmail({
       to: updatedUser.email,

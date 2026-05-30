@@ -1,5 +1,7 @@
 import type { Order, OrderProduct } from "@/models/profile/order"
-
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://ind2b.com"
+const COMPANY_NAME = "IND2B"
+const LOGO_URL = `${APP_URL}/logo1.webp`
 /**
  * Generate welcome email template for new users
  */
@@ -872,6 +874,19 @@ export function generateRoleUpdateEmail({
             <!-- Card -->
             <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
               style="max-width:540px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.10);">
+
+
+
+               <!-- Logo header -->
+              <tr>
+                <td align="center" style="padding:20px 24px 16px;background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                  <a href="${appUrl}" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">
+                    <img src="${appUrl}/logo1.webp" alt="IND2B" width="40" height="40"
+                      style="display:inline-block;border-radius:8px;vertical-align:middle;" />
+                    <span style="font-size:20px;font-weight:800;color:${role.color};vertical-align:middle;letter-spacing:-0.5px;">IND2B</span>
+                  </a>
+                </td>
+              </tr>
  
               <!-- Header gradient banner -->
               <tr>
