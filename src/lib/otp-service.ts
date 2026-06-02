@@ -1,4 +1,4 @@
-import { OTPVerification } from "@/models/otp-verification"
+import { Schema } from "mongoose"
 import { sendEmail } from "@/lib/email"
 import {
   generateSignupOTPEmail,
@@ -6,12 +6,28 @@ import {
 } from "@/lib/email-templates"
 import { connectToProfileDB } from "@/lib/mongodb"
 
+// Define the OTP schema locally so it can be registered on the profile DB connection
+const OTPVerificationSchema = new Schema(
+  {
+    email: { type: String, required: true, lowercase: true, trim: true, index: true },
+    otp: { type: String, required: true },
+    type: { type: String, enum: ["signup", "login", "password-reset"], required: true },
+    expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
+    attempts: { type: Number, default: 0 },
+    maxAttempts: { type: Number, default: 5 },
+    isVerified: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+)
+
 /**
- * Get OTP model from the profile database connection
+ * Get OTP model from the profile database connection.
+ * Registers the schema on the connection if not already registered.
  */
 async function getOTPModel() {
   const connection = await connectToProfileDB()
-  return connection.model("OTPVerification")
+  // Use existing model if already registered on this connection, otherwise register it
+  return connection.models.OTPVerification || connection.model("OTPVerification", OTPVerificationSchema)
 }
 
 /**
