@@ -3,6 +3,7 @@ import { getCurrentUser } from "@/actions/auth"
 import { connectProfileDB } from "@/lib/profileDb"
 import { getBlogModel, type BlogStatus } from "@/models/blog"
 import { revalidatePath } from "next/cache"
+import { sendBlogNewsletter } from "@/lib/send-blog-newsletter"
 
 function slugify(input: string) {
   return input
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const title = String(body.title || "").trim()
-    const excerpt = String(body.excerpt || "").trim().slice(0, 497).replace(/\s+\S*$/, "") + (String(body.excerpt || "").trim().length > 497 ? "..." : "")
+    const excerpt = String(body.excerpt || "").trim()
     const content = String(body.content || "").trim()
     const author = String(body.author || user.name || "Admin").trim()
     const status = (body.status === "published" ? "published" : "draft") as BlogStatus
@@ -104,6 +105,19 @@ export async function POST(request: NextRequest) {
 
     revalidatePath("/blog")
     revalidatePath(`/blog/${slug}`)
+
+    // Await newsletter so it isn't killed when the request context closes
+    if (status === "published") {
+      await sendBlogNewsletter({
+        title: blog.title,
+        excerpt: blog.excerpt,
+        slug: blog.slug,
+        author: blog.author,
+        coverImage: blog.coverImage,
+        tags: blog.tags,
+        publishedAt: blog.publishedAt,
+      })
+    }
 
     return NextResponse.json({ success: true, blog }, { status: 201 })
   } catch (error) {

@@ -4,6 +4,7 @@ import { connectProfileDB } from "@/lib/profileDb"
 import { getBlogModel, type BlogStatus } from "@/models/blog"
 import { revalidatePath } from "next/cache"
 import mongoose from "mongoose"
+import { sendBlogNewsletter } from "@/lib/send-blog-newsletter"
 
 function slugify(input: string) {
   return input
@@ -71,9 +72,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: "Blog not found" }, { status: 404 })
     }
 
+    const previousStatus = current.status
+
     const title = body.title ? String(body.title).trim() : current.title
-    const rawExcerpt = body.excerpt ? String(body.excerpt).trim() : current.excerpt
-    const excerpt = rawExcerpt.length > 497 ? rawExcerpt.slice(0, 497).replace(/\s+\S*$/, "") + "..." : rawExcerpt
+    const excerpt = body.excerpt ? String(body.excerpt).trim() : current.excerpt
     const content = body.content ? String(body.content).trim() : current.content
     const author = body.author ? String(body.author).trim() : current.author
     const coverImage = body.coverImage !== undefined ? String(body.coverImage || "").trim() : current.coverImage
@@ -113,6 +115,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     revalidatePath("/blog")
     revalidatePath(`/blog/${current.slug}`)
+
+    // Await newsletter only when transitioning draft → published (not on every edit)
+    if (status === "published" && previousStatus !== "published") {
+      await sendBlogNewsletter({
+        title: current.title,
+        excerpt: current.excerpt,
+        slug: current.slug,
+        author: current.author,
+        coverImage: current.coverImage,
+        tags: current.tags,
+        publishedAt: current.publishedAt,
+      })
+    }
 
     return NextResponse.json({ success: true, blog: current })
   } catch (error) {

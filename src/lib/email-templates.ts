@@ -1,7 +1,5 @@
 import type { Order, OrderProduct } from "@/models/profile/order"
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://ind2b.com"
-const COMPANY_NAME = "IND2B"
-const LOGO_URL = `${APP_URL}/logo1.webp`
+
 /**
  * Generate welcome email template for new users
  */
@@ -877,16 +875,7 @@ export function generateRoleUpdateEmail({
 
 
 
-               <!-- Logo header -->
-              <tr>
-                <td align="center" style="padding:20px 24px 16px;background:#ffffff;border-bottom:1px solid #e2e8f0;">
-                  <a href="${appUrl}" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">
-                    <img src="${appUrl}/logo1.webp" alt="IND2B" width="40" height="40"
-                      style="display:inline-block;border-radius:8px;vertical-align:middle;" />
-                    <span style="font-size:20px;font-weight:800;color:${role.color};vertical-align:middle;letter-spacing:-0.5px;">IND2B</span>
-                  </a>
-                </td>
-              </tr>
+              
  
               <!-- Header gradient banner -->
               <tr>
@@ -1003,6 +992,187 @@ export function generateRoleUpdateEmail({
                 <td style="padding:32px;text-align:center;border-top:1px solid #e2e8f0;margin-top:32px;">
                   <p style="margin:0;font-size:13px;color:#94a3b8;">© ${year} IND2B. All rights reserved.</p>
                   <p style="margin:6px 0 0;font-size:12px;color:#cbd5e1;">This email was sent to <strong style="color:#94a3b8;">${email}</strong></p>
+                </td>
+              </tr>
+ 
+            </table>
+            <!-- End Card -->
+ 
+          </td>
+        </tr>
+      </table>
+ 
+    </body>
+    </html>
+  `
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Generate blog newsletter email template
+ */
+export function generateBlogNewsletterEmail({
+  blogTitle,
+  blogExcerpt,
+  blogSlug,
+  blogAuthor,
+  blogCoverImage,
+  blogTags = [],
+  publishedAt,
+  subscriberEmail,
+}: {
+  blogTitle: string
+  blogExcerpt: string
+  blogSlug: string
+  blogAuthor: string
+  blogCoverImage?: string
+  blogTags?: string[]
+  publishedAt?: Date | null
+  subscriberEmail: string
+}): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://ind2b.com"
+  const blogUrl = `${appUrl}/blog/${blogSlug}`
+  const unsubscribeUrl = `${appUrl}/unsubscribe?email=${encodeURIComponent(subscriberEmail)}`
+  const year = new Date().getFullYear()
+  const dateStr = publishedAt
+    ? new Date(publishedAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
+    : new Date().toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" })
+ 
+  const tagsHtml = blogTags.length
+    ? blogTags
+        .slice(0, 4)
+        .map(
+          (tag) =>
+            `<span style="display:inline-block;background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600;margin:2px 3px 2px 0;text-transform:uppercase;letter-spacing:0.5px;">${tag}</span>`
+        )
+        .join("")
+    : ""
+ 
+  const coverImageHtml = blogCoverImage
+    ? `<tr>
+        <td style="padding:0;">
+          <img src="${blogCoverImage}" alt="${blogTitle}"
+            style="width:100%;max-height:260px;object-fit:cover;display:block;border-radius:0;" />
+        </td>
+      </tr>`
+    : ""
+ 
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>New Blog Post - ${blogTitle} | IND2B</title>
+    </head>
+    <body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;background-color:#f1f5f9;">
+ 
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+        <tr>
+          <td align="center" style="padding:32px 16px;">
+ 
+            <!-- Card -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+              style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.10);">
+ 
+              <!-- Logo Header -->
+              <tr>
+                <td align="center" style="padding:20px 28px 16px;background:#ffffff;border-bottom:1px solid #e2e8f0;">
+                  <a href="${appUrl}" style="text-decoration:none;display:inline-flex;align-items:center;gap:10px;">
+                    <img src="${appUrl}/logo1.webp" alt="IND2B" width="40" height="40"
+                      style="display:inline-block;border-radius:8px;vertical-align:middle;" />
+                    <span style="font-size:20px;font-weight:800;color:#059669;vertical-align:middle;letter-spacing:-0.5px;">IND2B</span>
+                  </a>
+                </td>
+              </tr>
+ 
+              <!-- Hero Banner -->
+              <tr>
+                <td style="background:linear-gradient(135deg,#059669 0%,#0d9488 100%);padding:32px 28px 28px;text-align:center;">
+                  <div style="display:inline-block;background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 18px;margin-bottom:14px;">
+                    <span style="color:rgba(255,255,255,0.95);font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;">📰 New Blog Post</span>
+                  </div>
+                  <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:800;line-height:1.35;letter-spacing:-0.3px;">
+                    ${blogTitle}
+                  </h1>
+                  <p style="margin:10px 0 0;color:rgba(255,255,255,0.80);font-size:13px;">
+                    By <strong style="color:rgba(255,255,255,0.95);">${blogAuthor}</strong> &nbsp;·&nbsp; ${dateStr}
+                  </p>
+                </td>
+              </tr>
+ 
+              <!-- Cover Image -->
+              ${coverImageHtml}
+ 
+              <!-- Body -->
+              <tr>
+                <td style="padding:28px 28px 0;">
+                  <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;">What's New on IND2B</p>
+                  <p style="margin:0;font-size:15px;color:#374151;line-height:1.75;">${blogExcerpt}</p>
+                </td>
+              </tr>
+ 
+              <!-- Tags -->
+              ${
+                tagsHtml
+                  ? `<tr>
+                <td style="padding:18px 28px 0;">
+                  ${tagsHtml}
+                </td>
+              </tr>`
+                  : ""
+              }
+ 
+              <!-- CTA Button -->
+              <tr>
+                <td style="padding:28px 28px 0;text-align:center;">
+                  <a href="${blogUrl}"
+                    style="display:inline-block;background:linear-gradient(135deg,#059669,#0d9488);color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:14px 40px;border-radius:10px;letter-spacing:0.2px;box-shadow:0 4px 14px rgba(5,150,105,0.35);">
+                    Read Full Article &rarr;
+                  </a>
+                </td>
+              </tr>
+ 
+              <!-- Divider + Why you received this -->
+              <tr>
+                <td style="padding:28px 28px 0;">
+                  <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 20px;" />
+                  <table width="100%" cellpadding="0" cellspacing="0" role="presentation"
+                    style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;">
+                    <tr>
+                      <td style="padding:16px 20px;">
+                        <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
+                          📬 You're receiving this because you subscribed to <strong>IND2B newsletters</strong>.
+                          Stay updated with the latest industry insights, product news, and more.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+ 
+              <!-- Footer -->
+              <tr>
+                <td style="padding:24px 28px 28px;text-align:center;">
+                  <p style="margin:0;font-size:13px;color:#94a3b8;">
+                    © ${year} IND2B. All rights reserved.
+                  </p>
+                  <p style="margin:6px 0 0;font-size:12px;color:#cbd5e1;">
+                    This email was sent to <strong style="color:#94a3b8;">${subscriberEmail}</strong>
+                  </p>
+                  <p style="margin:8px 0 0;font-size:12px;">
+                    <a href="${unsubscribeUrl}" style="color:#94a3b8;text-decoration:underline;">Unsubscribe</a>
+                    &nbsp;·&nbsp;
+                    <a href="${appUrl}/blog" style="color:#94a3b8;text-decoration:underline;">View all posts</a>
+                  </p>
                 </td>
               </tr>
  
