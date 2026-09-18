@@ -76,7 +76,7 @@ export default function SimpleSlider() {
     const initialDeviceType = getDeviceType()
     setDeviceType(initialDeviceType)
 
-    dispatch(fetchAdvertisements({ deviceType: initialDeviceType, position: "all" }))
+    dispatch(fetchAdvertisements({ deviceType: initialDeviceType, position: "homepage" }))
       .unwrap()
       .then(() => {
         if (isMountedRef.current) {
@@ -105,7 +105,7 @@ export default function SimpleSlider() {
         const newDeviceType = getDeviceType()
         if (newDeviceType !== deviceType && isMountedRef.current) {
           setDeviceType(newDeviceType)
-          dispatch(fetchAdvertisements({ deviceType: newDeviceType, position: "all" }))
+          dispatch(fetchAdvertisements({ deviceType: newDeviceType, position: "homepage" }))
         }
       }, 250)
     }
