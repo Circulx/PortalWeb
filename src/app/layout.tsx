@@ -9,10 +9,8 @@ import GoogleAnalytics from "@/components/analytics/GoogleAnalytics"
 import PageViewTracker from "@/components/analytics/PageViewTracker"
 import { Suspense } from "react"
 import Clarity from "@/components/analytics/Clarity"
-import Script from "next/script"
-import { OnboardingPopupHandler } from "@/components/onboarding-popup-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
-import Chatbot from "@/components/chat/Chatbot"
+import DeferredWidgets from "@/components/layout/deferred-widgets"
 
 
 export const metadata: Metadata = {
@@ -56,27 +54,6 @@ export default async function RootLayout({
       <head>
         <link rel="icon" href="/logo.webp" sizes="any" />
         <link rel="apple-touch-icon" href="/logo.webp" />
-        <Script id="polyfills" strategy="beforeInteractive">
-          {`
-            // requestIdleCallback polyfill for Safari/iOS
-            if (typeof window !== 'undefined' && !window.requestIdleCallback) {
-              window.requestIdleCallback = function(callback) {
-                const start = Date.now();
-                return setTimeout(function() {
-                  callback({
-                    didTimeout: false,
-                    timeRemaining: function() {
-                      return Math.max(0, 50 - (Date.now() - start));
-                    }
-                  });
-                }, 1);
-              };
-              window.cancelIdleCallback = function(id) {
-                clearTimeout(id);
-              };
-            }
-          `}
-        </Script>
       </head>
       <body className="bg-gray-100 prevent-overflow">
         <GoogleAnalytics />
@@ -93,8 +70,7 @@ export default async function RootLayout({
               </Suspense>
             </main>
             <Footer />
-            <OnboardingPopupHandler />
-            <Chatbot user={user} />
+            <DeferredWidgets user={user} />
           </Providers>
         </ErrorBoundary>
       </body>
