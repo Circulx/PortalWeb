@@ -13,6 +13,7 @@ import Script from "next/script"
 import { OnboardingPopupHandler } from "@/components/onboarding-popup-handler"
 import { ErrorBoundary } from "@/components/error-boundary"
 import Chatbot from "@/components/chat/Chatbot"
+import { Analytics } from '@vercel/analytics/next'
 
 
 export const metadata: Metadata = {
@@ -97,6 +98,7 @@ export default async function RootLayout({
             <Chatbot user={user} />
           </Providers>
         </ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   )
